@@ -96,11 +96,9 @@ if __name__ == '__main__':
     
 
     for i, data  in enumerate(predDataloader):
-        print(f'Index: {i} | My data: {data}')
+        print(f'Index: {i} | My data: {data} | Louis Testing')
         st_time = time.time()
-        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data
-
-        
+        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data        
 
         if args['use_cuda']:
             hist = hist.cuda()
