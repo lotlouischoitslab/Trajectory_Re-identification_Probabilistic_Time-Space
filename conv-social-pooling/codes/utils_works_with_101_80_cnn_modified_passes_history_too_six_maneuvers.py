@@ -132,7 +132,10 @@ class ngsimDataset(Dataset):
         # Initialize neighbors and neighbors length batches:
         nbr_batch_size = 0
         for _,_,nbrs,_,_,_,_ in samples:
-            nbr_batch_size += sum([len(nbrs[i])!=0 for i in range(len(nbrs))])
+            # nbr_batch_size += sum([len(nbrs[i])!=0 for i in range(len(nbrs))])
+            nbr_batch_size += sum([len(nbr) if nbr is not None else 0 for nbr in nbrs]) # Louis modified here due to None type error
+            
+
         maxlen = self.t_h//self.d_s + 1
         nbrs_batch = torch.zeros(maxlen,nbr_batch_size,2)
 

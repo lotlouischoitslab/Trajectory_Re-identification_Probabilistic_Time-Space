@@ -16,7 +16,7 @@ import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 
 #The GPU id to use, usually either "0" or "1"
-# os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 
 if __name__ == '__main__':
@@ -72,6 +72,7 @@ if __name__ == '__main__':
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
 
     predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
+
     # lossVals = torch.zeros(50).cuda()
     # counts = torch.zeros(50).cuda()
 
