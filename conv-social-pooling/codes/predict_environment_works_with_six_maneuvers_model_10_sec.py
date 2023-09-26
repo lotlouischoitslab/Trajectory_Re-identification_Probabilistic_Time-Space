@@ -9,7 +9,15 @@ import math
 import pickle
 import numpy as np
 
-# import intel_extension_for_pytorch as ipex
+''' 
+NOTES For Louis Sungwoo Cho NCAS HAL Cluster:
+Go here for more reference: https://wiki.ncsa.illinois.edu/display/ISL20/HAL+cluster 
+1. To connect to NCSA Hal Cluster: ssh louissc2@hal.ncsa.illinois.edu
+2. Type in Password & Enter the Authentication code 
+3. swrun -p gpux1 
+'''
+
+# ssh <username>@hal.ncsa.illinois.edu
 
 ###FOR MULTI-GPU system using a single gpu:
 import os
@@ -29,6 +37,9 @@ if __name__ == '__main__':
         args['use_cuda'] = True 
     else:
         args['use_cuda'] = False 
+    
+
+    print(f'My device: {device}')
 
     
     args['encoder_size'] = 64
