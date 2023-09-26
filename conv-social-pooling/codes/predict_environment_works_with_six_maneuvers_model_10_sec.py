@@ -14,6 +14,7 @@ import numpy as np
 ###FOR MULTI-GPU system using a single gpu:
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+
 #The GPU id to use, usually either "0" or "1"
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
@@ -165,8 +166,8 @@ if __name__ == '__main__':
             # ###END OF DEBUG
             fut_predictions.append(fut_pred_point)
 
-
-            maneuver_m = maneuver_pred[j].detach().cpu().numpy()
+            # maneuver_m = maneuver_pred[j].detach().cpu().numpy()
+            maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
 
             num_points += 1
