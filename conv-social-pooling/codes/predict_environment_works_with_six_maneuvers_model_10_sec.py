@@ -192,18 +192,18 @@ if __name__ == '__main__':
         counts += c.detach()
 
         ##DEBUG
-        # print("len(fut_pred), must be 6: ",len(fut_pred))
-        # for m in range(len(fut_pred)):
-        #     print("shape of fut_pred[m], must be (t_f//d_s,batch_size,5): ", fut_pred[m].shape)
-        #     for n in range(batch_size):
-        #         muX = fut_pred[m][:,n,0]
-        #         muY = fut_pred[m][:,n,1]
-        #         sigX = fut_pred[m][:,n,2]
-        #         sigY = fut_pred[m][:,n,3]
-        #         print('muX: ', muX)
-        #         print('muY: ', muY)
-        #         print('sigX: ', sigX)
-        #         print('sigY: ', sigY)
+        print(f"len(fut_pred), must be 6: {len(fut_pred)}")
+        for m in range(len(fut_pred)):
+            print("shape of fut_pred[m], must be (t_f//d_s,batch_size,5): ", fut_pred[m].shape)
+            for n in range(batch_size):
+                muX = fut_pred[m][:,n,0]
+                muY = fut_pred[m][:,n,1]
+                sigX = fut_pred[m][:,n,2]
+                sigY = fut_pred[m][:,n,3]
+                print('muX: ', muX)
+                print('muY: ', muY)
+                print('sigX: ', sigX)
+                print('sigY: ', sigY)
         ##END OF DEBUG
 
         points_np = points.numpy()

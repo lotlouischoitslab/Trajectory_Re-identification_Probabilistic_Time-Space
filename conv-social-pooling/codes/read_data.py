@@ -16,7 +16,7 @@ def load_from_pickle(filename):
         data = pickle.load(file)
     return data
 
-# Use the function
  
 loaded_data = load_from_pickle(filename)
 print(loaded_data.shape)
+print(loaded_data)
