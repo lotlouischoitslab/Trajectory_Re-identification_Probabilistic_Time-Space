@@ -84,6 +84,7 @@ class highwayNet_six_maneuver(nn.Module):
 
         ## Masked scatter
         soc_enc = torch.zeros_like(masks).float()
+        masks = masks.bool()
         soc_enc = soc_enc.masked_scatter_(masks, nbrs_enc)
         soc_enc = soc_enc.permute(0,3,2,1)
 

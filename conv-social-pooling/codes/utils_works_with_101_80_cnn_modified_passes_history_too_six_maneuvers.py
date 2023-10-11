@@ -6,10 +6,16 @@ import torch
 
 import pickle
 
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+########## Use this temporary but we need to fix the OpenBLAS error #########
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, append=True)
+##############################################################################
+
 ### Dataset class for the NGSIM dataset
 class ngsimDataset(Dataset):
-
-
     def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
         print(file_name+'_trajectory.data','louis check')
         with open(file_name+'_trajectory.data', 'rb') as filehandle:
@@ -27,7 +33,6 @@ class ngsimDataset(Dataset):
 
     def __len__(self):
         return len(self.D)
-
 
 
     def __getitem__(self, idx):
@@ -66,59 +71,30 @@ class ngsimDataset(Dataset):
 
 
     ## Helper function to get track history
-    # def getHistory(self,vehId,t,refVehId,dsId):
-    #     if vehId == 0:
-    #         return np.empty([0,2])
-    #     else:
-    #         print(len(self.T[dsId-1]) , 'check index')
-    #         if len(self.T[dsId-1]) <= vehId - 1:
-    #             return np.empty([0,2])
-    #         refTrack = self.T[dsId-1][refVehId-1]
-    #         vehTrack = self.T[dsId-1][vehId-1]
-    #         refPos = refTrack[np.where(refTrack[:,0]==t)][0,1:3]
-
-    #         if vehTrack.size==0 or np.argwhere(vehTrack[:, 0] == t).size==0:
-    #              return np.empty([0,2])
-    #         else:
-    #             stpt = np.maximum(0, np.argwhere(vehTrack[:, 0] == t).item() - self.t_h)
-    #             enpt = np.argwhere(vehTrack[:, 0] == t).item() + 1
-    #             hist = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
-
-    #         if len(hist) < self.t_h//self.d_s + 1:
-    #             return np.empty([0,2])
-    #         return hist
-    
-    # Louis' Modified function to get history 
     def getHistory(self,vehId,t,refVehId,dsId):
         if vehId == 0:
             return np.empty([0,2])
         else:
-            if dsId-1 < len(self.T): # Check to see if dsId-1 is within the bounds of the array
-                print(len(self.T[dsId-1]) , 'check index')
-                if len(self.T[dsId-1]) <= vehId - 1:
-                    return np.empty([0,2])
-                # Rest of your logic here
+            if len(self.T[dsId-1]) <= vehId - 1:
+                return np.empty([0,2])
+            refTrack = self.T[dsId-1][refVehId-1]
+            vehTrack = self.T[dsId-1][vehId-1]
+            refPos = refTrack[np.where(refTrack[:,0]==t)][0,1:3]
+
+            if vehTrack.size==0 or np.argwhere(vehTrack[:, 0] == t).size==0:
+                 return np.empty([0,2])
             else:
-                print(f"Index {dsId-1} is out of bounds for array of size {len(self.T)}")
-                return np.empty([0,2]) # Or handle it some other way appropriate to your use case
+                stpt = np.maximum(0, np.argwhere(vehTrack[:, 0] == t).item() - self.t_h)
+                enpt = np.argwhere(vehTrack[:, 0] == t).item() + 1
+                hist = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
 
-
-
+            if len(hist) < self.t_h//self.d_s + 1:
+                return np.empty([0,2])
+            return hist
+    
 
     ## Helper function to get track future
-    # def getFuture(self, vehId, t,dsId):
-    #     vehTrack = self.T[dsId-1][vehId-1]
-    #     refPos = vehTrack[np.where(vehTrack[:, 0] == t)][0, 1:3]
-    #     stpt = np.argwhere(vehTrack[:, 0] == t).item() + self.d_s
-    #     enpt = np.minimum(len(vehTrack), np.argwhere(vehTrack[:, 0] == t).item() + self.t_f + 1)
-    #     fut = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
-    #     return fut
-
-    ## Louis' modified helper function to get track future 
-    def getFuture(self, vehId, t, dsId):
-        if dsId-1 >= len(self.T) or dsId-1 < 0: # Check if dsId-1 is out of bounds for self.T
-            print(f"Index {dsId-1} is out of bounds for array of size {len(self.T)}")
-            return np.empty([0,2]) # Return empty array or handle it in another appropriate way for your use case
+    def getFuture(self, vehId, t,dsId):
         vehTrack = self.T[dsId-1][vehId-1]
         refPos = vehTrack[np.where(vehTrack[:, 0] == t)][0, 1:3]
         stpt = np.argwhere(vehTrack[:, 0] == t).item() + self.d_s
@@ -126,9 +102,9 @@ class ngsimDataset(Dataset):
         fut = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
         return fut
 
+
     ## Collate function for dataloader
     def collate_fn(self, samples):
-
         # Initialize neighbors and neighbors length batches:
         nbr_batch_size = 0
         for _,_,nbrs,_,_,_,_ in samples:

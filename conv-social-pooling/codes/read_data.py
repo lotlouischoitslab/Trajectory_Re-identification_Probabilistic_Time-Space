@@ -1,34 +1,22 @@
-import numpy as np 
-import pandas as pd 
-
-filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/'
-file_test = 'test_trajectory.data'
-
-filename = filepath_pred_Set + file_test
-
+import numpy as np
+import pandas as pd
 import pickle
-import csv
+import math
 
-with open(filename, 'rb') as file:
-    data = pickle.load(file)
-
-# If the data is not already in the desired format (numpy array or torch tensor), convert it:
-if isinstance(data, np.ndarray):
-    pass  # Already a numpy array
-elif torch.is_tensor(data):
-    data = data.numpy()  # Convert torch tensor to numpy array
-else:
-    data = np.array(data)  # Convert other data types to numpy array
-
-
-csv_filename = 'output.csv'
-
-# Using numpy
-np.savetxt(csv_filename, data, delimiter=',', fmt='%s')
-
-# Or using pandas
-df = pd.DataFrame(data)
-df.to_csv(csv_filename, index=False)
+# Define directories and filenames
+directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
+directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
+saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
+file_test = 'fut_predictions.data'
+filename = directory + saving_directory + file_test
  
 
+def load_from_pickle(filename):
+    with open(filename, 'rb') as file:
+        data = pickle.load(file)
+    return data
 
+# Use the function
+ 
+loaded_data = load_from_pickle(filename)
+print(loaded_data.shape)
