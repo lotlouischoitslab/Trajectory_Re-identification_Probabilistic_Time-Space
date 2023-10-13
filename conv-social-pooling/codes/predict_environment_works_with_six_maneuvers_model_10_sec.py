@@ -87,36 +87,79 @@ Quit: :q!
  
 '''
 
+''' 
+Format of the output:
+- 6 movements, each movement has probability distribution
+- Straight, Accel, straight, decel, right, decel, left, decl 
+- Every point one second during that 10 second horizon, we are getting normal distribution 2d where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
+For next week 
+- Create a code (actual data of the trajectories) (observed trajectory). Get the series of probability trajectories that are ones within the 10 seconds prediction horizon in the range of 50 meters in that vehicle and within the 3 lanes vehicles can reach. Given a point of the vehicle, identify the possible location the vehicle can move. Find a set of trajectories that are probable and can be connected 
+- Get those probability distributions and get the line integral over the probability distributions for the x,y trajectories. 
+-	.data files are saved as pkl so refer to that 
+'''
+
 def line_integral(x,y): # TO-DO Later 
+    # line integral for normal distribution  
     pass 
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories 
     # get highest probability of the 6 but each has 50 elements. What do I do here/
     # within 50 meters? 3 lanes? which data 
 
-    print('point shape',points_np.shape[0])
+    print('point shape',points_np.shape)
+
+    print('input points',points_np)
 
     for j in range(points_np.shape[0]):
         point = points_np[j] # get the points to analyze 
         #print(f'point: {point}') # print the point for debugging 
         fut_pred_point = fut_pred[:,:,j,:] # future prediction point
         #print(f'fut pred point: {fut_pred_point}')
+        # 50 points is for 5 second 
+        for i in range(6): # for six possible manuever choices 
 
-        for i in range(6):
-            muX = fut_pred_point[i, :, 0] # mean x 
+            #####################################################
+            muX = fut_pred_point[i, :, 0] # mean x 50 data points
             muY = fut_pred_point[i, :, 1] # mean y
-            sigX = fut_pred_point[i, :, 2] # std x
+            sigX = fut_pred_point[i, :, 2] # std x 50 data points
             sigY = fut_pred_point[i, :, 3] # std y
-            # print(f'muX: {muX}')
-            # print(f'muY: {muY}')
-            # print(f'sigX: {sigX}')
-            # print(f'sigY: {sigY}')
-            print('len of muX',len(muX)) 
-            print('len of muY',len(muY)) 
-            print('len of sigX',len(sigX)) 
-            print('len of sigY',len(sigY)) 
+            #####################################################
+
+          
+
+            # Each of 6 maneuver
+            # Each maneuver has 50 points
+            # Each point has probability distribution
+            # Take each maneuver ALL the 50 points. the corresponding point
+            # Take the line integral of that particular distrubtuion
+            # DO this for all 50 points 
+            # sum them up 
+            # then do this for all trajectories 
+            # pick the manuever and the trajectory with the highest total value of the line integral 
+
+            # set of trajectories 
+
+            # FOCUS:
+            # write a function that take 50 points. Each has 4 variables. Get all the trajectories and write the line integral 
+            # Do that it's done 
+            # Rest is one for loop 
+
+
+
+      
+
+            print(f'muX: {muX}') 
+            print(f'muY: {muY}')
+            print(f'sigX: {sigX}')
+            print(f'sigY: {sigY}')
+            break 
+
+            # print('len of muX',len(muX)) 
+            # print('len of muY',len(muY)) 
+            # print('len of sigX',len(sigX)) 
+            # print('len of sigY',len(sigY)) 
     
-    return []
+    return [] # return the list of possible maneuvers 
 
 
 def main(): # Main function 
@@ -252,7 +295,6 @@ def main(): # Main function
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
- 
         outputs = predict_trajectories(points_np,fut_pred_np, maneuver_pred) # where the function is called and I feed in maneurver pred and future prediction points 
         
         for j in range(points_np.shape[0]):
