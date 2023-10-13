@@ -87,35 +87,36 @@ Quit: :q!
  
 '''
 
-def predict_trajectories(points_np,actual_trajectory,future_prediction_points): # Function to predict trajectories 
-    print(f'actual trajectory: {actual_trajectory}') # just for checking actual trajectory points
-    print(f'future trajectory: {future_prediction_points}') # just for checking future prediction points
+def line_integral(x,y): # TO-DO Later 
+    pass 
 
-    # actual trajectory will have mux,muy and sigx sigy
-    # likewise prediction points 
-
+def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories 
     # get highest probability of the 6 but each has 50 elements. What do I do here/
     # within 50 meters? 3 lanes? which data 
 
+    print('point shape',points_np.shape[0])
+
     for j in range(points_np.shape[0]):
-        point = points_np[j]
-        print(f'point.shape should be (49,): {point.shape}')
-        print(f'point: {point}')
-        fut_pred_point = future_prediction_points[:,:,j,:]
+        point = points_np[j] # get the points to analyze 
+        #print(f'point: {point}') # print the point for debugging 
+        fut_pred_point = fut_pred[:,:,j,:] # future prediction point
+        #print(f'fut pred point: {fut_pred_point}')
 
         for i in range(6):
-            muX = fut_pred_point[i, :, 0]
-            muY = fut_pred_point[i, :, 1]
-            sigX = fut_pred_point[i, :, 2]
-            sigY = fut_pred_point[i, :, 3]
-            print(f'muX: {muX}')
-            print(f'muY: {muY}')
-            print(f'sigX: {sigX}')
-            print(f'sigY: {sigY}')
+            muX = fut_pred_point[i, :, 0] # mean x 
+            muY = fut_pred_point[i, :, 1] # mean y
+            sigX = fut_pred_point[i, :, 2] # std x
+            sigY = fut_pred_point[i, :, 3] # std y
+            # print(f'muX: {muX}')
+            # print(f'muY: {muY}')
+            # print(f'sigX: {sigX}')
+            # print(f'sigY: {sigY}')
             print('len of muX',len(muX)) 
             print('len of muY',len(muY)) 
             print('len of sigX',len(sigX)) 
             print('len of sigY',len(sigY)) 
+    
+    return []
 
 
 def main(): # Main function 
@@ -188,6 +189,9 @@ def main(): # Main function
     lon_predictions = [] # longitudinal prediction values 
     maneuver_predictions = [] # maneuver prediction values 
     num_points = 0 # number of points we have analyzed 
+
+    ######################### Output data ##############################################################################
+    outputs = []
     
     # print(f'Length of the pred data loader: {len(predDataloader)}')
     # 6 movements (maneuvers) with probability distributions: 
@@ -242,20 +246,19 @@ def main(): # Main function
 
 
         ##END OF DEBUG
-
         points_np = points.numpy() # convert to numpy arrays 
         fut_pred_np = [] # store the future pred points 
         for k in range(6): #manuevers mean the 
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
-
-        predict_trajectories(points_np,maneuver_pred,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points 
-
+ 
+        outputs = predict_trajectories(points_np,fut_pred_np, maneuver_pred) # where the function is called and I feed in maneurver pred and future prediction points 
+        
         for j in range(points_np.shape[0]):
             point = points_np[j]
-            print(f'point.shape should be (49,): {point.shape}')
-            print(f'point: {point}')
+            # print(f'point.shape should be (49,): {point.shape}')
+            # print(f'point: {point}')
             data_points.append(point)
             fut_pred_point = fut_pred_np[:,:,j,:]
 
@@ -287,11 +290,12 @@ def main(): # Main function
                 print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
                 print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
+
     
     # Print Test Error
-    print('MSE: ', lossVals / counts)
-    print('RMSE: ', torch.pow(lossVals / counts,0.5))   # Calculate RMSE, feet
-    print('number of data points: ', num_points)
+    # print('MSE: ', lossVals / counts)
+    # print('RMSE: ', torch.pow(lossVals / counts,0.5))   # Calculate RMSE, feet
+    # print('number of data points: ', num_points)
 
     with open(directory+saving_directory+"data_points.data", "wb") as filehandle:
         pickle.dump(np.array(data_points), filehandle, protocol=4)
