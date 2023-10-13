@@ -87,13 +87,13 @@ Quit: :q!
  
 '''
 
-def predict_trajectories():
-    pass 
+def predict_trajectories(actual_trajectory,future_prediction_points): # Function to predict trajectories 
+    print(f'actual trajectory: {actual_trajectory}') # just for checking actual trajectory points
+    print(f'future trajectory: {future_prediction_points}') # just for checking future prediction points
+     
 
-
-if __name__ == '__main__':
-    ## Network Arguments
-    args = {}
+def main(): # Main function 
+    args = {} # Network Arguments
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == 'cuda':
         args['use_cuda'] = True 
@@ -153,29 +153,32 @@ if __name__ == '__main__':
     counts = torch.zeros(50).to(device) # Louis code
 
     ######################### Variables holding train and validation loss values #######################################
-    train_loss = []
-    val_loss = []
-    prev_val_loss = math.inf
-    net.train_flag = False
+    train_loss = [] # we are going to store the training loss values 
+    val_loss = [] # we are going to store the validation loss values 
+    prev_val_loss = math.inf # we are going to store the previous validation loss values
+    net.train_flag = False # neural network training flag is initialized to be False by default 
 
     ######################### Saving data ##############################################################################
-    data_points = []
-    fut_predictions = []
-    lat_predictions = []
-    lon_predictions = []
-    maneuver_predictions = []
-    num_points = 0
+    data_points = [] # the data points
+    fut_predictions = [] # future prediction values 
+    lat_predictions = [] # lateral prediction values
+    lon_predictions = [] # longitudinal prediction values 
+    maneuver_predictions = [] # maneuver prediction values 
+    num_points = 0 # number of points we have analyzed 
     
     # print(f'Length of the pred data loader: {len(predDataloader)}')
-    # 6 movements, each movement has probability distributions
-    # Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
+    # 6 movements (maneuvers) with probability distributions: 
+    # Actions are either straight or accelerate or deccelerate or right or left or rear 
+    # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
 
-    for i, data  in enumerate(predDataloader):
-        print(f'Index of Data: {i}')
+    for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
+        print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+        ############ Comment this out if deploying to GPU Cluster #############################################
         if i == 100: # we are just going to stop at index 100 for testing 
             break 
-        st_time = time.time()
-        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data        
+        #######################################################################################################
+        st_time = time.time() # start the timer 
+        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data      
 
         if args['use_cuda']:
             hist = hist.cuda()
@@ -187,16 +190,14 @@ if __name__ == '__main__':
             op_mask = op_mask.cuda()
             maneuver_enc = maneuver_enc.cuda()
 
-        # Forward pass
-        fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc)
-        fut_pred_max = torch.zeros_like(fut_pred[0])
-        for k in range(maneuver_pred.shape[0]):
-            indx = torch.argmax(maneuver_pred[k, :]).detach()
-            fut_pred_max[:, k, :] = fut_pred[indx][:, k, :]
-        l, c = maskedMSETest(fut_pred_max, fut, op_mask)
-
-        lossVals += l.detach()
-        counts += c.detach()
+        fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+        fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
+        for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
+            indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
+            fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
+        l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+        lossVals += l.detach() # increment the loss value 
+        counts += c.detach() # increment the count value 
 
         ##DEBUG
         #print(f"len(fut_pred), must be 6: {len(fut_pred)}")
@@ -216,7 +217,7 @@ if __name__ == '__main__':
 
         points_np = points.numpy() # convert to numpy arrays 
         fut_pred_np = [] # store the future pred points 
-        for k in range(6): #manuevers
+        for k in range(6): #manuevers mean the 
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
@@ -245,7 +246,6 @@ if __name__ == '__main__':
             fut_predictions.append(fut_pred_point)
             maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
-
             num_points += 1
             if num_points%10000 == 0:
                 print('point: ', num_points)
@@ -268,4 +268,5 @@ if __name__ == '__main__':
     with open(directory+saving_directory+"maneuver_predictions.data", "wb") as filehandle:
         pickle.dump(np.array(maneuver_predictions), filehandle, protocol=4)
 
- 
+if __name__ == '__main__': # run the code
+    main() # call the main function 
