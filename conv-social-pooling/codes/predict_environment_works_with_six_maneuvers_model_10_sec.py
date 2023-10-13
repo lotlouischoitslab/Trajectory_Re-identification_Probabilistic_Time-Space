@@ -87,7 +87,7 @@ Quit: :q!
  
 '''
 
-def predict_trajectories(actual_trajectory,future_prediction_points): # Function to predict trajectories 
+def predict_trajectories(points_np,actual_trajectory,future_prediction_points): # Function to predict trajectories 
     print(f'actual trajectory: {actual_trajectory}') # just for checking actual trajectory points
     print(f'future trajectory: {future_prediction_points}') # just for checking future prediction points
 
@@ -97,7 +97,26 @@ def predict_trajectories(actual_trajectory,future_prediction_points): # Function
     # get highest probability of the 6 but each has 50 elements. What do I do here/
     # within 50 meters? 3 lanes? which data 
 
-     
+    for j in range(points_np.shape[0]):
+        point = points_np[j]
+        print(f'point.shape should be (49,): {point.shape}')
+        print(f'point: {point}')
+        fut_pred_point = future_prediction_points[:,:,j,:]
+
+        for i in range(6):
+            muX = fut_pred_point[i, :, 0]
+            muY = fut_pred_point[i, :, 1]
+            sigX = fut_pred_point[i, :, 2]
+            sigY = fut_pred_point[i, :, 3]
+            print(f'muX: {muX}')
+            print(f'muY: {muY}')
+            print(f'sigX: {sigX}')
+            print(f'sigY: {sigY}')
+            print('len of muX',len(muX)) 
+            print('len of muY',len(muY)) 
+            print('len of sigX',len(sigX)) 
+            print('len of sigY',len(sigY)) 
+
 
 def main(): # Main function 
     args = {} # Network Arguments
@@ -231,6 +250,8 @@ def main(): # Main function
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
 
+        predict_trajectories(points_np,maneuver_pred,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points 
+
         for j in range(points_np.shape[0]):
             point = points_np[j]
             print(f'point.shape should be (49,): {point.shape}')
@@ -250,10 +271,10 @@ def main(): # Main function
                 # print(f'muY: {muY}')
                 # print(f'sigX: {sigX}')
                 # print(f'sigY: {sigY}')
-                print('len of muX',len(muX)) 
-                print('len of muY',len(muY)) 
-                print('len of sigX',len(sigX)) 
-                print('len of sigY',len(sigY)) 
+                # print('len of muX',len(muX)) 
+                # print('len of muY',len(muY)) 
+                # print('len of sigX',len(sigX)) 
+                # print('len of sigY',len(sigY)) 
             ###END OF DEBUG
 
             fut_predictions.append(fut_pred_point)
