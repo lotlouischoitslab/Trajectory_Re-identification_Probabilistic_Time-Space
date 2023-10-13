@@ -111,27 +111,47 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-def line_integral(x,y): # TO-DO Later 
-    # line integral for normal distribution  
-    pass 
+def joint_pdf(x, y, muX, muY, sigX, sigY):
+    """ Compute the joint PDF value at a point (x, y) """
+    partX = (1.0 / (sigX * np.sqrt(2 * np.pi))) * np.exp(-(x - muX)**2 / (2 * sigX**2))
+    partY = (1.0 / (sigY * np.sqrt(2 * np.pi))) * np.exp(-(y - muY)**2 / (2 * sigY**2))
+    return partX * partY
+
+def line_integral(point,muX, muY, sigX, sigY):
+    integral_value = 0
+    # Loop through each pair of adjacent points
+    for i in range(len(point) - 1):
+        # Compute the joint PDF values at the two points
+        f1 = joint_pdf(point[i], point[i], muX[i], muY[i], sigX[i], sigY[i])
+        f2 = joint_pdf(point[i+1], point[i+1], muX[i+1], muY[i+1], sigX[i+1], sigY[i+1])
+        
+        # Compute the distance between the two points
+        ds = np.sqrt((muX[i+1] - muX[i])**2 + (muY[i+1] - muY[i])**2)
+        
+        # Update the integral value using the trapezoidal rule
+        integral_value += 0.5 * (f1 + f2) * ds
+    return integral_value
+ 
+ 
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories 
     # get highest probability of the 6 but each has 50 elements. What do I do here/
     # within 50 meters? 3 lanes? which data 
 
-    print('point shape',points_np.shape)
-    print('input points',points_np)
+    # print(f'point shape: {points_np.shape}')
+    # print(f'input points: {points_np}')
 
     best_maneuvers = [] # store all the best manuevers
 
     for j in range(points_np.shape[0]):
         point = points_np[j] # get the points to analyze 
-        #print(f'point: {point}') # print the point for debugging 
+        print(f'point: {point}') # print the point for debugging 
         fut_pred_point = fut_pred[:,:,j,:] # future prediction point
         #print(f'fut pred point: {fut_pred_point}')
         
-        max_integral_value = float('-inf') 
-        best_maneuver_point = None 
+        max_integral_value = float('-inf') # this is assigned as the negative infinity 
+        # print(max_integral_value,'max int')
+        best_maneuver_point = None # best maneuver point is initialized as None 
         for i in range(6): # for six possible manuever choices 
 
             #####################################################
@@ -141,20 +161,20 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
             sigY = fut_pred_point[i, :, 3] # std y
             #####################################################
 
-            total_integral = 0
-            iterate = len(muX)
+            total_integral = 0 # total value of the line integral 
+            iterate = muX.shape[0] # there are 50 points
 
+            for k in range(iterate): # iterate through the loop 
+                total_integral += line_integral(point,muX[k], muY[k], sigX[k], sigY[k])
 
-
-            for k in range(iterate):
-                total_integral += line_integral(muX[k], muY[k], sigX[k], sigY[k])
-
-            if total_integral > max_integral_value:
-                max_integral_value = total_integral
-                best_maneuver_point = i 
+            # print(total_integral,'tot integral')
+            if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
+                max_integral_value = total_integral # max integral value is assigned as the total integral value
+                best_maneuver_point = i # best maneuver point is assigned as the current maneuver point
             
-        best_maneuvers.append(best_maneuver_point)
+        best_maneuvers.append(best_maneuver_point) # append the best maneuver point into the list
     
+    # print(f'Best maneuver: {best_maneuvers}')
     return best_maneuvers  # return the list of possible maneuvers 
 
 
