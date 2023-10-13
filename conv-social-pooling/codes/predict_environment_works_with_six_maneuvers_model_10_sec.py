@@ -87,6 +87,9 @@ Quit: :q!
  
 '''
 
+def predict_trajectories():
+    pass 
+
 
 if __name__ == '__main__':
     ## Network Arguments
@@ -123,17 +126,19 @@ if __name__ == '__main__':
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
     
-    batch_size = 128
+    batch_size = 128 # batch size for the model 
 
     # Initialize network 
-    net = highwayNet_six_maneuver(args)
-    full_path = os.path.join(directory, model_directory)
-    net.load_state_dict(torch.load(full_path, map_location=torch.device(device)))
+    net = highwayNet_six_maneuver(args) # we are going to initialize the network 
+    full_path = os.path.join(directory, model_directory) # create a full path 
+    net.load_state_dict(torch.load(full_path, map_location=torch.device(device))) # load the model onto the local machine 
 
-    if args['use_cuda']:
+    ############################### Check if GPU is available ###############################################################
+    if args['use_cuda']: 
         net = net.cuda()
+    #########################################################################################################################
 
-    ## Initialize data loaders
+    ################################ Initialize data loaders ################################################################
     # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
     # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
     # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/test', t_h=30, t_f=100, d_s=2)
@@ -147,13 +152,13 @@ if __name__ == '__main__':
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
-    ## Variables holding train and validation loss values:
+    ######################### Variables holding train and validation loss values #######################################
     train_loss = []
     val_loss = []
     prev_val_loss = math.inf
     net.train_flag = False
 
-    # Saving data
+    ######################### Saving data ##############################################################################
     data_points = []
     fut_predictions = []
     lat_predictions = []
@@ -161,11 +166,13 @@ if __name__ == '__main__':
     maneuver_predictions = []
     num_points = 0
     
-    print(f'Length of the pred data loader: {len(predDataloader)}')
+    # print(f'Length of the pred data loader: {len(predDataloader)}')
+    # 6 movements, each movement has probability distributions
+    # Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
 
     for i, data  in enumerate(predDataloader):
         print(f'Index of Data: {i}')
-        if i == 100:
+        if i == 100: # we are just going to stop at index 100 for testing 
             break 
         st_time = time.time()
         hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data        
@@ -192,22 +199,23 @@ if __name__ == '__main__':
         counts += c.detach()
 
         ##DEBUG
-        print(f"len(fut_pred), must be 6: {len(fut_pred)}")
+        #print(f"len(fut_pred), must be 6: {len(fut_pred)}")
         for m in range(len(fut_pred)):
-            print("shape of fut_pred[m], must be (t_f//d_s,batch_size,5): ", fut_pred[m].shape)
+            #print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
             for n in range(batch_size):
                 muX = fut_pred[m][:,n,0]
                 muY = fut_pred[m][:,n,1]
                 sigX = fut_pred[m][:,n,2]
                 sigY = fut_pred[m][:,n,3]
-                print('muX: ', muX)
-                print('muY: ', muY)
-                print('sigX: ', sigX)
-                print('sigY: ', sigY)
+                # print(f'muX: {muX}')
+                # print(f'muY: {muY}')
+                # print(f'sigX: {sigX}')
+                # print(f'sigY: {sigY}')
+
         ##END OF DEBUG
 
-        points_np = points.numpy()
-        fut_pred_np = []
+        points_np = points.numpy() # convert to numpy arrays 
+        fut_pred_np = [] # store the future pred points 
         for k in range(6): #manuevers
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
@@ -223,19 +231,18 @@ if __name__ == '__main__':
             ###DEBUG
             # print('fut_pred_point.shape should be (6,t_f//d_s,5): ',fut_pred_point.shape) #6 is for different lon and lat maneuvers
             # print("check this: \n")
-            # for i in range(6):
-            #     muX = fut_pred_point[i, :, 0]
-            #     muY = fut_pred_point[i, :, 1]
-            #     sigX = fut_pred_point[i, :, 2]
-            #     sigY = fut_pred_point[i, :, 3]
-            #     print('muX: ', muX)
-            #     print('muY: ', muY)
-            #     print('sigX: ', sigX)
-            #     print('sigY: ', sigY)
+            for i in range(6):
+                muX = fut_pred_point[i, :, 0]
+                muY = fut_pred_point[i, :, 1]
+                sigX = fut_pred_point[i, :, 2]
+                sigY = fut_pred_point[i, :, 3]
+                print(f'muX: {muX}')
+                print(f'muY: {muY}')
+                print(f'sigX: {sigX}')
+                print(f'sigY: {sigY}')
             ###END OF DEBUG
 
             fut_predictions.append(fut_pred_point)
-
             maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
 
