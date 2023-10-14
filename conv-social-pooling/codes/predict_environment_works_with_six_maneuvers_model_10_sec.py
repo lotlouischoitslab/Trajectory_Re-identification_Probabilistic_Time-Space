@@ -23,67 +23,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
 
 
 ''' 
-File Name: predict_environment_works_with_six_maneuvers_model_10_sec.py
-NOTES For Louis Sungwoo Cho NCAS HAL Cluster:
-Reference: https://www.youtube.com/watch?v=l1dV25xwo0o&list=PLO8UWE9gZTlCtkZbWtEcKgxYVVLIvN2IS&index=1 
-Run the GPU: swrun -p gpux1 -r louissc2
-Exit the terminal: exit 
-We are using CEE497 conda environment 
-Go here for more reference: https://wiki.ncsa.illinois.edu/display/ISL20/HAL+cluster 
-Make sure to upload the files to the cluster if you have made any changes
-0. We need to: conda install -c "conda-forge/label/cf202003" libopenblas
-1. To connect to NCSA Hal Cluster: ssh louissc2@hal.ncsa.illinois.edu
-conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
-2. Type in Password & Enter the Authentication code
-3. module load opence
-4. conda activate CEE497
-5. To save: If you're using vim, you can press ESC, then type :wq and press Enter.
 
-./demo.swb
-Type the following:
-#!/bin/bash 
-#SBATCH --job-name="louis_trajectory"
-#SBATCH --output="louis_trajectory.out"
-#SBATCH --partition=gpux1
-#SBATCH --time=2
-#SBATCH --reservation=louissc2
-
-module load wmlce
-
-hostname 
-
-./demo2.swb
-Type the following: 
-#!/bin/bash 
-#SBATCH --job-name="louis_trajectory"
-#SBATCH --output="louis_trajectory.out"
-#SBATCH --partition=gpu
-#SBATCH --time=2
-
-module load wmlce
-
-hostname 
-
-
-########### Run the batch ###########
-swbatch ./demo.swb
-
-########### Check Status ############
-squeue -u louissc2
-
-########## To launch vim ############
-vim ./demo.s
-Quit: :q!
-#####################################
-
-
-########### To run GPU on HAL Cluster #############
-1. swqueue (GPUs and the queue of users)
-2. squeue (List of currently running clusters)   
-3. sinfo
-4. swrun -p gpux1 
-5. module load wmlce
-#####################################################
  
 '''
 
@@ -111,8 +51,7 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-def joint_pdf(x, y, muX, muY, sigX, sigY):
-    """ Compute the joint PDF value at a point (x, y) """
+def joint_pdf(x, y, muX, muY, sigX, sigY): # Compute the joint PDF value at a point (x, y)
     partX = (1.0 / (sigX * np.sqrt(2 * np.pi))) * np.exp(-(x - muX)**2 / (2 * sigX**2))
     partY = (1.0 / (sigY * np.sqrt(2 * np.pi))) * np.exp(-(y - muY)**2 / (2 * sigY**2))
     return partX * partY
@@ -134,18 +73,13 @@ def line_integral(point,muX, muY, sigX, sigY):
  
  
 
-def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories 
-    # get highest probability of the 6 but each has 50 elements. What do I do here/
-    # within 50 meters? 3 lanes? which data 
-
-    # print(f'point shape: {points_np.shape}')
-    # print(f'input points: {points_np}')
-
+def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
 
     for j in range(points_np.shape[0]):
         point = points_np[j] # get the points to analyze 
         print(f'point: {point}') # print the point for debugging 
+        break 
         fut_pred_point = fut_pred[:,:,j,:] # future prediction point
         #print(f'fut pred point: {fut_pred_point}')
         
