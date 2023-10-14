@@ -16,13 +16,14 @@ We are using CEE497 conda environment
 Go here for more reference: https://wiki.ncsa.illinois.edu/display/ISL20/HAL+cluster 
 Make sure to upload the files to the cluster if you have made any changes
 
-0. We need to: conda install -c "conda-forge/label/cf202003" libopenblas
-1. To connect to NCSA Hal Cluster: ssh louissc2@hal.ncsa.illinois.edu
-conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
-2. Type in Password & Enter the Authentication code
-3. module load opence
-4. conda activate CEE497
-5. To save: If you're using vim, you can press ESC, then type :wq and press Enter.
+0. We need to: 
+        conda install -c "conda-forge/label/cf202003" libopenblas
+1. To connect to NCSA Hal Cluster: 
+        conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
+2. Type in Password & Enter the Authentication code:
+        module load opence
+        conda activate CEE497
+3. To save: If you're using vim, you can press ESC, then type :wq and press Enter.
 
         ./demo.swb
         Type the following:
@@ -59,9 +60,6 @@ conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
         Launch VIM
         vim ./demo.s
         Quit: :q!
- 
-
-
 ## Run GPU on HAL Cluster:
         swqueue (GPUs and the queue of users)
         squeue (List of currently running clusters)   
