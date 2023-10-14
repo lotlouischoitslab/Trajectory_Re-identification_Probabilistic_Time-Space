@@ -62,7 +62,7 @@ conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
  
 
 
-## To run GPU on HAL Cluster 
+## Run GPU on HAL Cluster:
         swqueue (GPUs and the queue of users)
         squeue (List of currently running clusters)   
         sinfo
