@@ -284,6 +284,8 @@ def main(): # Main function
     # print('MSE: ', lossVals / counts)
     # print('RMSE: ', torch.pow(lossVals / counts,0.5))   # Calculate RMSE, feet
     # print('number of data points: ', num_points)
+    print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
+    print(f'Output results: {output_results}')
 
     with open(directory+saving_directory+"data_points.data", "wb") as filehandle:
         pickle.dump(np.array(data_points), filehandle, protocol=4)
