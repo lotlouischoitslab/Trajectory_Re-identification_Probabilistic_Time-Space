@@ -50,22 +50,22 @@ conda config --add channels https://ftp.osuosl.org/pub/open-ce/1.5.1/
         hostname 
 
 
-## Run the batch 
-swbatch ./demo.swb
+        Run the batch 
+        swbatch ./demo.swb
 
-## Check Status 
-squeue -u louissc2
+        Check Status 
+        squeue -u louissc2
 
-## Launch VIM
-vim ./demo.s
-Quit: :q!
+        Launch VIM
+        vim ./demo.s
+        Quit: :q!
  
 
 
 ## To run GPU on HAL Cluster 
-1. swqueue (GPUs and the queue of users)
-2. squeue (List of currently running clusters)   
-3. sinfo
-4. swrun -p gpux1 
-5. module load wmlce
+        swqueue (GPUs and the queue of users)
+        squeue (List of currently running clusters)   
+        sinfo
+        swrun -p gpux1 
+        module load wmlce
  
