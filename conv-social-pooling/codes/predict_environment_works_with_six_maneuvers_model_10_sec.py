@@ -21,12 +21,6 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
 ##############################################################################
 
-
-''' 
-
- 
-'''
-
 ''' 
 Format of the output:
 - 6 movements, each movement has probability distribution
@@ -39,7 +33,7 @@ Guidelines to understand the prediction function:
 - Each point has probability distribution
 - Take each maneuver ALL the 50 points. the corresponding point
 - Take the line integral of that particular distrubtuion
-- DO this for all 50 points 
+- Do this for all 50 points 
 - Sum them up 
 - Then do this for all trajectories 
 - Pick the manuever and the trajectory with the highest total value of the line integral
@@ -56,45 +50,37 @@ def joint_pdf(x, y, muX, muY, sigX, sigY): # Compute the joint PDF value at a po
     partY = (1.0 / (sigY * np.sqrt(2 * np.pi))) * np.exp(-(y - muY)**2 / (2 * sigY**2))
     return partX * partY
 
-def line_integral(point,muX, muY, sigX, sigY):
-    integral_value = 0
-    # Loop through each pair of adjacent points
-    for i in range(len(point) - 1):
-        # Compute the joint PDF values at the two points
-        f1 = joint_pdf(point[i], point[i], muX[i], muY[i], sigX[i], sigY[i])
-        f2 = joint_pdf(point[i+1], point[i+1], muX[i+1], muY[i+1], sigX[i+1], sigY[i+1])
-        
-        # Compute the distance between the two points
-        ds = np.sqrt((muX[i+1] - muX[i])**2 + (muY[i+1] - muY[i])**2)
-        
-        # Update the integral value using the trapezoidal rule
-        integral_value += 0.5 * (f1 + f2) * ds
+def line_integral(point,muX, muY, sigX, sigY): # Line integral function using mux, muy, sigx, sigy
+    integral_value = 0 # total value of the line integral 
+    print(muX,muY,sigX,sigY)
+    for i in range(len(point) - 1): # Loop through each pair of adjacent points
+        f1 = joint_pdf(point[i], point[i+1], muX, muY, sigX, sigY) # Compute the joint PDF values at the two points
+        ds = np.sqrt((point[i] - muX)**2 + (point[i+1] - muY)**2) # Compute the distance between the two points
+        integral_value += 0.5 * (f1) * ds # Update the integral value using the trapezoidal rule 
+
     return integral_value
- 
- 
+  
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
-
+    print(f'fut pred point shape: {fut_pred.shape}')
     for j in range(points_np.shape[0]):
         point = points_np[j] # get the points to analyze 
-        print(f'point: {point}') # print the point for debugging 
-        break 
+        # print(f'point: {point}') # print the point for debugging 
+        # print(f'length of point: {len(point)}')
+ 
         fut_pred_point = fut_pred[:,:,j,:] # future prediction point
         #print(f'fut pred point: {fut_pred_point}')
         
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         # print(max_integral_value,'max int')
         best_maneuver_point = None # best maneuver point is initialized as None 
-        for i in range(6): # for six possible manuever choices 
 
-            #####################################################
+        for i in range(6): # for six possible manuever choices 
             muX = fut_pred_point[i, :, 0] # mean x 50 data points
             muY = fut_pred_point[i, :, 1] # mean y
             sigX = fut_pred_point[i, :, 2] # std x 50 data points
             sigY = fut_pred_point[i, :, 3] # std y
-            #####################################################
-
             total_integral = 0 # total value of the line integral 
             iterate = muX.shape[0] # there are 50 points
 
@@ -108,7 +94,7 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
             
         best_maneuvers.append(best_maneuver_point) # append the best maneuver point into the list
     
-    # print(f'Best maneuver: {best_maneuvers}')
+    print(f'Best maneuver: {best_maneuvers}')
     return best_maneuvers  # return the list of possible maneuvers 
 
 
@@ -193,13 +179,15 @@ def main(): # Main function
 
     for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
         print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+        # print(f'data: {data}') 
+        # print(f'data shape: {len(data)}')
         ############ Comment this out if deploying to GPU Cluster #############################################
         if i == 100: # we are just going to stop at index 100 for testing 
             break 
         #######################################################################################################
         st_time = time.time() # start the timer 
         hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data      
-
+  
         if args['use_cuda']:
             hist = hist.cuda()
             nbrs = nbrs.cuda()
@@ -236,9 +224,8 @@ def main(): # Main function
                 # print('len of muY',len(muY)) 
                 # print('len of sigX',len(sigX)) 
                 # print('len of sigY',len(sigY)) 
-
-
         ##END OF DEBUG
+
         points_np = points.numpy() # convert to numpy arrays 
         fut_pred_np = [] # store the future pred points 
         for k in range(6): #manuevers mean the 
@@ -276,11 +263,11 @@ def main(): # Main function
             maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
             num_points += 1
-            if num_points%10000 == 0:
-                print('point: ', num_points)
-                print('point.shape should be (49,): ', point.shape)
-                print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
-                print('maneuver_m.shape should be (6,):', maneuver_m.shape)
+            # if num_points%10000 == 0:
+            #     print('point: ', num_points)
+            #     print('point.shape should be (49,): ', point.shape)
+            #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
+            #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
 
     
