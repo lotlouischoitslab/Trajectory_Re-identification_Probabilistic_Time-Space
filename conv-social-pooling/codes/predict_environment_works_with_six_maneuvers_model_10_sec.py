@@ -94,7 +94,7 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
             sigY = fut_pred_point[i, :, 3][1:] # std y
             total_integral = line_integral(X,muX, muY, sigX, sigY)
 
-            print(total_integral,'tot integral')
+            #print(total_integral,'tot integral')
             if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
                 max_integral_value = total_integral # max integral value is assigned as the total integral value
                 best_maneuver_point = i # best maneuver point is assigned as the current maneuver point
@@ -193,6 +193,7 @@ def main(): # Main function
         if i == 10: # we are just going to stop at index 100 for testing 
             break 
         #######################################################################################################
+        
         st_time = time.time() # start the timer 
         hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data    
 
@@ -281,9 +282,12 @@ def main(): # Main function
 
     
     # Print Test Error
-    # print('MSE: ', lossVals / counts)
-    # print('RMSE: ', torch.pow(lossVals / counts,0.5))   # Calculate RMSE, feet
-    # print('number of data points: ', num_points)
+    mse = lossVals / counts # mean squared error
+    rmse = np.sqrt(mse) # root mean sqaured error 
+    
+    print(f'MSE: {mse}')
+    print(f'RMSE: {rmse}')   # Calculate RMSE, feet
+    print(f'Number of data points: {num_points}')
     print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
     print(f'Output results: {output_results}')
 
