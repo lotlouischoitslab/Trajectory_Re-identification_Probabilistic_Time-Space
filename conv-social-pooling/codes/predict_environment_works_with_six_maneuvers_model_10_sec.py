@@ -52,18 +52,18 @@ def joint_pdf(x, y, muX, muY, sigX, sigY): # Compute the joint PDF value at a po
 
 def line_integral(point,muX, muY, sigX, sigY): # Line integral function using mux, muy, sigx, sigy
     integral_value = 0 # total value of the line integral 
-    print(muX,muY,sigX,sigY)
+    # print(muX,muY,sigX,sigY)
     for i in range(len(point) - 1): # Loop through each pair of adjacent points
         f1 = joint_pdf(point[i], point[i+1], muX, muY, sigX, sigY) # Compute the joint PDF values at the two points
         ds = np.sqrt((point[i] - muX)**2 + (point[i+1] - muY)**2) # Compute the distance between the two points
         integral_value += 0.5 * (f1) * ds # Update the integral value using the trapezoidal rule 
 
-    return integral_value
+    return integral_value # return the integral value 
   
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
-    print(f'fut pred point shape: {fut_pred.shape}')
+    #print(f'fut pred point shape: {fut_pred.shape}')
     for j in range(points_np.shape[0]):
         point = points_np[j] # get the points to analyze 
         # print(f'point: {point}') # print the point for debugging 
@@ -182,7 +182,7 @@ def main(): # Main function
         # print(f'data: {data}') 
         # print(f'data shape: {len(data)}')
         ############ Comment this out if deploying to GPU Cluster #############################################
-        if i == 100: # we are just going to stop at index 100 for testing 
+        if i == 10: # we are just going to stop at index 100 for testing 
             break 
         #######################################################################################################
         st_time = time.time() # start the timer 
