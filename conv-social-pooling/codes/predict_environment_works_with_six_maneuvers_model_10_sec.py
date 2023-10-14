@@ -5,6 +5,7 @@ from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers impor
 from torch.utils.data import DataLoader
 import time
 import math
+from scipy.stats import multivariate_normal
 
 import pickle
 import numpy as np
@@ -12,6 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # FOR MULTI-GPU system using a single gpu
 os.environ["CUDA_VISIBLE_DEVICES"]="1" # The GPU id to use, usually either "0" or "1"
@@ -45,27 +47,35 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-def joint_pdf(x, y, muX, muY, sigX, sigY): # Compute the joint PDF value at a point (x, y)
-    partX = (1.0 / (sigX * np.sqrt(2 * np.pi))) * np.exp(-(x - muX)**2 / (2 * sigX**2))
-    partY = (1.0 / (sigY * np.sqrt(2 * np.pi))) * np.exp(-(y - muY)**2 / (2 * sigY**2))
-    return partX * partY
+def line_integral(X, muX, muY, sigX, sigY): # Line integral function
+    integral_values = [] # integral values 
+    # print('X shape',X.shape) 
+    # print('muX shape',len(muX)) 
+    # print('muY shape',len(muY)) 
+    # print('sigX shape',len(sigX)) 
+    # print('sigY shape',len(sigY)) 
+    
+    for i in range(X.shape[1]): 
+        mean = [muX[i], muY[i]] # get the mean values
+        covariance_matrix = np.array([  # construct covariance matrix 
+            [sigX[i]**2, 0],
+            [0, sigY[i]**2]
+        ])
+        
+        values = multivariate_normal.pdf(X[:, i].reshape(-1, 2), mean=mean, cov=covariance_matrix) # multivariate normal distribution
+        integral_values.append(np.sum(values)) # sum up all the values 
 
-def line_integral(point,muX, muY, sigX, sigY): # Line integral function using mux, muy, sigx, sigy
-    integral_value = 0 # total value of the line integral 
-    # print(muX,muY,sigX,sigY)
-    for i in range(len(point) - 1): # Loop through each pair of adjacent points
-        f1 = joint_pdf(point[i], point[i+1], muX, muY, sigX, sigY) # Compute the joint PDF values at the two points
-        ds = np.sqrt((point[i] - muX)**2 + (point[i+1] - muY)**2) # Compute the distance between the two points
-        integral_value += 0.5 * (f1) * ds # Update the integral value using the trapezoidal rule 
-
-    return integral_value # return the integral value 
+    total_integral_value = np.sum(integral_values) # sum them up again 
+    return total_integral_value # return the total value 
   
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
     #print(f'fut pred point shape: {fut_pred.shape}')
+    X = points_np # assign the X variable to be the points_np
+ 
     for j in range(points_np.shape[0]):
-        point = points_np[j] # get the points to analyze 
+        #point = points_np[j] # get the points to analyze 
         # print(f'point: {point}') # print the point for debugging 
         # print(f'length of point: {len(point)}')
  
@@ -75,19 +85,16 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         # print(max_integral_value,'max int')
         best_maneuver_point = None # best maneuver point is initialized as None 
+        total_integral = 0 # total value of the line integral 
 
         for i in range(6): # for six possible manuever choices 
-            muX = fut_pred_point[i, :, 0] # mean x 50 data points
-            muY = fut_pred_point[i, :, 1] # mean y
-            sigX = fut_pred_point[i, :, 2] # std x 50 data points
-            sigY = fut_pred_point[i, :, 3] # std y
-            total_integral = 0 # total value of the line integral 
-            iterate = muX.shape[0] # there are 50 points
+            muX = fut_pred_point[i, :, 0][1:] # mean x 50 data points
+            muY = fut_pred_point[i, :, 1][1:] # mean y
+            sigX = fut_pred_point[i, :, 2][1:] # std x 50 data points
+            sigY = fut_pred_point[i, :, 3][1:] # std y
+            total_integral += line_integral(X,muX, muY, sigX, sigY)
 
-            for k in range(iterate): # iterate through the loop 
-                total_integral += line_integral(point,muX[k], muY[k], sigX[k], sigY[k])
-
-            # print(total_integral,'tot integral')
+            print(total_integral,'tot integral')
             if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
                 max_integral_value = total_integral # max integral value is assigned as the total integral value
                 best_maneuver_point = i # best maneuver point is assigned as the current maneuver point
@@ -96,6 +103,7 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
     
     print(f'Best maneuver: {best_maneuvers}')
     return best_maneuvers  # return the list of possible maneuvers 
+
 
 
 def main(): # Main function 
@@ -179,14 +187,15 @@ def main(): # Main function
 
     for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
         print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
-        # print(f'data: {data}') 
-        # print(f'data shape: {len(data)}')
+     
+         
         ############ Comment this out if deploying to GPU Cluster #############################################
         if i == 10: # we are just going to stop at index 100 for testing 
             break 
         #######################################################################################################
         st_time = time.time() # start the timer 
-        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data      
+        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data    
+
   
         if args['use_cuda']:
             hist = hist.cuda()
