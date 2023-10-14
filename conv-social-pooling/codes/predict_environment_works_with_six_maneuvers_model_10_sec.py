@@ -85,14 +85,14 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         # print(max_integral_value,'max int')
         best_maneuver_point = None # best maneuver point is initialized as None 
-        total_integral = 0 # total value of the line integral 
-
+         
+        total_integral = 0 # total value of the line integral
         for i in range(6): # for six possible manuever choices 
             muX = fut_pred_point[i, :, 0][1:] # mean x 50 data points
             muY = fut_pred_point[i, :, 1][1:] # mean y
             sigX = fut_pred_point[i, :, 2][1:] # std x 50 data points
             sigY = fut_pred_point[i, :, 3][1:] # std y
-            total_integral += line_integral(X,muX, muY, sigX, sigY)
+            total_integral = line_integral(X,muX, muY, sigX, sigY)
 
             print(total_integral,'tot integral')
             if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
@@ -178,7 +178,7 @@ def main(): # Main function
     num_points = 0 # number of points we have analyzed 
 
     ######################### Output data ##############################################################################
-    outputs = []
+    output_results = []
     
     # print(f'Length of the pred data loader: {len(predDataloader)}')
     # 6 movements (maneuvers) with probability distributions: 
@@ -242,7 +242,7 @@ def main(): # Main function
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
         outputs = predict_trajectories(points_np,fut_pred_np, maneuver_pred) # where the function is called and I feed in maneurver pred and future prediction points 
-        
+        output_results.append(outputs)
         for j in range(points_np.shape[0]):
             point = points_np[j]
             # print(f'point.shape should be (49,): {point.shape}')
