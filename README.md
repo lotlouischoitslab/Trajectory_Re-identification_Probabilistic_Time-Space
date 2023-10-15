@@ -10,7 +10,7 @@
 File Name: predict_environment_works_with_six_maneuvers_model_10_sec.py
 
 ## NOTES For Louis Sungwoo Cho NCAS HAL Cluster:
-Reference: https://www.youtube.com/watch?v=l1dV25xwo0o&list=PLO8UWE9gZTlCtkZbWtEcKgxYVVLIvN2IS&index=1 
+(Reference Video:)[https://www.youtube.com/watch?v=l1dV25xwo0o&list=PLO8UWE9gZTlCtkZbWtEcKgxYVVLIvN2IS&index=1]
 
 Run the GPU: 
 
