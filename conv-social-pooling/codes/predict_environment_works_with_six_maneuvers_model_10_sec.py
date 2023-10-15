@@ -190,8 +190,8 @@ def main(): # Main function
      
          
         ############ Comment this out if deploying to GPU Cluster #############################################
-        if i == 10: # we are just going to stop at index 100 for testing 
-            break 
+        # if i == 10: # we are just going to stop at index 100 for testing 
+        #     break 
         #######################################################################################################
         
         st_time = time.time() # start the timer 
