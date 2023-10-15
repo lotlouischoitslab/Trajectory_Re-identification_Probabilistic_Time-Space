@@ -27,6 +27,7 @@ We need to:
          conda install -c "conda-forge/label/cf202003" libopenblas
          
 To connect to NCSA Hal Cluster: 
+
          ssh louissc2@hal.ncsa.illinois.edu
          
 Type in Password & Enter the Authentication code:
