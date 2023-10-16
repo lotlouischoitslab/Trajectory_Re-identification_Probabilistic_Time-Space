@@ -48,12 +48,8 @@ FOCUS:
 '''
 
 def line_integral(X, muX, muY, sigX, sigY): # Line integral function
-    integral_values = [] # integral values 
-    # print('X shape',X.shape) 
-    # print('muX shape',len(muX)) 
-    # print('muY shape',len(muY)) 
-    # print('sigX shape',len(sigX)) 
-    # print('sigY shape',len(sigY)) 
+    total_integral_values = 0 # integral values 
+    print('X shape',X.shape) # X shape 
     
     for i in range(X.shape[1]): 
         mean = [muX[i], muY[i]] # get the mean values
@@ -63,10 +59,9 @@ def line_integral(X, muX, muY, sigX, sigY): # Line integral function
         ])
         
         values = multivariate_normal.pdf(X[:, i].reshape(-1, 2), mean=mean, cov=covariance_matrix) # multivariate normal distribution
-        integral_values.append(np.sum(values)) # sum up all the values 
-
-    total_integral_value = np.sum(integral_values) # sum them up again 
-    return total_integral_value # return the total value 
+        total_integral_values += np.sum(values) # sum up all the values 
+ 
+    return total_integral_values # return the total value 
   
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
@@ -74,25 +69,18 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
     #print(f'fut pred point shape: {fut_pred.shape}')
     X = points_np # assign the X variable to be the points_np
  
-    for j in range(points_np.shape[0]):
-        #point = points_np[j] # get the points to analyze 
-        # print(f'point: {point}') # print the point for debugging 
-        # print(f'length of point: {len(point)}')
- 
+    for j in range(points_np.shape[0]): # for each point (row by row)
         fut_pred_point = fut_pred[:,:,j,:] # future prediction point
-        #print(f'fut pred point: {fut_pred_point}')
-        
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
-        # print(max_integral_value,'max int')
         best_maneuver_point = None # best maneuver point is initialized as None 
-         
         total_integral = 0 # total value of the line integral
+
         for i in range(6): # for six possible manuever choices 
             muX = fut_pred_point[i, :, 0][1:] # mean x 50 data points
             muY = fut_pred_point[i, :, 1][1:] # mean y
             sigX = fut_pred_point[i, :, 2][1:] # std x 50 data points
             sigY = fut_pred_point[i, :, 3][1:] # std y
-            total_integral = line_integral(X,muX, muY, sigX, sigY)
+            total_integral = line_integral(X,muX, muY, sigX, sigY) # calculate the total line integral
 
             #print(total_integral,'tot integral')
             if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
@@ -190,8 +178,8 @@ def main(): # Main function
      
          
         ############ Comment this out if deploying to GPU Cluster #############################################
-        # if i == 10: # we are just going to stop at index 100 for testing 
-        #     break 
+        if i == 10: # we are just going to stop at index 100 for testing 
+            break 
         #######################################################################################################
         
         st_time = time.time() # start the timer 
