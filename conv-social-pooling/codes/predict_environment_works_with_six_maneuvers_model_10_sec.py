@@ -24,6 +24,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="1" # The GPU id to use, usually either "0" o
 ########## Use this temporary but we need to fix the OpenBLAS error #########
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
+warnings.simplefilter('ignore', np.RankWarning)
+
 ##############################################################################
 
 ''' 
@@ -55,33 +57,26 @@ def calculate_accuracy(predictions, true_labels):
     return accuracy
 
   
-def integrand(T, x_t, y_t, muX, muY, sigX, sigY):
-    # Evaluate the parametric representation of the curve at T
+def integrand(T, x_t, y_t, dx_dt, dy_dt, muX, muY, sigX, sigY):
     x_val = np.polyval(x_t, T)
     y_val = np.polyval(y_t, T)
-    
-    # Differential arc length at T
-    dx_dt = np.polyder(x_t)
-    dy_dt = np.polyder(y_t)
     ds = np.sqrt(np.polyval(dx_dt, T)**2 + np.polyval(dy_dt, T)**2)
-    
-    # Gaussian function centered at (muX, muY) with std (sigX, sigY)
     f_val = multivariate_normal.pdf([x_val, y_val], mean=[muX, muY], cov=[[sigX**2, 0], [0, sigY**2]])
-    
     return f_val * ds
 
 def line_integral(X, y, muX, muY, sigX, sigY):
-    # Interpolating the points to get a parametric representation of the curve
     x_t = np.polyfit(range(len(X)), X, len(X)-1)
     y_t = np.polyfit(range(len(y)), y, len(y)-1)
     
+    dx_dt = np.polyder(x_t)
+    dy_dt = np.polyder(y_t)
+
     integral_sum = 0
     for i in range(len(X)):
-        integral_for_this_point, _ = quad(integrand, 0, 1, args=(x_t, y_t, muX[i], muY[i], sigX[i], sigY[i]))
+        integral_for_this_point, _ = quad(integrand, 0, 1, args=(x_t, y_t, dx_dt, dy_dt, muX[i], muY[i], sigX[i], sigY[i]))
         integral_sum += integral_for_this_point
 
     return integral_sum
-
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
@@ -93,6 +88,7 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         best_maneuver_point = None # best maneuver point is initialized as None 
         total_integral = 0 # total value of the line integral
+        X = points_np[j] 
 
         for i in range(6):
             muX = fut_pred[i, :, j, 0][1:]
@@ -100,7 +96,6 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
             sigX = fut_pred[i, :, j, 2][1:]
             sigY = fut_pred[i, :, j, 3][1:]
 
-            X = points_np[j] 
             y = fut_pred[i, :, j, 4][1:]
 
             # print(f'X: {X}')
@@ -234,7 +229,7 @@ def main(): # Main function
         #print(f"len(fut_pred), must be 6: {len(fut_pred)}")
         
         for m in range(len(fut_pred)):
-            print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
+            # print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
             break 
             for n in range(batch_size):
                 muX = fut_pred[m][:,n,0]
