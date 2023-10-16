@@ -9,9 +9,11 @@ import math
 
 import pickle
 import numpy as np
-import sympy as sp
 import pandas as pd 
 import matplotlib.pyplot as plt 
+
+from scipy.integrate import quad
+from scipy.stats import multivariate_normal
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -52,34 +54,34 @@ def calculate_accuracy(predictions, true_labels):
     accuracy = correct_predictions / len(true_labels)
     return accuracy
 
+  
+def integrand(T, x_t, y_t, muX, muY, sigX, sigY):
+    # Evaluate the parametric representation of the curve at T
+    x_val = np.polyval(x_t, T)
+    y_val = np.polyval(y_t, T)
+    
+    # Differential arc length at T
+    dx_dt = np.polyder(x_t)
+    dy_dt = np.polyder(y_t)
+    ds = np.sqrt(np.polyval(dx_dt, T)**2 + np.polyval(dy_dt, T)**2)
+    
+    # Gaussian function centered at (muX, muY) with std (sigX, sigY)
+    f_val = multivariate_normal.pdf([x_val, y_val], mean=[muX, muY], cov=[[sigX**2, 0], [0, sigY**2]])
+    
+    return f_val * ds
 
 def line_integral(X, y, muX, muY, sigX, sigY):
-    T = sp.symbols('T')  # parameter of the parametric curve
-
     # Interpolating the points to get a parametric representation of the curve
-    x_t = sp.interpolating_poly(len(X) - 1, T, X)
-    y_t = sp.interpolating_poly(len(y) - 1, T, y)
+    x_t = np.polyfit(range(len(X)), X, len(X)-1)
+    y_t = np.polyfit(range(len(y)), y, len(y)-1)
     
-    dx_dt = sp.diff(x_t, T)
-    dy_dt = sp.diff(y_t, T)
-    ds = sp.sqrt(dx_dt**2 + dy_dt**2)  # differential arc length
-
-    X_val, Y_val = sp.symbols('X Y')
-    integral_sum = 0  # to accumulate the integral values for each point
-
+    integral_sum = 0
     for i in range(len(X)):
-        # Gaussian function centered at (muX[i], muY[i]) with std (sigX[i], sigY[i])
-        f = (1 / (2 * sp.pi * sigX[i] * sigY[i])) * \
-            sp.exp(- ((X_val - muX[i])**2 / (2 * sigX[i]**2) + (Y_val - muY[i])**2 / (2 * sigY[i]**2)))
-
-        # Substituting the curve's parametric form into the Gaussian
-        f_parametric = f.subs({X_val: x_t, Y_val: y_t})
-        
-        integral_for_this_point = sp.integrate(f_parametric * ds, (T, 0, 1))
+        integral_for_this_point, _ = quad(integrand, 0, 1, args=(x_t, y_t, muX[i], muY[i], sigX[i], sigY[i]))
         integral_sum += integral_for_this_point
 
-    return float(integral_sum)
-  
+    return integral_sum
+
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
@@ -87,9 +89,7 @@ def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predi
     # print(f'fut pred point shape: {fut_pred.shape}')
     print(f'points: {points_np}')
  
-
     for j in range(points_np.shape[0]):
-         
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         best_maneuver_point = None # best maneuver point is initialized as None 
         total_integral = 0 # total value of the line integral
