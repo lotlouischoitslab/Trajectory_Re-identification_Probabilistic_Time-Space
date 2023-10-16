@@ -5,10 +5,11 @@ from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers impor
 from torch.utils.data import DataLoader
 import time
 import math
-from scipy.stats import multivariate_normal
+ 
 
 import pickle
 import numpy as np
+import sympy as sp
 import pandas as pd 
 import matplotlib.pyplot as plt 
 
@@ -46,41 +47,65 @@ FOCUS:
 - Do that it's done 
 - Rest is one for loop 
 '''
+def calculate_accuracy(predictions, true_labels):
+    correct_predictions = sum(p == t for p, t in zip(predictions, true_labels))
+    accuracy = correct_predictions / len(true_labels)
+    return accuracy
 
-def line_integral(X, muX, muY, sigX, sigY): # Line integral function
-    total_integral_values = 0 # integral values 
-    print('X shape',X.shape) # X shape 
+
+def line_integral(X, y, muX, muY, sigX, sigY):
+    T = sp.symbols('T')  # parameter of the parametric curve
+
+    # Interpolating the points to get a parametric representation of the curve
+    x_t = sp.interpolating_poly(len(X) - 1, T, X)
+    y_t = sp.interpolating_poly(len(y) - 1, T, y)
     
-    for i in range(X.shape[1]): 
-        mean = [muX[i], muY[i]] # get the mean values
-        covariance_matrix = np.array([  # construct covariance matrix 
-            [sigX[i]**2, 0],
-            [0, sigY[i]**2]
-        ])
+    dx_dt = sp.diff(x_t, T)
+    dy_dt = sp.diff(y_t, T)
+    ds = sp.sqrt(dx_dt**2 + dy_dt**2)  # differential arc length
+
+    X_val, Y_val = sp.symbols('X Y')
+    integral_sum = 0  # to accumulate the integral values for each point
+
+    for i in range(len(X)):
+        # Gaussian function centered at (muX[i], muY[i]) with std (sigX[i], sigY[i])
+        f = (1 / (2 * sp.pi * sigX[i] * sigY[i])) * \
+            sp.exp(- ((X_val - muX[i])**2 / (2 * sigX[i]**2) + (Y_val - muY[i])**2 / (2 * sigY[i]**2)))
+
+        # Substituting the curve's parametric form into the Gaussian
+        f_parametric = f.subs({X_val: x_t, Y_val: y_t})
         
-        values = multivariate_normal.pdf(X[:, i].reshape(-1, 2), mean=mean, cov=covariance_matrix) # multivariate normal distribution
-        total_integral_values += np.sum(values) # sum up all the values 
- 
-    return total_integral_values # return the total value 
+        integral_for_this_point = sp.integrate(f_parametric * ds, (T, 0, 1))
+        integral_sum += integral_for_this_point
+
+    return float(integral_sum)
   
 
 def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
     best_maneuvers = [] # store all the best manuevers
-    #print(f'fut pred point shape: {fut_pred.shape}')
-    X = points_np # assign the X variable to be the points_np
+    # print(f'points_np shape: {points_np.shape}')
+    # print(f'fut pred point shape: {fut_pred.shape}')
+    print(f'points: {points_np}')
  
-    for j in range(points_np.shape[0]): # for each point (row by row)
-        fut_pred_point = fut_pred[:,:,j,:] # future prediction point
+
+    for j in range(points_np.shape[0]):
+         
         max_integral_value = float('-inf') # this is assigned as the negative infinity 
         best_maneuver_point = None # best maneuver point is initialized as None 
         total_integral = 0 # total value of the line integral
 
-        for i in range(6): # for six possible manuever choices 
-            muX = fut_pred_point[i, :, 0][1:] # mean x 50 data points
-            muY = fut_pred_point[i, :, 1][1:] # mean y
-            sigX = fut_pred_point[i, :, 2][1:] # std x 50 data points
-            sigY = fut_pred_point[i, :, 3][1:] # std y
-            total_integral = line_integral(X,muX, muY, sigX, sigY) # calculate the total line integral
+        for i in range(6):
+            muX = fut_pred[i, :, j, 0][1:]
+            muY = fut_pred[i, :, j, 1][1:]
+            sigX = fut_pred[i, :, j, 2][1:]
+            sigY = fut_pred[i, :, j, 3][1:]
+
+            X = points_np[j] 
+            y = fut_pred[i, :, j, 4][1:]
+
+            # print(f'X: {X}')
+            # print(f'y: {y}')
+            total_integral = line_integral(X,y,muX, muY, sigX, sigY) # calculate the total line integral
 
             #print(total_integral,'tot integral')
             if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
@@ -207,22 +232,15 @@ def main(): # Main function
 
         ##DEBUG
         #print(f"len(fut_pred), must be 6: {len(fut_pred)}")
+        
         for m in range(len(fut_pred)):
-            #print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
+            print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
+            break 
             for n in range(batch_size):
                 muX = fut_pred[m][:,n,0]
                 muY = fut_pred[m][:,n,1]
                 sigX = fut_pred[m][:,n,2]
                 sigY = fut_pred[m][:,n,3]
-                # print(f'muX: {muX}')
-                # print(f'muY: {muY}')
-                # print(f'sigX: {sigX}')
-                # print(f'sigY: {sigY}')
-                # print('len of muX',len(muX)) 
-                # print('len of muY',len(muY)) 
-                # print('len of sigX',len(sigX)) 
-                # print('len of sigY',len(sigY)) 
-        ##END OF DEBUG
 
         points_np = points.numpy() # convert to numpy arrays 
         fut_pred_np = [] # store the future pred points 
@@ -230,8 +248,7 @@ def main(): # Main function
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
-        outputs = predict_trajectories(points_np,fut_pred_np, maneuver_pred) # where the function is called and I feed in maneurver pred and future prediction points 
-        output_results.append(outputs)
+
         for j in range(points_np.shape[0]):
             point = points_np[j]
             # print(f'point.shape should be (49,): {point.shape}')
@@ -267,8 +284,13 @@ def main(): # Main function
             #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
-
+        outputs = predict_trajectories(points_np,fut_pred_np, maneuver_predictions) # where the function is called and I feed in maneurver pred and future prediction points 
+        output_results.append(outputs)
     
+    # Accuracy 
+    # accuracy_score = calculate_accuracy(best_maneuvers, true_labels)
+    # print(f"Accuracy: {accuracy_score * 100:.2f}%")
+
     # Print Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
