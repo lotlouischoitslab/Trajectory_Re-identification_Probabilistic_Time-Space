@@ -52,10 +52,12 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-def calculate_accuracy(predictions, true_labels):
-    correct_predictions = sum(p == t for p, t in zip(predictions, true_labels))
-    accuracy = correct_predictions / len(true_labels)
+def compute_accuracy(predicted_maneuvers, ground_truth_maneuvers):
+    correct_predictions = np.sum(np.array(predicted_maneuvers) == np.array(ground_truth_maneuvers))
+    total_predictions = len(predicted_maneuvers)
+    accuracy = correct_predictions / total_predictions
     return accuracy
+
 
   
 def integrand(T, x_t, y_t, dx_dt, dy_dt, muX, muY, sigX, sigY):
@@ -81,6 +83,7 @@ def line_integral(X, y, muX, muY, sigX, sigY):
 
 def predict_trajectories(points_np, fut_pred): 
     best_maneuvers = [] 
+    max_integral_values = [] 
 
     for j in range(points_np.shape[0]):
         max_integral_value = float('-inf') 
@@ -105,12 +108,13 @@ def predict_trajectories(points_np, fut_pred):
             if total_integral > max_integral_value: 
                 max_integral_value = total_integral
                 best_maneuver_point = i
+                max_integral_values.append(max_integral_value)
             
         best_maneuvers.append(best_maneuver_point)
 
     best_maneuvers = np.array(best_maneuvers)
     print(f'best maneuvers: {best_maneuvers}')
-    return best_maneuvers
+    return best_maneuvers, max_integral_values
 
  
 
@@ -139,8 +143,8 @@ def main(): # Main function
     args['use_maneuvers'] = True
     args['train_flag'] = False
 
-    #directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
-    directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
+    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
+    #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
@@ -149,8 +153,8 @@ def main(): # Main function
     # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
     # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/test', t_h=30, t_f=100, d_s=2)
 
-    #filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
-    filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
+    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
+    #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
     
     batch_size = 128 # batch size for the model 
 
@@ -174,6 +178,7 @@ def main(): # Main function
     counts = torch.zeros(50).to(device) # Louis code
 
     ######################### Variables holding train and validation loss values #######################################
+    accuracy = [] # we are going to store the accuracy values 
     train_loss = [] # we are going to store the training loss values 
     val_loss = [] # we are going to store the validation loss values 
     prev_val_loss = math.inf # we are going to store the previous validation loss values
@@ -253,21 +258,23 @@ def main(): # Main function
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
         outputs = predict_trajectories(points_np,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points 
+        predicted_maneuvers, maneuver_scores = predict_trajectories(points_np, fut_pred_np) 
+        temp_acc = compute_accuracy(predicted_maneuvers, ground_truth_maneuvers)
+        accuracy.append(temp_acc)
         # output_results.append(outputs)
         # print(f'points np: {points_np.shape}')
         # print(f'sample point in 0: {points_np[0]}')
         # print(f'future points: {fut_pred_point.shape}')
         # print(f'sample future point in 0 muX: {fut_pred_point[0,:,0]}')
         # print(f'sample future point in 0: {fut_pred_point[0,:,4]}')
+        
         break 
     
     # Accuracy 
-    maneuver_enc_np = np.array(maneuver_enc)
-    print(f'predicted output shape: {outputs.shape} | actual shape: {maneuver_enc_np.shape}')
-    # accuracy_score = calculate_accuracy(outputs, maneuver_enc_np)
-    # print(f"Accuracy: {accuracy_score * 100:.2f}%")
+    print(f'Accuracies: {accuracy}')
+ 
 
-    # Print Test Error
+    # Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
     
