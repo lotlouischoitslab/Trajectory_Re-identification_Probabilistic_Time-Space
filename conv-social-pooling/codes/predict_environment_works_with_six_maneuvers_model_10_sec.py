@@ -51,6 +51,7 @@ FOCUS:
 - Do that it's done 
 - Rest is one for loop 
 '''
+
 def calculate_accuracy(predictions, true_labels):
     correct_predictions = sum(p == t for p, t in zip(predictions, true_labels))
     accuracy = correct_predictions / len(true_labels)
@@ -78,41 +79,40 @@ def line_integral(X, y, muX, muY, sigX, sigY):
 
     return integral_sum
 
-def predict_trajectories(points_np,fut_pred, maneuver_pred): # Function to predict trajectories
-    best_maneuvers = [] # store all the best manuevers
-    # print(f'points_np shape: {points_np.shape}')
-    # print(f'fut pred point shape: {fut_pred.shape}')
-    print(f'points: {points_np}')
- 
+def predict_trajectories(points_np, fut_pred): 
+    best_maneuvers = [] 
+
     for j in range(points_np.shape[0]):
-        max_integral_value = float('-inf') # this is assigned as the negative infinity 
-        best_maneuver_point = None # best maneuver point is initialized as None 
-        total_integral = 0 # total value of the line integral
+        max_integral_value = float('-inf') 
+        best_maneuver_point = None 
         X = points_np[j] 
 
+        # Loop through each maneuver
         for i in range(6):
-            muX = fut_pred[i, :, j, 0][1:]
-            muY = fut_pred[i, :, j, 1][1:]
-            sigX = fut_pred[i, :, j, 2][1:]
-            sigY = fut_pred[i, :, j, 3][1:]
+            # Reshape fut_pred to get (128,49) for each maneuver
+            fut_pred_for_maneuver = fut_pred[i, 1:, j, :].T
 
-            y = fut_pred[i, :, j, 4][1:]
-
-            # print(f'X: {X}')
+            muX = fut_pred_for_maneuver[0]
+            muY = fut_pred_for_maneuver[1]
+            sigX = fut_pred_for_maneuver[2]
+            sigY = fut_pred_for_maneuver[3]
+            y = fut_pred_for_maneuver[4]
+            # print(f'X: {X}') 
             # print(f'y: {y}')
-            total_integral = line_integral(X,y,muX, muY, sigX, sigY) # calculate the total line integral
 
-            #print(total_integral,'tot integral')
-            if total_integral > max_integral_value: # if the total integral is greater than the current max integral value
-                max_integral_value = total_integral # max integral value is assigned as the total integral value
-                best_maneuver_point = i # best maneuver point is assigned as the current maneuver point
+            total_integral = line_integral(X, y, muX, muY, sigX, sigY) 
+
+            if total_integral > max_integral_value: 
+                max_integral_value = total_integral
+                best_maneuver_point = i
             
-        best_maneuvers.append(best_maneuver_point) # append the best maneuver point into the list
-    
-    print(f'Best maneuver: {best_maneuvers}')
-    return best_maneuvers  # return the list of possible maneuvers 
+        best_maneuvers.append(best_maneuver_point)
 
+    best_maneuvers = np.array(best_maneuvers)
+    print(f'best maneuvers: {best_maneuvers}')
+    return best_maneuvers
 
+ 
 
 def main(): # Main function 
     args = {} # Network Arguments
@@ -139,11 +139,18 @@ def main(): # Main function
     args['use_maneuvers'] = True
     args['train_flag'] = False
 
-    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
-    # directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
+    #directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
+    directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
+
+    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
+    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
+    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/test', t_h=30, t_f=100, d_s=2)
+
+    #filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
+    filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
     
     batch_size = 128 # batch size for the model 
 
@@ -158,12 +165,7 @@ def main(): # Main function
     #########################################################################################################################
 
     ################################ Initialize data loaders ################################################################
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/test', t_h=30, t_f=100, d_s=2)
 
-    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
-    # filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
 
     # predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
@@ -198,7 +200,7 @@ def main(): # Main function
      
          
         ############ Comment this out if deploying to GPU Cluster #############################################
-        if i == 10: # we are just going to stop at index 100 for testing 
+        if i == 1: # we are just going to stop at index 100 for testing 
             break 
         #######################################################################################################
         
@@ -225,24 +227,13 @@ def main(): # Main function
         lossVals += l.detach() # increment the loss value 
         counts += c.detach() # increment the count value 
 
-        ##DEBUG
-        #print(f"len(fut_pred), must be 6: {len(fut_pred)}")
-        
-        for m in range(len(fut_pred)):
-            # print(f"shape of fut_pred[m], must be (t_f//d_s,batch_size,5): {fut_pred[m].shape}")
-            break 
-            for n in range(batch_size):
-                muX = fut_pred[m][:,n,0]
-                muY = fut_pred[m][:,n,1]
-                sigX = fut_pred[m][:,n,2]
-                sigY = fut_pred[m][:,n,3]
-
         points_np = points.numpy() # convert to numpy arrays 
         fut_pred_np = [] # store the future pred points 
         for k in range(6): #manuevers mean the 
             fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
             fut_pred_np.append(fut_pred_np_point)
         fut_pred_np = np.array(fut_pred_np)
+        print(f'trained and tested fut pred point: {fut_pred_np.shape}')
 
         for j in range(points_np.shape[0]):
             point = points_np[j]
@@ -250,28 +241,10 @@ def main(): # Main function
             # print(f'point: {point}')
             data_points.append(point)
             fut_pred_point = fut_pred_np[:,:,j,:]
-
-            ###DEBUG
-            # print('fut_pred_point.shape should be (6,t_f//d_s,5): ',fut_pred_point.shape) #6 is for different lon and lat maneuvers
-            # print("check this: \n")
-            for i in range(6):
-                muX = fut_pred_point[i, :, 0]
-                muY = fut_pred_point[i, :, 1]
-                sigX = fut_pred_point[i, :, 2]
-                sigY = fut_pred_point[i, :, 3]
-                # print(f'muX: {muX}')
-                # print(f'muY: {muY}')
-                # print(f'sigX: {sigX}')
-                # print(f'sigY: {sigY}')
-                # print('len of muX',len(muX)) 
-                # print('len of muY',len(muY)) 
-                # print('len of sigX',len(sigX)) 
-                # print('len of sigY',len(sigY)) 
-            ###END OF DEBUG
-
             fut_predictions.append(fut_pred_point)
             maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
+
             num_points += 1
             # if num_points%10000 == 0:
             #     print('point: ', num_points)
@@ -279,22 +252,30 @@ def main(): # Main function
             #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
-        outputs = predict_trajectories(points_np,fut_pred_np, maneuver_predictions) # where the function is called and I feed in maneurver pred and future prediction points 
-        output_results.append(outputs)
+        outputs = predict_trajectories(points_np,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points 
+        # output_results.append(outputs)
+        # print(f'points np: {points_np.shape}')
+        # print(f'sample point in 0: {points_np[0]}')
+        # print(f'future points: {fut_pred_point.shape}')
+        # print(f'sample future point in 0 muX: {fut_pred_point[0,:,0]}')
+        # print(f'sample future point in 0: {fut_pred_point[0,:,4]}')
+        break 
     
     # Accuracy 
-    # accuracy_score = calculate_accuracy(best_maneuvers, true_labels)
+    maneuver_enc_np = np.array(maneuver_enc)
+    print(f'predicted output shape: {outputs.shape} | actual shape: {maneuver_enc_np.shape}')
+    # accuracy_score = calculate_accuracy(outputs, maneuver_enc_np)
     # print(f"Accuracy: {accuracy_score * 100:.2f}%")
 
     # Print Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
     
-    print(f'MSE: {mse}')
-    print(f'RMSE: {rmse}')   # Calculate RMSE, feet
-    print(f'Number of data points: {num_points}')
-    print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
-    print(f'Output results: {output_results}')
+    # print(f'MSE: {mse}')
+    # print(f'RMSE: {rmse}')   # Calculate RMSE, feet
+    # print(f'Number of data points: {num_points}')
+    # print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
+    # print(f'Output results: {output_results}')
 
     with open(directory+saving_directory+"data_points.data", "wb") as filehandle:
         pickle.dump(np.array(data_points), filehandle, protocol=4)
