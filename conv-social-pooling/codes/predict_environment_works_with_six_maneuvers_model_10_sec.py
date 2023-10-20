@@ -53,11 +53,12 @@ FOCUS:
 '''
 
 def compute_accuracy(predicted_maneuvers, ground_truth_maneuvers):
+    print(f'predicted man: {predicted_maneuvers}')
+    print(f'ground truth man: {ground_truth_maneuvers}')
     correct_predictions = np.sum(np.array(predicted_maneuvers) == np.array(ground_truth_maneuvers))
     total_predictions = len(predicted_maneuvers)
     accuracy = correct_predictions / total_predictions
     return accuracy
-
 
   
 def integrand(T, x_t, y_t, dx_dt, dy_dt, muX, muY, sigX, sigY):
@@ -66,6 +67,7 @@ def integrand(T, x_t, y_t, dx_dt, dy_dt, muX, muY, sigX, sigY):
     ds = np.sqrt(np.polyval(dx_dt, T)**2 + np.polyval(dy_dt, T)**2)
     f_val = multivariate_normal.pdf([x_val, y_val], mean=[muX, muY], cov=[[sigX**2, 0], [0, sigY**2]])
     return f_val * ds
+
 
 def line_integral(X, y, muX, muY, sigX, sigY):
     x_t = np.polyfit(range(len(X)), X, len(X)-1)
@@ -116,7 +118,18 @@ def predict_trajectories(points_np, fut_pred):
     print(f'best maneuvers: {best_maneuvers}')
     return best_maneuvers, max_integral_values
 
- 
+def cost_calculator(x1, y1, x2, y2, obj): #obj = [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...]
+    cost = 0
+    for i in range(len(obj)):
+        a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2*obj[i][2]))
+        b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + \
+            (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) * (1 / (2*obj[i][2]))
+        c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) * (1 / (2*obj[i][2]))
+  
+        cost = cost + (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) *  \
+            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2*math.sqrt(a))) - math.erf(b / (2*math.sqrt(a)))) * \
+            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    return cost
 
 def main(): # Main function 
     args = {} # Network Arguments
@@ -143,19 +156,30 @@ def main(): # Main function
     args['use_maneuvers'] = True
     args['train_flag'] = False
 
+    ######################################## TRAJECTORY DIRECTORIES #################################################
+    #trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/'
+    trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/'
+    temp_x_trajectory_directory = 'train_trajectory_x.data'
+    temp_y_trajectory_directory = 'train_trajectory_y.data'
+
+    x_trajectory_directory = trajectories_directory + temp_x_trajectory_directory
+    y_trajectory_directory = trajectories_directory + temp_y_trajectory_directory
+
+    ######################################## MODEL DIRECTORIES ######################################################
     directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
     #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
-
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
-    # predSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/test', t_h=30, t_f=100, d_s=2)
-
+    
+    ######################################### PRED SET DIRECTORY #############################################################
     filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
     #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
     
+
+
+
+
     batch_size = 128 # batch size for the model 
 
     # Initialize network 
@@ -210,8 +234,7 @@ def main(): # Main function
         #######################################################################################################
         
         st_time = time.time() # start the timer 
-        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data    
-
+        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
   
         if args['use_cuda']:
             hist = hist.cuda()
@@ -224,6 +247,9 @@ def main(): # Main function
             maneuver_enc = maneuver_enc.cuda()
 
         fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+        print(f'fut_pred: {fut_pred}') 
+        print(f'maneuver_pred: {maneuver_pred}') 
+        
         fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
         for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
             indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
@@ -259,8 +285,12 @@ def main(): # Main function
 
         outputs = predict_trajectories(points_np,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points 
         predicted_maneuvers, maneuver_scores = predict_trajectories(points_np, fut_pred_np) 
-        temp_acc = compute_accuracy(predicted_maneuvers, ground_truth_maneuvers)
-        accuracy.append(temp_acc)
+        ground_truth_maneuvers = maneuver_enc
+
+        print(f'prped shape: {predicted_maneuvers.shape}')
+        print(f'ground shape: {ground_truth_maneuvers.shape}')
+        #temp_acc = compute_accuracy(predicted_maneuvers, ground_truth_maneuvers)
+        #accuracy.append(temp_acc)
         # output_results.append(outputs)
         # print(f'points np: {points_np.shape}')
         # print(f'sample point in 0: {points_np[0]}')
