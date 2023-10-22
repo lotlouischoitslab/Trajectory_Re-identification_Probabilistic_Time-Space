@@ -151,7 +151,7 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batc
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
                 highest_integral_value = total_integral_for_trajectory # update the highest integral value
                 best_trajectory['X'] = x_traj # assign the x trajectories
-                best_trajectory['Y'] = y_traj # assign the y trajectories 
+                best_trajectory['y'] = y_traj # assign the y trajectories 
    
     return best_trajectory # return the best trajectory dictionary  
 
@@ -322,7 +322,7 @@ def main(): # Main function
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
         predicted_traj = predict_trajectories(x_trajectory,y_trajectory,fut_pred_np,traj_len,batch_size=batch_size) # where the function is called and I feed in maneurver pred and future prediction points 
-        output_results.append(predicted_traj)
+        output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
         print(f'output results: {output_results}')
    
  
