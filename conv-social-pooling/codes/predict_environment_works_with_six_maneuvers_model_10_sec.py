@@ -5,15 +5,13 @@ from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers impor
 from torch.utils.data import DataLoader
 import time
 import math
- 
-
 import pickle
 import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
 
 from scipy.integrate import quad
-from scipy.stats import multivariate_normal
+from scipy.special import erf
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -52,133 +50,110 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-def compute_accuracy(predicted_maneuvers, ground_truth_maneuvers):
-    print(f'predicted man: {predicted_maneuvers}')
-    print(f'ground truth man: {ground_truth_maneuvers}')
-    correct_predictions = np.sum(np.array(predicted_maneuvers) == np.array(ground_truth_maneuvers))
-    total_predictions = len(predicted_maneuvers)
-    accuracy = correct_predictions / total_predictions
-    return accuracy
- 
+############################################# DATA CLEANING AND PARSING #########################################
 
-def line_integral(x1, y1, x2, y2, obj):
-    cost = 0 
-    for i in range(len(obj)):
-        denom = 2*obj[i][2]
-        if denom == 0:
-            denom = 1
+def load_from_pickle(filename): # Function to load in the data 
+    with open(filename, 'rb') as file: # open the file 
+        data = pickle.load(file) # load the file into the computer
 
-        a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) / denom
-        b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + 
-             (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) / denom
-        c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) / denom
-        
-        # If a is zero or too close to zero, continue to the next iteration
-        if abs(a) < 1e-9:  # a threshold to handle floating point inaccuracies
-            continue
-
-        denom = 2 * math.sqrt(a)
-        if denom == 0:
-            denom = 1
-
-        cost += (math.exp((b * b) / (4 * a) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) * \
-                (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / denom) - math.erf(b / denom)) * \
-                math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
-    return cost
-
-
-def create_object(muX, muY, sigX, sigY): # creates an object to feed into the line integral 
-    to_return = [] # will return a 2d list of [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...]
-    for mux,muy,sig in zip(muX,muY,sigX): # so for each mu_x, mu_y, sig_x 
-        temp = [mux,muy,sig**2] # create a temporary list
-        to_return.append(temp) # append to the list 
-    return to_return # return 
-
-
-def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batch_size=1):
-    """
-    Predict trajectories based on the provided x_trajectory and y_trajectory for different maneuvers.
-    Returns the best maneuvers.
-    """
-    num_maneuvers = len(fut_pred)
-    best_maneuvers = [-1] * num_maneuvers  # Initialize with a default value
-    
-    for m in range(num_maneuvers):
-        max_integral_value = float('-inf')
-        
-        for n in range(batch_size):
-            muX = fut_pred[m][:, n, 0]
-            muY = fut_pred[m][:, n, 1]
-            sigX = fut_pred[m][:, n, 2]
-            sigY = fut_pred[m][:, n, 3]
-            x_test = x_trajectory[m][n][0]
-            y_test = y_trajectory[m][n][0]
-            
-            objects_for_integral = create_object(muX, muY, sigX, sigY)
-
-            total_integral_for_batch = sum(
-                line_integral(x_test[i], y_test[i], x_test[i+1], y_test[i+1], objects_for_integral) 
-                for i in range(traj_length-1)
-            )
-            
-            if total_integral_for_batch > max_integral_value:
-                max_integral_value = total_integral_for_batch
-                best_maneuver_for_m = m
-        
-        best_maneuvers[m] = best_maneuver_for_m
-
-    best_maneuvers = np.array(best_maneuvers)
-    print(f'best maneuvers: {best_maneuvers}')
-    return best_maneuvers
-
-
-
-
-def load_from_pickle(filename):
-    with open(filename, 'rb') as file:
-        data = pickle.load(file)
-
-        # Convert potential numpy arrays to Python lists
-        if isinstance(data, np.ndarray):
+        if isinstance(data, np.ndarray):  # Convert potential numpy arrays to Python lists
             data = data.tolist()
 
-        # If the items of data are also numpy arrays, convert them to lists
-        for i, item in enumerate(data):
-            if isinstance(item, np.ndarray):
-                data[i] = item.tolist()
+        for i, item in enumerate(data): # If the items of data are also numpy arrays, convert them to lists
+            if isinstance(item, np.ndarray): # check if they are numpy arrays 
+                data[i] = item.tolist() # convert each item into list 
 
-        # You can continue this logic further if there are more nested numpy arrays.
-        # If the depth is unknown or very deep, a recursive approach will be needed.
+    return data # return the trajectory data plots 
 
-    return data
-
-def get_shape(obj):
-    if isinstance(obj, list):
-        if len(obj) == 0:
-            return 0,
-        shapes = [get_shape(sub_obj) for sub_obj in obj]
+def get_shape(obj): # Recursive function to calculate the shape of the trajectory data 
+    if isinstance(obj, list): # if it is a list 
+        if len(obj) == 0: # if empty 
+            return 0, # just return 0
+        shapes = [get_shape(sub_obj) for sub_obj in obj] # get the shapes
         max_shape = max(shapes, key=lambda x: len(x))
         return (len(obj),) + max_shape
-    elif isinstance(obj, np.ndarray):
-        return obj.shape
+    elif isinstance(obj, np.ndarray): # if numpy array
+        return obj.shape # just return the shape 
     else:
-        # This is a leaf node
-        return ()
+        return () # This is a leaf node
 
 ########################## FUNCTIONS TO FILTER OUT EMPTY LISTS #################################################
-def filter_empty(sublist):
-    if isinstance(sublist, list):
-        # Remove empty lists or arrays
+def filter_empty(sublist): # Filter the empty elements in our given input data 
+    if isinstance(sublist, list): # Remove empty lists or arrays
         return [item for item in (filter_empty(item) for item in sublist) if (isinstance(item, list) and len(item) > 0) or (isinstance(item, np.ndarray) and item.size > 0) or item]
-    elif isinstance(sublist, np.ndarray):
-        # If numpy array is not empty, return the array
-        return sublist if sublist.size > 0 else None
-    return sublist
+    elif isinstance(sublist, np.ndarray): # If numpy array is not empty, return the array
+        return sublist if sublist.size > 0 else None # make sure we return the sublist if it is greater than 0, otherwise just return None 
+    return sublist # return the sublist 
 
 
-def filter_points(x, y):
-    return filter_empty(x), filter_empty(y)
+def filter_points(x, y): # Recursive function to call the filter empty function 
+    return filter_empty(x), filter_empty(y) # call the helper functions 
 ################################################################################################################
+
+
+
+def line_integral(x1, y1, x2, y2, obj): # Line integral calculator assuming obj has a shape of (N, 3), where N is the number of maneuvers
+    x1_x2_sq = np.power(x1 - x2, 2)
+    y1_y2_sq = np.power(y1 - y2, 2)
+    
+    denom = 2 * obj[:, 2]
+    denom[denom < 1e-9] = 1e-9  # Ensure no values too close to zero
+
+    a = (x1_x2_sq + y1_y2_sq) / denom
+    b = (-2 * x1 + 2 * x2 + 2 * obj[:, 0] - 2 * x2 * obj[:, 0] + 
+         -2 * y1 + 2 * y2 + 2 * obj[:, 1] - 2 * y2 * obj[:, 1]) / denom
+    c = (np.power(x1 - obj[:, 0], 2) + np.power(y1 - obj[:, 1], 2)) / denom
+    
+    # Mask where 'a' is too close to zero
+    mask = np.abs(a) >= 1e-9
+    a = a[mask]
+    b = b[mask]
+    c = c[mask]
+    
+    # Check if the masked values lead to an empty array. Return 0 if true.
+    if a.size == 0:
+        return 0.0
+    
+    denom = 2 * np.sqrt(a)
+    denom[denom < 1e-9] = 1e-9  # Ensure no values too close to zero
+
+    exp_arg = (b * b) / (4 * a) - c
+    exp_arg = np.clip(exp_arg, -20, 20)  # Avoid too large/small arguments for exponential function
+
+    cost = (np.exp(exp_arg) / (2 * np.pi * obj[mask, 2])) * \
+           (1 / np.sqrt(a)) * (np.sqrt(np.pi) / 2) * \
+           (erf(np.sqrt(a) + b / denom) - erf(b / denom)) * \
+           np.sqrt(x1_x2_sq + y1_y2_sq)
+
+    return cost.sum()  # return the sum of the calculated cost
+
+
+
+def create_object(muX, muY, sigX,sigY): # Helper function create an object of normal distribution parameters
+    return np.column_stack([muX, muY, (sigX-sigY)**2]) # Stack up the values
+
+ 
+def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batch_size=16): # function to predict trajectories
+    num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
+    highest_integral_value = float('-inf')  # Initialize with a very small number
+    best_trajectory = {
+        'X':[],
+        'y':[]
+    } # Placeholder for the best trajectory's x and y values
+
+    for m in range(num_maneuvers): # for each of the 6 maneuvers
+        objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
+        for b in range(batch_size): # for each b in batch size 
+            x_traj = x_trajectory[m][b][0] # extract the x_traj trajectories
+            y_traj = y_trajectory[m][b][0] # extract the y_traj trajectories
+            total_integral_for_trajectory = sum(line_integral(x_traj[i], y_traj[i], x_traj[i+1], y_traj[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
+            
+            if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
+                highest_integral_value = total_integral_for_trajectory # update the highest integral value
+                best_trajectory['X'] = x_traj # assign the x trajectories
+                best_trajectory['Y'] = y_traj # assign the y trajectories 
+   
+    return best_trajectory # return the best trajectory dictionary  
 
 
 def main(): # Main function 
@@ -206,11 +181,22 @@ def main(): # Main function
     args['use_maneuvers'] = True
     args['train_flag'] = False
 
-    ######################################## TRAJECTORY DIRECTORIES #################################################
-    #trajectories_directory1 = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/'
-  
-    trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/'
+    ######################################## TRAJECTORY DIRECTORIES ######################################################################################
+    trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
+    #trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
+
+    ####################################### MODEL DIRECTORIES ############################################################################################
+    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
+    #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
+
+    model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
+    saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
     
+    ######################################### PRED SET DIRECTORY #########################################################################################
+    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
+    #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
+    
+    ######################################################################################################################################################
     temp_x_trajectory_directory = 'train_trajectory_x.data'
     temp_y_trajectory_directory = 'train_trajectory_y.data'
 
@@ -235,30 +221,20 @@ def main(): # Main function
 
     manuever_len,d2,d3,traj_len = get_shape(x_trajectory)
 
-    ####################################### MODEL DIRECTORIES ######################################################
-    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/'
-    #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'
-
-    model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
-    saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
-    
-    ######################################### PRED SET DIRECTORY #############################################################
-    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
-    #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test'
-    
-    batch_size = 128 # batch size for the model 
+    batch_size = 16 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
+    temp_stop = 1000 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     full_path = os.path.join(directory, model_directory) # create a full path 
     net.load_state_dict(torch.load(full_path, map_location=torch.device(device))) # load the model onto the local machine 
 
-    ############################### Check if GPU is available ###############################################################
+    ################################ CHECK GPU AVAILABILITY ###############################################################
     if args['use_cuda']: 
         net = net.cuda()
     #########################################################################################################################
 
-    ################################ Initialize data loaders ################################################################
+    ################################ INITIALIZE DATA LOADERS ################################################################
 
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
 
@@ -267,14 +243,14 @@ def main(): # Main function
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
-    ######################### Variables holding train and validation loss values #######################################
+    ######################### TRAIN & VALIDATION LOSS VALUES #######################################
     accuracy = [] # we are going to store the accuracy values 
     train_loss = [] # we are going to store the training loss values 
     val_loss = [] # we are going to store the validation loss values 
     prev_val_loss = math.inf # we are going to store the previous validation loss values
     net.train_flag = False # neural network training flag is initialized to be False by default 
 
-    ######################### Saving data ##############################################################################
+    ########################## SAVING DATA ##############################################################################
     data_points = [] # the data points
     fut_predictions = [] # future prediction values 
     lat_predictions = [] # lateral prediction values
@@ -282,10 +258,10 @@ def main(): # Main function
     maneuver_predictions = [] # maneuver prediction values 
     num_points = 0 # number of points we have analyzed 
 
-    ######################### Output data ##############################################################################
-    output_results = []
+    ######################### OUTPUT DATA ##############################################################################
+    output_results = [] # output trajectories
     
-    print(f'Length of the pred data loader: {len(predDataloader)}')
+    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 12970 
     # 6 movements (maneuvers) with probability distributions: 
     # Actions are either straight or accelerate or deccelerate or right or left or rear 
     # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
@@ -293,10 +269,10 @@ def main(): # Main function
     for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
         print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
          
-        ############ Comment this out if deploying to GPU Cluster #############################################
-        if i == 1: # we are just going to stop at index 100 for testing 
+        ########################## ASSIGN A VALUE WHERE WE WANT TO STOP ###############################################
+        if i == temp_stop: 
             break 
-        #######################################################################################################
+        ###############################################################################################################
         
         st_time = time.time() # start the timer 
         hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
@@ -338,7 +314,6 @@ def main(): # Main function
             fut_predictions.append(fut_pred_point)
             maneuver_m = maneuver_pred[j].detach().to(device).numpy()
             maneuver_predictions.append(maneuver_m)
-
             num_points += 1
             # if num_points%10000 == 0:
             #     print('point: ', num_points)
@@ -346,21 +321,12 @@ def main(): # Main function
             #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
-        outputs = predict_trajectories(x_trajectory,y_trajectory,fut_pred_np,traj_len,batch_size=batch_size) # where the function is called and I feed in maneurver pred and future prediction points 
-    
-
-        # print(f'prped shape: {predicted_maneuvers.shape}')
-        # print(f'ground shape: {ground_truth_maneuvers.shape}')
-        #temp_acc = compute_accuracy(predicted_maneuvers, ground_truth_maneuvers)
-        #accuracy.append(temp_acc)
-        # output_results.append(outputs)
-        
-        break 
-    
-    # Accuracy 
-    print(f'Accuracies: {accuracy}')
+        predicted_traj = predict_trajectories(x_trajectory,y_trajectory,fut_pred_np,traj_len,batch_size=batch_size) # where the function is called and I feed in maneurver pred and future prediction points 
+        output_results.append(predicted_traj)
+        print(f'output results: {output_results}')
+   
  
-
+ 
     # Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
