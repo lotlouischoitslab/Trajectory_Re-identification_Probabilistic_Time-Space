@@ -112,7 +112,7 @@ def line_integral(x1, y1, x2, y2, obj): # Line integral calculator assuming obj 
     
     # Check if the masked values lead to an empty array. Return 0 if true.
     if a.size == 0:
-        return 0.0
+        return 1e-9
     
     denom = 2 * np.sqrt(a)
     denom[denom < 1e-9] = 1e-9  # Ensure no values too close to zero
@@ -131,8 +131,8 @@ def line_integral(x1, y1, x2, y2, obj): # Line integral calculator assuming obj 
     normalized_cost = (cost - mean_cost) / (std_cost + 1e-9)  # added small value to avoid division by zero
 
     return normalized_cost.sum() # sum up the normalized cost 
-
-
+ 
+ 
 
 def create_object(muX, muY, sigX,sigY): # Helper function create an object of normal distribution parameters
     return np.column_stack([muX, muY, (sigX-sigY)**2]) # Stack up the values
@@ -143,7 +143,8 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batc
     highest_integral_value = float('-inf')  # Initialize with a very small number
     best_trajectory = {
         'X':[],
-        'y':[]
+        'y':[],
+        'Cost':[]
     } # Placeholder for the best trajectory's x and y values
 
     for m in range(num_maneuvers): # for each of the 6 maneuvers
@@ -158,8 +159,9 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batc
                 # print(f'highest integral: {highest_integral_value}') # just to check for debugging 
                 best_trajectory['X'] = x_traj # assign the x trajectories
                 best_trajectory['y'] = y_traj # assign the y trajectories 
-                
-    print(f'highest integral: {highest_integral_value}') # just to check for debugging 
+                best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
+
+    #print(f'highest integral: {highest_integral_value}') # just to check for debugging 
     return best_trajectory # return the best trajectory dictionary  
 
 
@@ -328,8 +330,12 @@ def main(): # Main function
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
         predicted_traj = predict_trajectories(x_trajectory,y_trajectory,fut_pred_np,traj_len,batch_size=batch_size) # where the function is called and I feed in maneurver pred and future prediction points 
+        print(f'predicted_traj X: {predicted_traj["X"]}') # debugging
+        print(f'predicted_traj y: {predicted_traj["y"]}') # debugging
+        print(f'Cost: {predicted_traj["Cost"]}') # debugging
+        
         output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
-        print(f'output results: {output_results}')
+        #print(f'output results: {output_results}')
    
  
  
