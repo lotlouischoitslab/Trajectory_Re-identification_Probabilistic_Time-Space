@@ -78,3 +78,6 @@ To save: If you're using vim, you can press ESC, then type :wq and press Enter.
 ## Exit the terminal:
 
          exit 
+
+## Algorithm:
+First, the trajectory points for x and y coordinates are parsed in. The points are then filtered so we do not have any empty arrays in the nested data file. For each of the predDataloader, se have the mean x coordinates, mean y coordinates, and the standard deviation of x and y coordinates. We feed those in with the x and y coordinates of each trajectory into a helper function which will calculate the line integral and return the best trajectory. The best trajectory is determined by returning the maximum line integral value. 
