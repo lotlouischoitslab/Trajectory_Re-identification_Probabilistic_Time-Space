@@ -146,12 +146,15 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batc
         'y':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
-
+ 
+ 
     for m in range(num_maneuvers): # for each of the 6 maneuvers
         objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
         for b in range(batch_size): # for each b in batch size 
-            x_traj = x_trajectory[m][b][0] # extract the x_traj trajectories
-            y_traj = y_trajectory[m][b][0] # extract the y_traj trajectories
+            x_traj = x_trajectory[m][b][0][:] # extract the x_traj trajectories
+            y_traj = y_trajectory[m][b][0][:]   # extract the y_traj trajectories
+            print('x-traj',x_traj)
+            print('y-traj',y_traj)
             total_integral_for_trajectory = sum(line_integral(x_traj[i], y_traj[i], x_traj[i+1], y_traj[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
             
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
@@ -191,19 +194,19 @@ def main(): # Main function
     args['train_flag'] = False
 
     ######################################## TRAJECTORY DIRECTORIES ######################################################################################
-    #trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
-    trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
+    trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
+    #trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
 
     ####################################### MODEL DIRECTORIES ############################################################################################
-    #directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
-    directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
+    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
+    #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
     
     ######################################### PRED SET DIRECTORY #########################################################################################
-    #filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
-    filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
+    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
+    #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
     temp_x_trajectory_directory = 'train_trajectory_x.data'
@@ -217,21 +220,20 @@ def main(): # Main function
     # print("Shape of x data:", get_shape(x_trajectory))
     # print("Shape of y data:", get_shape(y_trajectory))
 
-    x_trajectory,y_trajectory = filter_points(x_trajectory,y_trajectory)
+    #x_trajectory,y_trajectory = filter_points(x_trajectory,y_trajectory)
+ 
 
     # print(f'x-traj: {x_trajectory}')
     # print(f'y-traj: {y_trajectory}')
 
-    # x_trajectory = torch.tensor(x_trajectory,device=device)
-    # y_trajectory = torch.tensor(y_trajectory,device=device)
-    
+
     print("Shape of x data:", get_shape(x_trajectory))
     print("Shape of y data:", get_shape(y_trajectory))    
 
     manuever_len,d2,d3,traj_len = get_shape(x_trajectory)
 
     batch_size = 16 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
-    temp_stop = 1000 # index where we want to stop the simulation
+    temp_stop = 10 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -337,8 +339,6 @@ def main(): # Main function
         output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
         #print(f'output results: {output_results}')
    
- 
- 
     # Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
@@ -357,6 +357,9 @@ def main(): # Main function
 
     with open(directory+saving_directory+"maneuver_predictions.data", "wb") as filehandle:
         pickle.dump(np.array(maneuver_predictions), filehandle, protocol=4)
+    
+    with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
+        pickle.dump(np.array(output_results), filehandle, protocol=4)
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
