@@ -125,7 +125,12 @@ def line_integral(x1, y1, x2, y2, obj): # Line integral calculator assuming obj 
            (erf(np.sqrt(a) + b / denom) - erf(b / denom)) * \
            np.sqrt(x1_x2_sq + y1_y2_sq)
 
-    return cost.sum()  # return the sum of the calculated cost
+    # Normalize the cost using Z-score normalization
+    mean_cost = np.mean(cost) # get the mean of the cost
+    std_cost = np.std(cost) # get the standard deviation of the cost
+    normalized_cost = (cost - mean_cost) / (std_cost + 1e-9)  # added small value to avoid division by zero
+
+    return normalized_cost.sum() # sum up the normalized cost 
 
 
 
@@ -150,9 +155,11 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batc
             
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
                 highest_integral_value = total_integral_for_trajectory # update the highest integral value
+                # print(f'highest integral: {highest_integral_value}') # just to check for debugging 
                 best_trajectory['X'] = x_traj # assign the x trajectories
                 best_trajectory['y'] = y_traj # assign the y trajectories 
-   
+                
+    print(f'highest integral: {highest_integral_value}') # just to check for debugging 
     return best_trajectory # return the best trajectory dictionary  
 
 
@@ -222,7 +229,7 @@ def main(): # Main function
     manuever_len,d2,d3,traj_len = get_shape(x_trajectory)
 
     batch_size = 16 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
-    temp_stop = 1000 # index where we want to stop the simulation
+    temp_stop = 100 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -235,7 +242,6 @@ def main(): # Main function
     #########################################################################################################################
 
     ################################ INITIALIZE DATA LOADERS ################################################################
-
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
 
     # predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
