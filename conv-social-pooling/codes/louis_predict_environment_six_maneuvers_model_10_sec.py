@@ -91,44 +91,96 @@ FOCUS:
 # ################################################################################################################
 
  
-def line_integral (x1, y1, x2, y2, obj): #obj = [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...] # Line integral calculator assuming obj has a shape of (N, 3), where N is the number of maneuvers
-    cost = 0
-    for i in range(len(obj)):
-        a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2*obj[i][2]))
-        b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + \
-            (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) * (1 / (2*obj[i][2]))
-        c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) * (1 / (2*obj[i][2]))
+# def line_integral (x1, y1, x2, y2, obj): #obj = [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...] # Line integral calculator assuming obj has a shape of (N, 3), where N is the number of maneuvers
+#     cost = 0
+#     for i in range(len(obj)):
+#         a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2*obj[i][2]))
+#         b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + \
+#             (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) * (1 / (2*obj[i][2]))
+#         c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) * (1 / (2*obj[i][2]))
   
-        cost = cost + (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) *  \
-            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2*math.sqrt(a))) - math.erf(b / (2*math.sqrt(a)))) * \
-            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
-    return cost
+#         cost = cost + (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) *  \
+#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2*math.sqrt(a))) - math.erf(b / (2*math.sqrt(a)))) * \
+#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+#     return cost
+ 
+def line_integral(x1, y1, x2, y2, obj):
+    # Compute square distances
+    x1_x2_sq = np.square(x1 - x2)
+    y1_y2_sq = np.square(y1 - y2)
+    
+    denom = 2 * obj[:, 2]
+    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
+
+    a = (x1_x2_sq + y1_y2_sq) / denom
+    b = (-2 * x1 + 2 * x2 + 2 * obj[:, 0] - 2 * x2 * obj[:, 0] + 
+         -2 * y1 + 2 * y2 + 2 * obj[:, 1] - 2 * y2 * obj[:, 1]) / denom
+    c = (np.square(x1 - obj[:, 0]) + np.square(y1 - obj[:, 1])) / denom
+
+    # Mask where 'a' is too close to zero
+    mask = np.abs(a) >= 1e-9
+    
+    # Apply the mask
+    a_masked = a[mask]
+    b_masked = b[mask]
+    c_masked = c[mask]
+    obj_masked = obj[mask]
+
+    # Return if empty after masking
+    if a_masked.size == 0:
+        return 1e-9
+
+    denom = 2 * np.sqrt(a_masked)
+    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
+
+    exp_arg = np.clip((b_masked * b_masked) / (4 * a_masked) - c_masked, -20, 20)
+
+    cost = (np.exp(exp_arg) / (2 * np.pi * obj_masked[:, 2])) * \
+           (1 / np.sqrt(a_masked)) * (np.sqrt(np.pi) / 2) * \
+           (erf(np.sqrt(a_masked) + b_masked / denom) - erf(b_masked / denom)) * \
+           np.sqrt(x1_x2_sq + y1_y2_sq)
+
+    # Normalize the cost using Z-score normalization
+    std_cost = np.std(cost) + 1e-9
+    mean_cost = np.mean(cost)
+    normalized_cost = (cost - mean_cost) / std_cost
+
+    return normalized_cost.sum()
+
  
 
-def create_object(muX, muY, sigX,sigY): # Helper function create an object of normal distribution parameters
-    return np.column_stack([muX, muY, (sigX-sigY)**2]) # Stack up the values
+def create_object(muX, muY, sigX, sigY):
+    # Ensure that the tensors do not require gradients before converting to numpy
+    muX_numpy = muX.detach().numpy() if isinstance(muX, torch.Tensor) else muX
+    muY_numpy = muY.detach().numpy() if isinstance(muY, torch.Tensor) else muY
+    sigX_numpy = sigX.detach().numpy() if isinstance(sigX, torch.Tensor) else sigX
+    sigY_numpy = sigY.detach().numpy() if isinstance(sigY, torch.Tensor) else sigY
+
+    return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
 
  
-def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batch_size=16): # function to predict trajectories
+def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length): # function to predict trajectories
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
     highest_integral_value = float('-inf')  # Initialize with a very small number
     best_trajectory = {
+        'Maneuver':0,
         'Optim_Traj':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
  
  
     for m in range(num_maneuvers): # for each of the 6 maneuvers
+        print(f'maneuver: {m+1}') # just for debugging 
         objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
-        for b in range(batch_size): # for each b in batch size 
-            total_integral_for_trajectory = sum(line_integral(x_traj[i], y_traj[i], x_traj[i+1], y_traj[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
-            if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
-                highest_integral_value = total_integral_for_trajectory # update the highest integral value
-                print(f'highest integral: {highest_integral_value}') # just to check for debugging 
-                best_trajectory['Optim_Traj'] = fut_pred[m] # assign the best trajectories
-                best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
+        total_integral_for_trajectory = sum(line_integral(x_trajectory[i], y_trajectory[i], x_trajectory[i+1], y_trajectory[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
+        if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
+            highest_integral_value = total_integral_for_trajectory # update the highest integral value
+            best_trajectory['Maneuver'] = m + 1 # assign the best maneuver 
+            best_trajectory['Optim_Traj'] = fut_pred[m] # assign the best trajectories
+            best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
     print(f'highest integral: {highest_integral_value}') # just to check for debugging 
+    print(f'best_trajectory: {best_trajectory}') # just to check for debugging 
     return best_trajectory # return the best trajectory dictionary  
 
 
@@ -194,14 +246,15 @@ def main(): # Main function
     traj_time = trajectories_data['time']
     x_trajectory = trajectories_data['xloc'] # first plot the x trajectory 
     y_trajectory = trajectories_data['yloc']  # first plot y trajectory  
-    traj_len = x_trajectory.shape[0]
+    traj_length = x_trajectory.shape[0] # length of the trajectory
+    print(f'Trajectory length: {traj_length}')
 
     ###################################################################################
     # print(f'x-trajectory: {x_trajectory}' )
     # print(f'y-trajectory: {y_trajectory}')
 
     plot_trajectory(traj_time,x_trajectory,y_trajectory) # plot the x and y trajectories verses time respectively
-    batch_size = 16 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
+    batch_size = 1 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
     temp_stop = 10 # index where we want to stop the simulation
 
     # Initialize network 
@@ -300,11 +353,7 @@ def main(): # Main function
             #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
-        predicted_traj = predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batch_size=16) # where the function is called and I feed in maneurver pred and future prediction points 
-        print(f'predicted_traj X: {predicted_traj["X"]}') # debugging
-        print(f'predicted_traj y: {predicted_traj["y"]}') # debugging
-        print(f'Cost: {predicted_traj["Cost"]}') # debugging
-        
+        predicted_traj = predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length) # where the function is called and I feed in maneurver pred and future prediction points         
         output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
         #print(f'output results: {output_results}')
    
