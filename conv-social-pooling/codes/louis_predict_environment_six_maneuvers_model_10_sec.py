@@ -163,7 +163,7 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length): # f
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
     highest_integral_value = float('-inf')  # Initialize with a very small number
     best_trajectory = {
-        'Maneuver':0,
+        'Maneuver':[],
         'Optim_Traj':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
