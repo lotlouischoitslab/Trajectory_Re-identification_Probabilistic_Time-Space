@@ -50,119 +50,101 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-############################################# DATA CLEANING AND PARSING #########################################
-
-def load_from_pickle(filename): # Function to load in the data 
-    with open(filename, 'rb') as file: # open the file 
-        data = pickle.load(file) # load the file into the computer
-
-        if isinstance(data, np.ndarray):  # Convert potential numpy arrays to Python lists
-            data = data.tolist()
-
-        for i, item in enumerate(data): # If the items of data are also numpy arrays, convert them to lists
-            if isinstance(item, np.ndarray): # check if they are numpy arrays 
-                data[i] = item.tolist() # convert each item into list 
-
-    return data # return the trajectory data plots 
-
-def get_shape(obj): # Recursive function to calculate the shape of the trajectory data 
-    if isinstance(obj, list): # if it is a list 
-        if len(obj) == 0: # if empty 
-            return 0, # just return 0
-        shapes = [get_shape(sub_obj) for sub_obj in obj] # get the shapes
-        max_shape = max(shapes, key=lambda x: len(x))
-        return (len(obj),) + max_shape
-    elif isinstance(obj, np.ndarray): # if numpy array
-        return obj.shape # just return the shape 
-    else:
-        return () # This is a leaf node
-
-########################## FUNCTIONS TO FILTER OUT EMPTY LISTS #################################################
-def filter_empty(sublist): # Filter the empty elements in our given input data 
-    if isinstance(sublist, list): # Remove empty lists or arrays
-        return [item for item in (filter_empty(item) for item in sublist) if (isinstance(item, list) and len(item) > 0) or (isinstance(item, np.ndarray) and item.size > 0) or item]
-    elif isinstance(sublist, np.ndarray): # If numpy array is not empty, return the array
-        return sublist if sublist.size > 0 else None # make sure we return the sublist if it is greater than 0, otherwise just return None 
-    return sublist # return the sublist 
-
-
-def filter_points(x, y): # Recursive function to call the filter empty function 
-    return filter_empty(x), filter_empty(y) # call the helper functions 
-################################################################################################################
-
-
-
-def line_integral(x1, y1, x2, y2, obj): # Line integral calculator assuming obj has a shape of (N, 3), where N is the number of maneuvers
-    x1_x2_sq = np.power(x1 - x2, 2)
-    y1_y2_sq = np.power(y1 - y2, 2)
+############################################# LINE INTEGRAL CALCULATIONS #########################################
+def line_integral(x1, y1, x2, y2, obj):
+    # Compute square distances
+    x1_x2_sq = np.square(x1 - x2)
+    y1_y2_sq = np.square(y1 - y2)
     
     denom = 2 * obj[:, 2]
-    denom[denom < 1e-9] = 1e-9  # Ensure no values too close to zero
+    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
 
     a = (x1_x2_sq + y1_y2_sq) / denom
     b = (-2 * x1 + 2 * x2 + 2 * obj[:, 0] - 2 * x2 * obj[:, 0] + 
          -2 * y1 + 2 * y2 + 2 * obj[:, 1] - 2 * y2 * obj[:, 1]) / denom
-    c = (np.power(x1 - obj[:, 0], 2) + np.power(y1 - obj[:, 1], 2)) / denom
-    
+    c = (np.square(x1 - obj[:, 0]) + np.square(y1 - obj[:, 1])) / denom
+
     # Mask where 'a' is too close to zero
     mask = np.abs(a) >= 1e-9
-    a = a[mask]
-    b = b[mask]
-    c = c[mask]
     
-    # Check if the masked values lead to an empty array. Return 0 if true.
-    if a.size == 0:
+    # Apply the mask
+    a_masked = a[mask]
+    b_masked = b[mask]
+    c_masked = c[mask]
+    obj_masked = obj[mask]
+
+    # Return if empty after masking
+    if a_masked.size == 0:
         return 1e-9
-    
-    denom = 2 * np.sqrt(a)
-    denom[denom < 1e-9] = 1e-9  # Ensure no values too close to zero
 
-    exp_arg = (b * b) / (4 * a) - c
-    exp_arg = np.clip(exp_arg, -20, 20)  # Avoid too large/small arguments for exponential function
+    denom = 2 * np.sqrt(a_masked)
+    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
 
-    cost = (np.exp(exp_arg) / (2 * np.pi * obj[mask, 2])) * \
-           (1 / np.sqrt(a)) * (np.sqrt(np.pi) / 2) * \
-           (erf(np.sqrt(a) + b / denom) - erf(b / denom)) * \
+    exp_arg = np.clip((b_masked * b_masked) / (4 * a_masked) - c_masked, -20, 20)
+
+    cost = (np.exp(exp_arg) / (2 * np.pi * obj_masked[:, 2])) * \
+           (1 / np.sqrt(a_masked)) * (np.sqrt(np.pi) / 2) * \
+           (erf(np.sqrt(a_masked) + b_masked / denom) - erf(b_masked / denom)) * \
            np.sqrt(x1_x2_sq + y1_y2_sq)
 
     # Normalize the cost using Z-score normalization
-    mean_cost = np.mean(cost) # get the mean of the cost
-    std_cost = np.std(cost) # get the standard deviation of the cost
-    normalized_cost = (cost - mean_cost) / (std_cost + 1e-9)  # added small value to avoid division by zero
+    std_cost = np.std(cost) + 1e-9
+    mean_cost = np.mean(cost)
+    normalized_cost = (cost - mean_cost) / std_cost
 
-    return normalized_cost.sum() # sum up the normalized cost 
- 
- 
+    return normalized_cost.sum()
 
-def create_object(muX, muY, sigX,sigY): # Helper function create an object of normal distribution parameters
-    return np.column_stack([muX, muY, (sigX-sigY)**2]) # Stack up the values
+
+def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
+    # Ensure that the tensors do not require gradients before converting to numpy
+    muX_numpy = muX.detach().numpy() if isinstance(muX, torch.Tensor) else muX
+    muY_numpy = muY.detach().numpy() if isinstance(muY, torch.Tensor) else muY
+    sigX_numpy = sigX.detach().numpy() if isinstance(sigX, torch.Tensor) else sigX
+    sigY_numpy = sigY.detach().numpy() if isinstance(sigY, torch.Tensor) else sigY
+
+    return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
 
  
-def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length, batch_size=16): # function to predict trajectories
+def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length): # function to predict trajectories
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
     highest_integral_value = float('-inf')  # Initialize with a very small number
     best_trajectory = {
-        'X':[],
-        'y':[],
+        'Maneuver':[],
+        'Optim_Traj':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
-
+ 
+ 
     for m in range(num_maneuvers): # for each of the 6 maneuvers
+        print(f'maneuver: {m+1}') # just for debugging 
         objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
-        for b in range(batch_size): # for each b in batch size 
-            x_traj = x_trajectory[m][b][0] # extract the x_traj trajectories
-            y_traj = y_trajectory[m][b][0] # extract the y_traj trajectories
-            total_integral_for_trajectory = sum(line_integral(x_traj[i], y_traj[i], x_traj[i+1], y_traj[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
-            
-            if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
-                highest_integral_value = total_integral_for_trajectory # update the highest integral value
-                # print(f'highest integral: {highest_integral_value}') # just to check for debugging 
-                best_trajectory['X'] = x_traj # assign the x trajectories
-                best_trajectory['y'] = y_traj # assign the y trajectories 
-                best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
+        total_integral_for_trajectory = sum(line_integral(x_trajectory[i], y_trajectory[i], x_trajectory[i+1], y_trajectory[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
+        if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
+            highest_integral_value = total_integral_for_trajectory # update the highest integral value
+            best_trajectory['Maneuver'] = m + 1 # assign the best maneuver 
+            best_trajectory['Optim_Traj'] = fut_pred[m] # assign the best trajectories
+            best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
-    #print(f'highest integral: {highest_integral_value}') # just to check for debugging 
+    print(f'highest integral: {highest_integral_value}') # just to check for debugging 
+    print(f'best_trajectory: {best_trajectory}') # just to check for debugging 
     return best_trajectory # return the best trajectory dictionary  
+
+
+def plot_trajectory(time,x_trajectory,y_trajectory):
+    x = x_trajectory 
+    y = y_trajectory
+ 
+    plt.figure(figsize=(10,12))
+    plt.xlabel('Time')
+    plt.ylabel('X trajectory')
+    plt.plot(time,x,marker='x',linestyle='dashed') 
+    plt.savefig('plot_x.png')
+
+    plt.figure(figsize=(10,12))
+    plt.xlabel('Time')
+    plt.ylabel('y trajectory')
+    plt.plot(time,y,marker='x',linestyle='dashed',) 
+    plt.savefig('plot_y.png')
 
 
 def main(): # Main function 
@@ -206,32 +188,20 @@ def main(): # Main function
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    temp_x_trajectory_directory = 'train_trajectory_x.data'
-    temp_y_trajectory_directory = 'train_trajectory_y.data'
+    trajectories_data = pd.read_csv('raw_trajectory.csv') 
+    traj_time = trajectories_data['time']
+    x_trajectory = trajectories_data['xloc'] # first plot the x trajectory 
+    y_trajectory = trajectories_data['yloc']  # first plot y trajectory  
+    traj_length = x_trajectory.shape[0] # length of the trajectory
+    print(f'Trajectory length: {traj_length}')
 
-    x_trajectory_directory = trajectories_directory + temp_x_trajectory_directory
-    y_trajectory_directory = trajectories_directory + temp_y_trajectory_directory
+    ###################################################################################
+    # print(f'x-trajectory: {x_trajectory}' )
+    # print(f'y-trajectory: {y_trajectory}')
 
-    x_trajectory = load_from_pickle(x_trajectory_directory)
-    y_trajectory = load_from_pickle(y_trajectory_directory)
-    # print("Shape of x data:", get_shape(x_trajectory))
-    # print("Shape of y data:", get_shape(y_trajectory))
-
-    x_trajectory,y_trajectory = filter_points(x_trajectory,y_trajectory)
-
-    # print(f'x-traj: {x_trajectory}')
-    # print(f'y-traj: {y_trajectory}')
-
-    # x_trajectory = torch.tensor(x_trajectory,device=device)
-    # y_trajectory = torch.tensor(y_trajectory,device=device)
-    
-    print("Shape of x data:", get_shape(x_trajectory))
-    print("Shape of y data:", get_shape(y_trajectory))    
-
-    manuever_len,d2,d3,traj_len = get_shape(x_trajectory)
-
-    batch_size = 16 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
-    temp_stop = 1000 # index where we want to stop the simulation
+    #plot_trajectory(traj_time,x_trajectory,y_trajectory) # plot the x and y trajectories verses time respectively
+    batch_size = 1 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
+    temp_stop = 100 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -251,7 +221,7 @@ def main(): # Main function
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
-    ######################### TRAIN & VALIDATION LOSS VALUES #######################################
+    ######################### TRAIN & VALIDATION LOSS VALUES ############################################################
     accuracy = [] # we are going to store the accuracy values 
     train_loss = [] # we are going to store the training loss values 
     val_loss = [] # we are going to store the validation loss values 
@@ -329,16 +299,10 @@ def main(): # Main function
             #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
             #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
 
-        predicted_traj = predict_trajectories(x_trajectory,y_trajectory,fut_pred_np,traj_len,batch_size=batch_size) # where the function is called and I feed in maneurver pred and future prediction points 
-        print(f'predicted_traj X: {predicted_traj["X"]}') # debugging
-        print(f'predicted_traj y: {predicted_traj["y"]}') # debugging
-        print(f'Cost: {predicted_traj["Cost"]}') # debugging
-        
+        predicted_traj = predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length) # where the function is called and I feed in maneurver pred and future prediction points         
         output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
         #print(f'output results: {output_results}')
    
- 
- 
     # Test Error
     mse = lossVals / counts # mean squared error
     rmse = np.sqrt(mse) # root mean sqaured error 
@@ -357,6 +321,9 @@ def main(): # Main function
 
     with open(directory+saving_directory+"maneuver_predictions.data", "wb") as filehandle:
         pickle.dump(np.array(maneuver_predictions), filehandle, protocol=4)
+    
+    with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
+        pickle.dump(np.array(output_results), filehandle, protocol=4)
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
