@@ -201,7 +201,7 @@ def main(): # Main function
 
     #plot_trajectory(traj_time,x_trajectory,y_trajectory) # plot the x and y trajectories verses time respectively
     batch_size = 1 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
-    temp_stop = 100 # index where we want to stop the simulation
+    temp_stop = 10 # index where we want to stop the simulation  
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
