@@ -50,7 +50,9 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-############################################# LINE INTEGRAL CALCULATIONS #########################################
+############################################# USE THIS FOR THE HAL CLUSTER ################################################
+
+############################################# LINE INTEGRAL CALCULATIONS ##################################################
 def line_integral(x1, y1, x2, y2, obj):
     # Compute square distances
     x1_x2_sq = np.square(x1 - x2)
@@ -217,6 +219,7 @@ def main(): # Main function
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
 
     # predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
+    
     predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=0,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
@@ -239,7 +242,7 @@ def main(): # Main function
     ######################### OUTPUT DATA ##############################################################################
     output_results = [] # output trajectories
     
-    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 12970 
+    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 
     # 6 movements (maneuvers) with probability distributions: 
     # Actions are either straight or accelerate or deccelerate or right or left or rear 
     # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl

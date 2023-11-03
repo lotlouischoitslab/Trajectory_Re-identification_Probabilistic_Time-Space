@@ -27,6 +27,14 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 ''' 
+Once I have the correct data,
+I need to look at the locations before the overpass (extract 5 seconds before overpass) (Input)
+Then 10 seconds after the overpass (This will be the integral)
+
+Plot which cutted trajectory (5 seconds before overpass) and 10 seconds after overpass (time,x) and (time,y)
+xloc and yloc
+
+
 Format of the output:
 - 6 movements, each movement has probability distribution
 - Straight, Accel, straight, decel, right, decel, left, decl 
