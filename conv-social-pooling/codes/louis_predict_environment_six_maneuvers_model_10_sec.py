@@ -121,8 +121,6 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length): # f
         'Optim_Traj':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
-    
-    print(f'test if fut pred passed: {fut_pred.shape}')
  
     for m in range(num_maneuvers): # for each of the 6 maneuvers
         # print(f'maneuver: {m+1}') # just for debugging 
@@ -189,16 +187,15 @@ def main(): # Main function
     y_trajectory = df['yloc']  # first plot y trajectory  
     traj_length = x_trajectory.shape[0] # length of the trajectory
     
-    unique_lanes = df['lane'].unique() # get the lanes that needs to be analyzed 
-    print(f'Unique lanes: {unique_lanes}')
+    lanes_to_analyze = df['lane'].unique() # get the lanes that needs to be analyzed 
+    #lanes_to_analyze = [2, 3, 4, 5]
+    print(f'Unique lanes: {lanes_to_analyze}')
 
-    lanes_to_analyze = unique_lanes[0] # just go for the random lane this one is lane 4
-    lanes_to_analyze = [2, 3, 4, 5]
+    
     output_results = [] # output trajectories
     output_results = {key:[] for key in lanes_to_analyze}
 
-    ###################################################################################
-    batch_size = 1 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
+    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024]
     temp_stop = 10 # index where we want to stop the simulation
 
     # Initialize network 
@@ -213,9 +210,7 @@ def main(): # Main function
 
     ################################ INITIALIZE DATA LOADERS ################################################################
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
-
-    # predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
-    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=0,collate_fn=predSet.collate_fn)
+    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=3,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
@@ -257,10 +252,6 @@ def main(): # Main function
 
         for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
             print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
-            
-            ########################## ASSIGN A VALUE WHERE WE WANT TO STOP ###############################################
-            if i == temp_stop: 
-                break 
             ###############################################################################################################
             st_time = time.time() # start the timer 
             hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   

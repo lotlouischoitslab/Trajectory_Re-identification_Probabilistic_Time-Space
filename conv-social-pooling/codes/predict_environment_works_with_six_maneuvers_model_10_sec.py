@@ -27,6 +27,14 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 ''' 
+Once I have the correct data,
+I need to look at the locations before the overpass (extract 5 seconds before overpass) (Input)
+Then 10 seconds after the overpass (This will be the integral)
+
+Plot which cutted trajectory (5 seconds before overpass) and 10 seconds after overpass (time,x) and (time,y)
+xloc and yloc
+
+
 Format of the output:
 - 6 movements, each movement has probability distribution
 - Straight, Accel, straight, decel, right, decel, left, decl 
@@ -50,9 +58,7 @@ FOCUS:
 - Rest is one for loop 
 '''
 
-############################################# USE THIS FOR THE HAL CLUSTER ################################################
-
-############################################# LINE INTEGRAL CALCULATIONS ##################################################
+############################################# LINE INTEGRAL CALCULATIONS #########################################
 def line_integral(x1, y1, x2, y2, obj):
     # Compute square distances
     x1_x2_sq = np.square(x1 - x2)
@@ -116,37 +122,21 @@ def predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length): # f
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
  
- 
     for m in range(num_maneuvers): # for each of the 6 maneuvers
-        print(f'maneuver: {m+1}') # just for debugging 
+        # print(f'maneuver: {m+1}') # just for debugging 
         objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
+
         total_integral_for_trajectory = sum(line_integral(x_trajectory[i], y_trajectory[i], x_trajectory[i+1], y_trajectory[i+1], objects_for_integral) for i in range(traj_length-1)) # sum up the line integrals
+        
         if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
             highest_integral_value = total_integral_for_trajectory # update the highest integral value
             best_trajectory['Maneuver'] = m + 1 # assign the best maneuver 
             best_trajectory['Optim_Traj'] = fut_pred[m] # assign the best trajectories
             best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
-    print(f'highest integral: {highest_integral_value}') # just to check for debugging 
-    print(f'best_trajectory: {best_trajectory}') # just to check for debugging 
+    # print(f'highest integral: {highest_integral_value}') # just to check for debugging 
+    # print(f'best_trajectory: {best_trajectory}') # just to check for debugging 
     return best_trajectory # return the best trajectory dictionary  
-
-
-def plot_trajectory(time,x_trajectory,y_trajectory):
-    x = x_trajectory 
-    y = y_trajectory
- 
-    plt.figure(figsize=(10,12))
-    plt.xlabel('Time')
-    plt.ylabel('X trajectory')
-    plt.plot(time,x,marker='x',linestyle='dashed') 
-    plt.savefig('plot_x.png')
-
-    plt.figure(figsize=(10,12))
-    plt.xlabel('Time')
-    plt.ylabel('y trajectory')
-    plt.plot(time,y,marker='x',linestyle='dashed',) 
-    plt.savefig('plot_y.png')
 
 
 def main(): # Main function 
@@ -190,20 +180,23 @@ def main(): # Main function
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    trajectories_data = pd.read_csv('raw_trajectory.csv') 
-    traj_time = trajectories_data['time']
-    x_trajectory = trajectories_data['xloc'] # first plot the x trajectory 
-    y_trajectory = trajectories_data['yloc']  # first plot y trajectory  
+    df = pd.read_csv('raw_trajectory.csv') # read in the data 
+    print(df.keys()) # print the keys just in case 
+    traj_time = df['time'] # time frame 
+    x_trajectory = df['xloc'] # first plot the x trajectory 
+    y_trajectory = df['yloc']  # first plot y trajectory  
     traj_length = x_trajectory.shape[0] # length of the trajectory
-    print(f'Trajectory length: {traj_length}')
+    
+    lanes_to_analyze = df['lane'].unique() # get the lanes that needs to be analyzed 
+    #lanes_to_analyze = [2, 3, 4, 5]
+    print(f'Unique lanes: {lanes_to_analyze}')
 
-    ###################################################################################
-    # print(f'x-trajectory: {x_trajectory}' )
-    # print(f'y-trajectory: {y_trajectory}')
+    
+    output_results = [] # output trajectories
+    output_results = {key:[] for key in lanes_to_analyze}
 
-    #plot_trajectory(traj_time,x_trajectory,y_trajectory) # plot the x and y trajectories verses time respectively
-    batch_size = 1 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256]
-    temp_stop = 10 # index where we want to stop the simulation  
+    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024]
+    temp_stop = 10 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -217,10 +210,7 @@ def main(): # Main function
 
     ################################ INITIALIZE DATA LOADERS ################################################################
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
-
-    # predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=predSet.collate_fn)
-    
-    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=0,collate_fn=predSet.collate_fn)
+    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=3,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
@@ -240,90 +230,70 @@ def main(): # Main function
     num_points = 0 # number of points we have analyzed 
 
     ######################### OUTPUT DATA ##############################################################################
-    output_results = [] # output trajectories
+    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
+
+    for lanes_to_analyze in lanes_to_analyze:
+        print(f'Lane: {lanes_to_analyze}')
+        focus_area = df[(df['xloc'] >= 1700) & (df['xloc'] <= 1900)]  # Adjust range as needed accprding to Yanlin 
+        lane_data = focus_area[focus_area['lane'] == lanes_to_analyze]  # Adjust for the specific lane I am analyzing
+        print(f'Length of lane data" {len(lane_data)}')
+
+        x_trajectory = lane_data['xloc'].values 
+        y_trajectory = lane_data['yloc'].values
+        traj_length = len(x_trajectory) # length of the trajectory
+
+        print(f'x len: {len(x_trajectory)}')
+        print(f'y len: {len(y_trajectory)}')
+        print(f'Trajectory length: {traj_length}')
+
+        # 6 movements (maneuvers) with probability distributions: 
+        # Actions are either straight or accelerate or deccelerate or right or left or rear 
+        # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
+
+        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
+            print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+            ###############################################################################################################
+            st_time = time.time() # start the timer 
+            hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
     
-    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 
-    # 6 movements (maneuvers) with probability distributions: 
-    # Actions are either straight or accelerate or deccelerate or right or left or rear 
-    # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
+            if args['use_cuda']:
+                hist = hist.cuda()
+                nbrs = nbrs.cuda()
+                mask = mask.cuda()
+                lat_enc = lat_enc.cuda()
+                lon_enc = lon_enc.cuda()
+                fut = fut.cuda()
+                op_mask = op_mask.cuda()
+                maneuver_enc = maneuver_enc.cuda()
 
-    for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-        print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
-         
-        ########################## ASSIGN A VALUE WHERE WE WANT TO STOP ###############################################
-        if i == temp_stop: 
-            break 
-        ###############################################################################################################
-        
-        st_time = time.time() # start the timer 
-        hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
-  
-        if args['use_cuda']:
-            hist = hist.cuda()
-            nbrs = nbrs.cuda()
-            mask = mask.cuda()
-            lat_enc = lat_enc.cuda()
-            lon_enc = lon_enc.cuda()
-            fut = fut.cuda()
-            op_mask = op_mask.cuda()
-            maneuver_enc = maneuver_enc.cuda()
+            fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+            fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
 
-        fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
-        # print(f'fut_pred: {fut_pred}') 
-        # print(f'maneuver_pred: {maneuver_pred}') 
-        
-        fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
-        for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
-            indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
-            fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
-        l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-        lossVals += l.detach() # increment the loss value 
-        counts += c.detach() # increment the count value 
+            for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
+                indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
+                fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
-        points_np = points.numpy() # convert to numpy arrays 
-        fut_pred_np = [] # store the future pred points 
-        for k in range(6): #manuevers mean the 
-            fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
-            fut_pred_np.append(fut_pred_np_point)
-        fut_pred_np = np.array(fut_pred_np)
-        print(f'trained and tested fut pred point: {fut_pred_np.shape}')
+            l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+            lossVals += l.detach() # increment the loss value 
+            counts += c.detach() # increment the count value 
 
-        for j in range(points_np.shape[0]):
-            point = points_np[j]
-            data_points.append(point)
-            fut_pred_point = fut_pred_np[:,:,j,:]
-            fut_predictions.append(fut_pred_point)
-            maneuver_m = maneuver_pred[j].detach().to(device).numpy()
-            maneuver_predictions.append(maneuver_m)
-            num_points += 1
-            # if num_points%10000 == 0:
-            #     print('point: ', num_points)
-            #     print('point.shape should be (49,): ', point.shape)
-            #     print('fut_pred_point.shape should be (6,t_f//d_s,5): ', fut_pred_point.shape)
-            #     print('maneuver_m.shape should be (6,):', maneuver_m.shape)
+            points_np = points.numpy() # convert to numpy arrays 
+            fut_pred_np = [] # store the future pred points 
 
-        predicted_traj = predict_trajectories(x_trajectory, y_trajectory, fut_pred, traj_length) # where the function is called and I feed in maneurver pred and future prediction points         
-        output_results.append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
-        #print(f'output results: {output_results}')
-   
-    # Test Error
-    mse = lossVals / counts # mean squared error
-    rmse = np.sqrt(mse) # root mean sqaured error 
+            for k in range(6): #manuevers mean the 
+                fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
+                fut_pred_np.append(fut_pred_np_point)
+            fut_pred_np = np.array(fut_pred_np)
+
+            # print(f'trained and tested fut pred point: {fut_pred_np.shape}')
+            # print(f'length of fut pred: {fut_pred_np.shape}')
+
+            predicted_traj = predict_trajectories(x_trajectory, y_trajectory, fut_pred_np, traj_length) # where the function is called and I feed in maneurver pred and future prediction points         
+            output_results[lanes_to_analyze].append(predicted_traj) # output result is a list of predicted trajectory dictionaries 
+            
     
-    # print(f'MSE: {mse}')
-    # print(f'RMSE: {rmse}')   # Calculate RMSE, feet
-    # print(f'Number of data points: {num_points}')
-    # print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
-    # print(f'Output results: {output_results}')
-
-    with open(directory+saving_directory+"data_points.data", "wb") as filehandle:
-        pickle.dump(np.array(data_points), filehandle, protocol=4)
-
-    with open(directory+saving_directory+"fut_predictions.data", "wb") as filehandle:
-        pickle.dump(np.array(fut_predictions), filehandle, protocol=4)
-
-    with open(directory+saving_directory+"maneuver_predictions.data", "wb") as filehandle:
-        pickle.dump(np.array(maneuver_predictions), filehandle, protocol=4)
+    print(f'output results: {output_results}')
+ 
     
     with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
         pickle.dump(np.array(output_results), filehandle, protocol=4)
