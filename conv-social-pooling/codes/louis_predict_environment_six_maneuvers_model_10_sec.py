@@ -235,8 +235,10 @@ def main(): # Main function
     num_points = 0 # number of points we have analyzed 
 
     ######################### OUTPUT DATA ##############################################################################
-    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 12970 
+    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
+
     for lanes_to_analyze in lanes_to_analyze:
+        print(f'Lane: {lanes_to_analyze}')
         focus_area = df[(df['xloc'] >= 1700) & (df['xloc'] <= 1900)]  # Adjust range as needed accprding to Yanlin 
         lane_data = focus_area[focus_area['lane'] == lanes_to_analyze]  # Adjust for the specific lane I am analyzing
         print(f'Length of lane data" {len(lane_data)}')
@@ -248,6 +250,7 @@ def main(): # Main function
         print(f'x len: {len(x_trajectory)}')
         print(f'y len: {len(y_trajectory)}')
         print(f'Trajectory length: {traj_length}')
+
         # 6 movements (maneuvers) with probability distributions: 
         # Actions are either straight or accelerate or deccelerate or right or left or rear 
         # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
@@ -299,16 +302,7 @@ def main(): # Main function
             
     
     print(f'output results: {output_results}')
-    # Test Error
-    mse = lossVals / counts # mean squared error
-    rmse = np.sqrt(mse) # root mean sqaured error 
-    
-    # print(f'MSE: {mse}')
-    # print(f'RMSE: {rmse}')   # Calculate RMSE, feet
-    # print(f'Number of data points: {num_points}')
-    # print(f'Output results shape: {len(output_results)} | {len(output_results[0])}')
-    # print(f'Output results: {output_results}')
-
+ 
     
     with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
         pickle.dump(np.array(output_results), filehandle, protocol=4)
