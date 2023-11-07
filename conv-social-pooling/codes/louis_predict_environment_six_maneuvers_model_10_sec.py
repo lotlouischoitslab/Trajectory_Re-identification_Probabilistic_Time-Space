@@ -37,9 +37,11 @@ xloc and yloc
 
 Format of the output:
 - 6 movements, each movement has probability distribution
-- Straight, Accel, straight, decel, right, decel, left, decl 
+- Actions are Straight, Accel, straight, decel, right, decel, left, decl 
+- This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
 - Every point one second during that 10 second horizon, we are getting normal distribution 2d where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
  
+        
 Guidelines to understand the prediction function: 
 - There are 6 different maneuvers the car can pick 
 - Each maneuver has 50 points
@@ -101,6 +103,7 @@ def line_integral(x1, y1, x2, y2, obj):
     normalized_cost = (cost - mean_cost) / std_cost
     return normalized_cost.sum()
 
+
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
     # Ensure that the tensors do not require gradients before converting to numpy
     muX_numpy = muX.detach().numpy() if isinstance(muX, torch.Tensor) else muX
@@ -110,75 +113,102 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
 
  
-def predict_trajectories(input_data,predict_data, fut_pred): # function to predict trajectories
-    input_x = input_data['xloc'].values
-    input_y = input_data['yloc'].values
-    input_time = input_data['time'].values
-
-    predict_x = predict_data['xloc'].values
-    predict_y = predict_data['yloc'].values
-    predict_time = predict_data['time'].values
-
+def predict_trajectories(input_data, overpass,lane,fut_pred): # function to predict trajectories
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
-    highest_integral_value = float('-inf')  # Initialize with a very small number
+    input_data = input_data[input_data['lane']==lane].reset_index(drop=True)
+    IDs = [] # get all the IDs
+    init_ID = -1
+
+    # print('input data',input_data,input_data.keys())
+
+    # get all vehicle IDs
+    for i in range(len(input_data)):
+        if input_data['ID'][i] != init_ID:
+            IDs.append(input_data['ID'][i])
+            init_ID = input_data['ID'][i]
+
+    input_data = input_data[(input_data['xloc'] >= overpass-100) & (input_data['xloc'] <= overpass+100)] # the overpass section that needs to be analyzed 
+    
+    input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Adjust for the specific lane I am analyzing
+    
+    min_time = input_data['time'].min()
+    max_time = input_data['time'].max()
+
+    print(f'min max: {min_time} | {max_time}')
+
+
     best_trajectory = {
-        'Maneuver':[],
-        'lane':input_data['lane'],
+        'lane':lane,
         'time':[],
         'xloc':[],
         'yloc':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
 
-    x_temp_trajectory = list(input_x) + list(predict_x)
-    y_temp_trajectory = list(input_y) + list(predict_y)
- 
-    for m in range(num_maneuvers): # for each of the 6 maneuvers
-        objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
-        for i in range(len(x_temp_trajectory)-1):
-            x1 = x_temp_trajectory[i] 
-            y1 = y_temp_trajectory[i] 
-            x2 = x_temp_trajectory[i+1]
-            y2 = y_temp_trajectory[i+1]
+    highest_integral_value = float('-inf')  # Initialize with a very small number
+    
+    for j in IDs:
+        temp_data = input_data[input_data['ID']==j] 
+        #print('temp data',temp_data.keys())
+         
+        for m in range(num_maneuvers): # for each of the 6 maneuvers
+            objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
+            x_temp_trajectory = temp_data['xloc'].values
+            y_temp_trajectory = temp_data['yloc'].values
+            total_integral_for_trajectory = 0 
 
-            total_integral_for_trajectory = line_integral(x1,y1,x2,y2,objects_for_integral)
+
+            for i in range(len(x_temp_trajectory)-1):
+                x1 = x_temp_trajectory[i] 
+                y1 = y_temp_trajectory[i] 
+                x2 = x_temp_trajectory[i+1]
+                y2 = y_temp_trajectory[i+1]
+
+                total_integral_for_trajectory += line_integral(x1,y1,x2,y2,objects_for_integral)
+                
             
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
                 highest_integral_value = total_integral_for_trajectory # update the highest integral value
-                best_trajectory['Maneuver'] = m + 1 # assign the best maneuver 
-                best_trajectory['time'].append(time)
-                best_trajectory['xloc'].append(x2) # assign the best trajectories for x
-                best_trajectory['yloc'].append(y2) # assign the best trajectories for y
+                length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
+              
+                min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly 
+                
+                best_trajectory['time'] = min_max_series # the time series plot we need to assign 
+                best_trajectory['xloc'] = x_temp_trajectory# assign the best trajectories for x
+                best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
                 best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
     print(best_trajectory['Cost'])
+    print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
     return best_trajectory # return the best trajectory dictionary  
 
 
-def plot_trajectory(lanes_to_analyze, smoothed_file, modified_data):
-    for lane in lanes_to_analyze:
-        lane_data = smoothed_file[smoothed_file['lane'] == lane].reset_index(drop=True)
-        IDs = lane_data['ID'].unique().tolist()  # More efficient way to get unique IDs
-        fig, ax = plt.subplots()
+def plot_trajectory(lane, smoothed_file, modified_data):
+    lane_data = smoothed_file[smoothed_file['lane'] == lane].reset_index(drop=True)
+    IDs = lane_data['ID'].unique().tolist()  # More efficient way to get unique IDs
+    fig, ax = plt.subplots()
 
-        for j in IDs:
-            temp_data = lane_data[lane_data['ID'] == j]
-            ts = temp_data['time'].to_numpy()
-            ys = temp_data['xloc'].to_numpy()
+    for j in IDs:
+        temp_data = lane_data[lane_data['ID'] == j]
+        ts = temp_data['time'].to_numpy()
+        ys = temp_data['xloc'].to_numpy()
+
+
+        # Plot original trajectory
+        ax.scatter(ts, ys, color='blue', s=10, marker='o', alpha=0.7, label='Original' if j == IDs[0] else "")
+
+        # Plot modified trajectory
+        for modified_data in modified_data:
             mod_ts = np.array(modified_data['time'] )
             mod_ys = np.array(modified_data['xloc'])
-
-            # Plot original trajectory
-            ax.scatter(ts, ys, color='blue', s=10, marker='o', alpha=0.7, label='Original' if j == IDs[0] else "")
-            # Plot modified trajectory
             ax.scatter(mod_ts, mod_ys, color='red', s=10, marker='x', alpha=0.7, label='Predicted' if j == IDs[0] else "")
 
-        ax.set_xlabel('Time (s)', fontsize=20)
-        ax.set_ylabel('Location (m)', fontsize=20)
-        ax.legend()
-        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-        fig.set_size_inches(80, 30)
-        fig.savefig(f'Louis_Lane_{lane}-x.png', dpi=300)  # Adjust the DPI for better resolution
+    ax.set_xlabel('Time (s)', fontsize=20)
+    ax.set_ylabel('Location (m)', fontsize=20)
+    ax.legend()
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    fig.set_size_inches(80, 30)
+    fig.savefig(f'Louis_Lane_{lane}-x.png', dpi=300)  # Adjust the DPI for better resolution
 
  
 def main(): # Main function 
@@ -225,17 +255,9 @@ def main(): # Main function
     df = pd.read_csv('raw_trajectory.csv') # read in the data 
     original_data = df.copy() # copy
     print(df.keys()) # print the keys just in case 
-    traj_time = df['time'] # time frame 
-    x_trajectory = df['xloc'] # first plot the x trajectory 
-    y_trajectory = df['yloc']  # first plot y trajectory  
-    
-    traj_length = x_trajectory.shape[0] # length of the trajectory
-    
-    # lanes_to_analyze = df['lane'].unique() # get the lanes that needs to be analyzed 
-    # print(f'Unique lanes: {lanes_to_analyze}')
 
     lanes_to_analyze = [2,3,4,5]
-    print(f'Unique lanes: {lanes_to_analyze}') 
+    # print(f'Unique lanes: {lanes_to_analyze}') 
     
     output_results = [] # output trajectories
     output_results = {key:[] for key in lanes_to_analyze}
@@ -276,69 +298,56 @@ def main(): # Main function
 
     ######################### OUTPUT DATA ##############################################################################
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
-    
-    lanes_to_analyze = [3] # for each lane
-    overpass_locations = [1800] # the overpass area has to be hardcoded manually look at the plots Yanlin sent you
 
+    lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
+        3:[1800,2500]
+    }
 
-    for lane,overpass in zip(lanes_to_analyze,overpass_locations):
+    for lane in lanes_with_overpass:
         print(f'Lane: {lane}')
-        input_data = original_data[(original_data['xloc'] <= overpass-100)] # extract 5 seconds before overpass
-        lane_data = input_data[input_data['lane'] == lane]  # Adjust for the specific lane I am analyzing
-
-        predict_input_data = original_data[(original_data['xloc'] >= overpass+100)] # extract 5 seconds before overpass
-        predict_lane_data = predict_input_data[predict_input_data['lane'] == lane]  # Adjust for the specific lane I am analyzing 
-
-        print(f'lane data: {lane_data}')
-        print(f'Length of lane data" {len(lane_data)}')
-
-        traj_length = len(lane_data) # length of the trajectory
-
-        print(f'Trajectory length: {traj_length}')
-
-        # 6 movements (maneuvers) with probability distributions: 
-        # Actions are either straight or accelerate or deccelerate or right or left or rear 
-        # This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
-
-        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-            print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
-            if i == temp_stop:
-                break
-            ###############################################################################################################
-            st_time = time.time() # start the timer 
-            hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
-    
-            if args['use_cuda']:
-                hist = hist.cuda()
-                nbrs = nbrs.cuda()
-                mask = mask.cuda()
-                lat_enc = lat_enc.cuda()
-                lon_enc = lon_enc.cuda()
-                fut = fut.cuda()
-                op_mask = op_mask.cuda()
-                maneuver_enc = maneuver_enc.cuda()
-
-            fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
-            fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
-
-            for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
-                indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
-                fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
-
-            l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-            lossVals += l.detach() # increment the loss value 
-            counts += c.detach() # increment the count value 
-            points_np = points.numpy() # convert to numpy arrays 
-            fut_pred_np = [] # store the future pred points 
-
-            for k in range(6): #manuevers mean the 
-                fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
-                fut_pred_np.append(fut_pred_np_point)
-
-            fut_pred_np = np.array(fut_pred_np)
-            predicted_traj = predict_trajectories(input_data,predict_lane_data, fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points         
+        predicted_traj = [] 
+        for overpass in lanes_with_overpass[lane]:
+            for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
+                print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+                if i == temp_stop:
+                    break
+                ###############################################################################################################
+                st_time = time.time() # start the timer 
+                hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
         
-        plot_trajectory(lanes_to_analyze, df, predicted_traj)
+                if args['use_cuda']:
+                    hist = hist.cuda()
+                    nbrs = nbrs.cuda()
+                    mask = mask.cuda()
+                    lat_enc = lat_enc.cuda()
+                    lon_enc = lon_enc.cuda()
+                    fut = fut.cuda()
+                    op_mask = op_mask.cuda()
+                    maneuver_enc = maneuver_enc.cuda()
+
+                fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+                fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
+
+                for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
+                    indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
+                    fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
+
+                l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+                lossVals += l.detach() # increment the loss value 
+                counts += c.detach() # increment the count value 
+                points_np = points.numpy() # convert to numpy arrays 
+                fut_pred_np = [] # store the future pred points 
+
+                for k in range(6): #manuevers mean the 
+                    fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
+                    fut_pred_np.append(fut_pred_np_point)
+
+                fut_pred_np = np.array(fut_pred_np)
+                predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points         
+                predicted_traj.append(predicted_traj_temp)
+        
+        
+        plot_trajectory(lane, df, predicted_traj)
  
     
     # with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
