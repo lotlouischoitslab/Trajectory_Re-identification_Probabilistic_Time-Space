@@ -196,11 +196,11 @@ def plot_trajectory(lane, smoothed_file, modified_data):
 
         # Plot original trajectory
         ax.scatter(ts, ys, color='blue', s=10, marker='o', alpha=0.7, label='Original' if j == IDs[0] else "")
-
+ 
         # Plot modified trajectory
-        for modified_data in modified_data:
-            mod_ts = np.array(modified_data['time'] )
-            mod_ys = np.array(modified_data['xloc'])
+        for md in modified_data:
+            mod_ts = np.array(md['time'] )
+            mod_ys = np.array(md['xloc'])
             ax.scatter(mod_ts, mod_ys, color='red', s=10, marker='x', alpha=0.7, label='Predicted' if j == IDs[0] else "")
 
     ax.set_xlabel('Time (s)', fontsize=20)
@@ -300,7 +300,7 @@ def main(): # Main function
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
 
     lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
-        3:[1800,2500]
+        3:[1800,2300] 
     }
 
     for lane in lanes_with_overpass:
@@ -342,12 +342,12 @@ def main(): # Main function
                     fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
                     fut_pred_np.append(fut_pred_np_point)
 
-                fut_pred_np = np.array(fut_pred_np)
+                fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
                 predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points         
-                predicted_traj.append(predicted_traj_temp)
+                predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
         
         
-        plot_trajectory(lane, df, predicted_traj)
+        plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
  
     
     # with open(directory+saving_directory+"output_results.data", "wb") as filehandle:
