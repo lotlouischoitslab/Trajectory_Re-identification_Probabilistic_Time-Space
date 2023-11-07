@@ -127,7 +127,8 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
             IDs.append(input_data['ID'][i])
             init_ID = input_data['ID'][i]
 
-    input_data = input_data[(input_data['xloc'] >= overpass-100) & (input_data['xloc'] <= overpass+100)] # the overpass section that needs to be analyzed 
+    delta = 50 
+    input_data = input_data[(input_data['xloc'] >= overpass-delta) & (input_data['xloc'] <= overpass+delta)] # the overpass section that needs to be analyzed 
     
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Adjust for the specific lane I am analyzing
     
@@ -153,20 +154,18 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
          
         for m in range(num_maneuvers): # for each of the 6 maneuvers
             objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
-            x_temp_trajectory = temp_data['xloc'].values
-            y_temp_trajectory = temp_data['yloc'].values
-            total_integral_for_trajectory = 0 
-
+            x_temp_trajectory = temp_data['xloc'].values # x trajectory values
+            y_temp_trajectory = temp_data['yloc'].values # y trajectory values 
+            total_integral_for_trajectory = 0 # line integral summation for that particular trajectory 
 
             for i in range(len(x_temp_trajectory)-1):
                 x1 = x_temp_trajectory[i] 
                 y1 = y_temp_trajectory[i] 
                 x2 = x_temp_trajectory[i+1]
                 y2 = y_temp_trajectory[i+1]
-
                 total_integral_for_trajectory += line_integral(x1,y1,x2,y2,objects_for_integral)
-                
-            
+
+             
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
                 highest_integral_value = total_integral_for_trajectory # update the highest integral value
                 length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
@@ -183,31 +182,28 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
     return best_trajectory # return the best trajectory dictionary  
 
 
-def plot_trajectory(lane, smoothed_file, modified_data):
-    lane_data = smoothed_file[smoothed_file['lane'] == lane].reset_index(drop=True)
+def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the trajectories 
+    lane_data = smoothed_file[smoothed_file['lane'] == lane].reset_index(drop=True) # extract the lane data 
     IDs = lane_data['ID'].unique().tolist()  # More efficient way to get unique IDs
     fig, ax = plt.subplots()
 
-    for j in IDs:
+    for j in IDs: # for each vehicle ID 
         temp_data = lane_data[lane_data['ID'] == j]
         ts = temp_data['time'].to_numpy()
         ys = temp_data['xloc'].to_numpy()
+        ax.plot(ts, ys, color='blue', linewidth=2, alpha=0.7, label='Original' if j == IDs[0] else "") # Plot original trajectory
 
-
-        # Plot original trajectory
-        ax.scatter(ts, ys, color='blue', s=10, marker='o', alpha=0.7, label='Original' if j == IDs[0] else "")
- 
-        # Plot modified trajectory
-        for md in modified_data:
-            mod_ts = np.array(md['time'] )
+        for md in modified_data:  # Plot modified trajectory
+            mod_ts = np.array(md['time'])
             mod_ys = np.array(md['xloc'])
-            ax.scatter(mod_ts, mod_ys, color='red', s=10, marker='x', alpha=0.7, label='Predicted' if j == IDs[0] else "")
+            ax.plot(mod_ts, mod_ys, color='red', linewidth=2, alpha=0.7, label='Predicted' if j == IDs[0] else "")
+
 
     ax.set_xlabel('Time (s)', fontsize=20)
     ax.set_ylabel('Location (m)', fontsize=20)
     ax.legend()
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    fig.set_size_inches(80, 30)
+    fig.set_size_inches(90, 30)
     fig.savefig(f'Louis_Lane_{lane}-x.png', dpi=300)  # Adjust the DPI for better resolution
 
  
@@ -262,7 +258,7 @@ def main(): # Main function
     output_results = [] # output trajectories
     output_results = {key:[] for key in lanes_to_analyze}
 
-    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024]
+    batch_size = 2048 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
     temp_stop = 10 # index where we want to stop the simulation
 
     # Initialize network 
@@ -281,37 +277,36 @@ def main(): # Main function
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
-    ######################### TRAIN & VALIDATION LOSS VALUES ############################################################
+    ################################# TRAIN & VALIDATION LOSS VALUES ############################################################
     accuracy = [] # we are going to store the accuracy values 
     train_loss = [] # we are going to store the training loss values 
     val_loss = [] # we are going to store the validation loss values 
     prev_val_loss = math.inf # we are going to store the previous validation loss values
     net.train_flag = False # neural network training flag is initialized to be False by default 
 
-    ########################## SAVING DATA ##############################################################################
-    data_points = [] # the data points
+    ################################## SAVING DATA ##############################################################################
     fut_predictions = [] # future prediction values 
-    lat_predictions = [] # lateral prediction values
-    lon_predictions = [] # longitudinal prediction values 
     maneuver_predictions = [] # maneuver prediction values 
-    num_points = 0 # number of points we have analyzed 
 
-    ######################### OUTPUT DATA ##############################################################################
+    ################################## OUTPUT DATA ##############################################################################
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
 
     lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
-        3:[1800,2300] 
+        2:[1800,2200],
+        3:[1800,2200] 
     }
 
-    for lane in lanes_with_overpass:
-        print(f'Lane: {lane}')
-        predicted_traj = [] 
-        for overpass in lanes_with_overpass[lane]:
+    for lane in lanes_with_overpass: # for each lane to be analyzed 
+        predicted_traj = [] # we are going to store the predicted trajectories 
+        for overpass in lanes_with_overpass[lane]: # for each overpass for that lane
+            print(f'Lane: {lane} | Overpass: {overpass}') # print the lane and the overpass 
+            predicted_traj_temp = None # initialized the predicted trajectory to be appended 
             for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
                 print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+
                 if i == temp_stop:
                     break
-                ###############################################################################################################
+                
                 st_time = time.time() # start the timer 
                 hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
         
@@ -344,8 +339,7 @@ def main(): # Main function
 
                 fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
                 predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points         
-                predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
-        
+            predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
         
         plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
  

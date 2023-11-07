@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 smoothed_file = pd.read_csv('raw_trajectory.csv')
 
-lanes = [2, 3, 4, 5]
+lanes = [-5,-4,-3,-2,0,2, 3, 4, 5]
 
 
 for lane in lanes:
