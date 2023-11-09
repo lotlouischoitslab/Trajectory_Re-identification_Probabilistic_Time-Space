@@ -28,6 +28,14 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 ''' 
+11/09/2023
+Input and Output:
+- Create a random set of trajectories and then plot it x and t (input)
+- One trajectory (you are predicting) per file 
+- Whatever you run in the integral, save it in a file 
+
+
+
 Once I have the correct data,
 I need to look at the locations before the overpass (extract 5 seconds before overpass) (Input)
 Then 10 seconds after the overpass (This will be the integral)
@@ -53,15 +61,10 @@ Guidelines to understand the prediction function:
 - Then do this for all trajectories 
 - Pick the manuever and the trajectory with the highest total value of the line integral
 - Set of trajectories 
-
-FOCUS:
-- Write a function that take 50 points. Each has 4 variables. Get all the trajectories and write the line integral 
-- Do that it's done 
-- Rest is one for loop 
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
-def line_integral(x1, y1, x2, y2, obj):
+def line_integral(x1, y1, x2, y2, obj): # x1 and y1 are when t = 0 and x2 and y2 are when t = 0.1  # let's also plot the x1,t1, x2,t2
     # Compute square distances
     x1_x2_sq = np.square(x1 - x2)
     y1_y2_sq = np.square(y1 - y2)
@@ -129,12 +132,9 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
 
     delta = 50 
     input_data = input_data[(input_data['xloc'] >= overpass-delta) & (input_data['xloc'] <= overpass+delta)] # the overpass section that needs to be analyzed 
-    
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Adjust for the specific lane I am analyzing
-    
     min_time = input_data['time'].min()
     max_time = input_data['time'].max()
-
     print(f'min max: {min_time} | {max_time}')
 
 
@@ -173,7 +173,7 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
                 min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly 
                 
                 best_trajectory['time'] = min_max_series # the time series plot we need to assign 
-                best_trajectory['xloc'] = x_temp_trajectory# assign the best trajectories for x
+                best_trajectory['xloc'] = x_temp_trajectory # assign the best trajectories for x
                 best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
                 best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
