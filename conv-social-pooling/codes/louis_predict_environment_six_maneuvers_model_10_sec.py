@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import time
 import math
 import pickle
+from pathlib import Path  
 import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
@@ -77,17 +78,15 @@ def line_integral(x1, y1, x2, y2, obj): # x1 and y1 are when t = 0 and x2 and y2
          -2 * y1 + 2 * y2 + 2 * obj[:, 1] - 2 * y2 * obj[:, 1]) / denom
     c = (np.square(x1 - obj[:, 0]) + np.square(y1 - obj[:, 1])) / denom
 
-    # Mask where 'a' is too close to zero
-    mask = np.abs(a) >= 1e-9
     
-    # Apply the mask
+    mask = np.abs(a) >= 1e-9 # Mask where 'a' is too close to zero
     a_masked = a[mask]
     b_masked = b[mask]
     c_masked = c[mask]
     obj_masked = obj[mask]
 
-    # Return if empty after masking
-    if a_masked.size == 0:
+    
+    if a_masked.size == 0: # Return if empty after masking
         return 1e-9
 
     denom = 2 * np.sqrt(a_masked)
@@ -116,7 +115,7 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
 
  
-def predict_trajectories(input_data, overpass,lane,fut_pred): # function to predict trajectories
+def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function to predict trajectories
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
     input_data = input_data[input_data['lane']==lane].reset_index(drop=True)
     IDs = [] # get all the IDs
@@ -145,6 +144,13 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
         'yloc':[],
         'Cost':[]
     } # Placeholder for the best trajectory's x and y values
+
+    files = {
+        'time':[],
+        'xloc':[]
+    }
+
+
 
     highest_integral_value = float('-inf')  # Initialize with a very small number
     
@@ -177,6 +183,14 @@ def predict_trajectories(input_data, overpass,lane,fut_pred): # function to pred
                 best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
                 best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
 
+                files['time'] = min_max_series
+                files['xloc'] = x_temp_trajectory # assign the best trajectories for x
+                
+    filepath = Path('temp_traj/out' + str(count)+'.csv')  
+    filepath.parent.mkdir(parents=True, exist_ok=True)  
+                
+    save_files = pd.DataFrame(files)
+    save_files.to_csv(filepath)
     print(best_trajectory['Cost'])
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
     return best_trajectory # return the best trajectory dictionary  
@@ -296,11 +310,20 @@ def main(): # Main function
         3:[1800,2200] 
     }
 
+    ####################### Temporary variable for debugging ########################################
+    lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
+        3:[1800] 
+    }
+    # batch_size = 512 # temporary
+
+    ####################################################################################################
+
     for lane in lanes_with_overpass: # for each lane to be analyzed 
         predicted_traj = [] # we are going to store the predicted trajectories 
         for overpass in lanes_with_overpass[lane]: # for each overpass for that lane
             print(f'Lane: {lane} | Overpass: {overpass}') # print the lane and the overpass 
             predicted_traj_temp = None # initialized the predicted trajectory to be appended 
+            count = 0
             for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
                 print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
 
@@ -338,7 +361,8 @@ def main(): # Main function
                     fut_pred_np.append(fut_pred_np_point)
 
                 fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-                predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np) # where the function is called and I feed in maneurver pred and future prediction points         
+                predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
+                count += 1
             predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
         
         plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
