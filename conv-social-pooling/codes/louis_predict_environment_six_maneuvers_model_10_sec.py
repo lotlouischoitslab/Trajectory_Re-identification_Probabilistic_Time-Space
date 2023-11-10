@@ -170,6 +170,18 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
                 x2 = x_temp_trajectory[i+1]
                 y2 = y_temp_trajectory[i+1]
                 total_integral_for_trajectory += line_integral(x1,y1,x2,y2,objects_for_integral)
+            
+
+            length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
+            min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly            
+            files['time'] = min_max_series
+            files['xloc'] = x_temp_trajectory # assign the best trajectories for x
+        
+            filepath = Path('temp_traj/out' + 'maneuver' + str(m+1)+ 'counter' +str(count)+'.csv')  
+            filepath.parent.mkdir(parents=True, exist_ok=True)  
+                        
+            save_files = pd.DataFrame(files)
+            save_files.to_csv(filepath)
 
              
             if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
@@ -182,15 +194,8 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
                 best_trajectory['xloc'] = x_temp_trajectory # assign the best trajectories for x
                 best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
                 best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
+                
 
-                files['time'] = min_max_series
-                files['xloc'] = x_temp_trajectory # assign the best trajectories for x
-                
-    filepath = Path('temp_traj/out' + str(count)+'.csv')  
-    filepath.parent.mkdir(parents=True, exist_ok=True)  
-                
-    save_files = pd.DataFrame(files)
-    save_files.to_csv(filepath)
     print(best_trajectory['Cost'])
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
     return best_trajectory # return the best trajectory dictionary  
