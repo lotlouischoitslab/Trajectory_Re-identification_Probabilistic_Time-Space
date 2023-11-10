@@ -105,6 +105,37 @@ def line_integral(x1, y1, x2, y2, obj): # x1 and y1 are when t = 0 and x2 and y2
     normalized_cost = (cost - mean_cost) / std_cost
     return normalized_cost.sum()
 
+    
+
+def temp_plot(files):
+    count = 0
+    for f in files:
+        t = f['time']
+        x = f['xloc']
+        
+        plt.figure()  # Start a new figure
+        plt.plot(t, x)  # Plot the data
+        plt.title('Time vs X Location')  # Optional: Add a title to the plot
+        plt.xlabel('Time')  # Optional: Add a label to the x-axis
+        plt.ylabel('X Location')  # Optional: Add a label to the y-axis
+        plt.grid(True)  # Optional: Add a grid to the plot for better readability
+        plot_filename = 'plot{}.png'.format(count)
+        plt.savefig(plot_filename)  # Save the current figure
+        plt.close()  # Close the figure to free memory
+        
+        # Create a DataFrame and save it as CSV
+        temp = {
+            'time': t,
+            'xloc': x
+        }
+        temp_df = pd.DataFrame(temp)
+        csv_filename = 'data{}.csv'.format(count)
+        temp_df.to_csv(csv_filename, index=False)  # Save the dataframe to a CSV without the index
+        
+        count += 1  # Increment the counter for the next plot
+
+
+
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
     # Ensure that the tensors do not require gradients before converting to numpy
@@ -134,7 +165,7 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Adjust for the specific lane I am analyzing
     min_time = input_data['time'].min()
     max_time = input_data['time'].max()
-    print(f'min max: {min_time} | {max_time}')
+    # print(f'min max: {min_time} | {max_time}')
 
 
     best_trajectory = {
@@ -149,6 +180,8 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
         'time':[],
         'xloc':[]
     }
+
+    files_saved = []
 
 
 
@@ -173,32 +206,32 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
             
 
             length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
-            min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly            
-            files['time'] = min_max_series
-            files['xloc'] = x_temp_trajectory # assign the best trajectories for x
-        
-            filepath = Path('temp_traj/out' + 'maneuver' + str(m+1)+ 'counter' +str(count)+'.csv')  
-            filepath.parent.mkdir(parents=True, exist_ok=True)  
-                        
-            save_files = pd.DataFrame(files)
-            save_files.to_csv(filepath)
+            min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly      
+            print('min max',min_max_series)
+            print('x',x_temp_trajectory)    
+             
+            if length_of_time_data > 0:  # Check that there is data in x_temp_trajectory
+                files = {}  # Initialize a new dictionary for this set of data
+                files['time'] = min_max_series
+                files['xloc'] = x_temp_trajectory  # assign the best trajectories for x
+                files_saved.append(files)  # Save this set of data
 
              
-            if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
-                highest_integral_value = total_integral_for_trajectory # update the highest integral value
-                length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
-              
-                min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly 
+                if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
+                    highest_integral_value = total_integral_for_trajectory # update the highest integral value
+                    # length_of_time_data = len(x_temp_trajectory) # Get the length of the x trajectory
                 
-                best_trajectory['time'] = min_max_series # the time series plot we need to assign 
-                best_trajectory['xloc'] = x_temp_trajectory # assign the best trajectories for x
-                best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
-                best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
+                    # min_max_series = np.linspace(min_time,max_time,length_of_time_data) # split the time evenly 
+                    
+                    best_trajectory['time'] = min_max_series # the time series plot we need to assign 
+                    best_trajectory['xloc'] = x_temp_trajectory # assign the best trajectories for x
+                    best_trajectory['yloc'] = y_temp_trajectory # assign the best trajectories for y
+                    best_trajectory['Cost'] = highest_integral_value # assign the highest_integral_value
                 
 
     print(best_trajectory['Cost'])
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
-    return best_trajectory # return the best trajectory dictionary  
+    return best_trajectory,files_saved # return the best trajectory dictionary  
 
 
 def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the trajectories 
@@ -278,7 +311,7 @@ def main(): # Main function
     output_results = {key:[] for key in lanes_to_analyze}
 
     batch_size = 2048 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
-    temp_stop = 10 # index where we want to stop the simulation
+    temp_stop = 2 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -366,10 +399,11 @@ def main(): # Main function
                     fut_pred_np.append(fut_pred_np_point)
 
                 fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-                predicted_traj_temp = predict_trajectories(original_data, overpass,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
+                predicted_traj_temp,files = predict_trajectories(original_data, overpass,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
                 count += 1
             predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
         
+        temp_plot(files)
         plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
  
     
