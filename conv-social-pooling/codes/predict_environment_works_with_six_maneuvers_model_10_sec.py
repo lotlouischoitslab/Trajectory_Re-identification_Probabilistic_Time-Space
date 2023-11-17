@@ -26,13 +26,22 @@ warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
 warnings.simplefilter('ignore', np.RankWarning)
 
 ##############################################################################
+'''
+Get the final data, cut out a piece of it
+What we can do is I pick this section of the road (200 ft) and cut take about 20 ft
+Simulate an overpass 
+Have one trajectory for 200 ft, between 100 to 120 ft cut it to two pieces, you have before and after trajectory 
+Run the code
+Look at the middle of the data and revolve 20 ft from the point
+Revolve 20 ft
 
-''' 
-Once I have the correct data,
-I need to look at the locations before the overpass (extract 5 seconds before overpass) (Input)
-Then 10 seconds after the overpass (This will be the integral)
-Plot which cutted trajectory (5 seconds before overpass) and 10 seconds after overpass (time,x) and (time,y)
-xloc and yloc
+Missing part is 100->120 ft part 
+Go back 5 seconds from 100 ft. (Feed in to the prediction model)
+Integral: Get the trajectories from 120 ft forward 5 seconds (This is the future) assuming there is an overpass 
+Connect the trajectories  
+Replace the 100->120ft part with the trajectory with 120 ft and 5 sec forward
+
+
 
 
 Format of the output:
@@ -52,12 +61,8 @@ Guidelines to understand the prediction function:
 - Sum them up 
 - Then do this for all trajectories 
 - Pick the manuever and the trajectory with the highest total value of the line integral
-- Set of trajectories 
 
-FOCUS:
-- Write a function that take 50 points. Each has 4 variables. Get all the trajectories and write the line integral 
-- Do that it's done 
-- Rest is one for loop 
+
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
