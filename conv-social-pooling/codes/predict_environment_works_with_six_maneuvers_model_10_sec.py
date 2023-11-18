@@ -43,7 +43,6 @@ Replace the 100->120ft part with the trajectory with 120 ft and 5 sec forward
 
 
 
-
 Format of the output:
 - 6 movements, each movement has probability distribution
 - Actions are Straight, Accel, straight, decel, right, decel, left, decl 
@@ -253,7 +252,7 @@ def main(): # Main function
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    df = pd.read_csv('raw_trajectory.csv') # read in the data 
+    df = pd.read_csv('Run_1_final_rounded.csv') # read in the data 
     original_data = df.copy() # copy
     print(df.keys()) # print the keys just in case 
 

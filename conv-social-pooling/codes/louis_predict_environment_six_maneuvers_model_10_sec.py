@@ -16,7 +16,6 @@ from scipy.special import erf
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
- 
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # FOR MULTI-GPU system using a single gpu
 os.environ["CUDA_VISIBLE_DEVICES"]="1" # The GPU id to use, usually either "0" or "1"
@@ -25,23 +24,22 @@ os.environ["CUDA_VISIBLE_DEVICES"]="1" # The GPU id to use, usually either "0" o
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
 warnings.simplefilter('ignore', np.RankWarning)
-
 ##############################################################################
 
-''' 
-11/09/2023
-Input and Output:
-- Create a random set of trajectories and then plot it x and t (input)
-- One trajectory (you are predicting) per file 
-- Whatever you run in the integral, save it in a file 
+'''
+Get the final data, cut out a piece of it
+What we can do is I pick this section of the road (200 ft) and cut take about 20 ft
+Simulate an overpass 
+Have one trajectory for 200 ft, between 100 to 120 ft cut it to two pieces, you have before and after trajectory 
+Run the code
+Look at the middle of the data and revolve 20 ft from the point
+Revolve 20 ft
 
-
-
-Once I have the correct data,
-I need to look at the locations before the overpass (extract 5 seconds before overpass) (Input)
-Then 10 seconds after the overpass (This will be the integral)
-Plot which cutted trajectory (5 seconds before overpass) and 10 seconds after overpass (time,x) and (time,y)
-xloc and yloc
+Missing part is 100->120 ft part 
+Go back 5 seconds from 100 ft. (Feed in to the prediction model)
+Integral: Get the trajectories from 120 ft forward 5 seconds (This is the future) assuming there is an overpass 
+Connect the trajectories  
+Replace the 100->120ft part with the trajectory with 120 ft and 5 sec forward
 
 
 Format of the output:
@@ -61,7 +59,6 @@ Guidelines to understand the prediction function:
 - Sum them up 
 - Then do this for all trajectories 
 - Pick the manuever and the trajectory with the highest total value of the line integral
-- Set of trajectories 
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
@@ -131,10 +128,7 @@ def temp_plot(files):
         temp_df = pd.DataFrame(temp)
         csv_filename = 'data{}.csv'.format(count)
         temp_df.to_csv(csv_filename, index=False)  # Save the dataframe to a CSV without the index
-        
         count += 1  # Increment the counter for the next plot
-
-
 
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
@@ -300,7 +294,7 @@ def main(): # Main function
     #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    df = pd.read_csv('raw_trajectory.csv') # read in the data 
+    df = pd.read_csv('Run_1_final_rounded.csv') # read in the data 
     original_data = df.copy() # copy
     print(df.keys()) # print the keys just in case 
 
@@ -310,7 +304,7 @@ def main(): # Main function
     output_results = [] # output trajectories
     output_results = {key:[] for key in lanes_to_analyze}
 
-    batch_size = 2048 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
+    batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
     temp_stop = 2 # index where we want to stop the simulation
 
     # Initialize network 
