@@ -28,19 +28,17 @@ warnings.simplefilter('ignore', np.RankWarning)
 
 '''
 Get the final data, cut out a piece of it
-What we can do is I pick this section of the road (200 ft) and cut take about 20 ft
+What we can do is I pick this section of the road (600 ft) and cut take about 20 ft
 Simulate an overpass 
-Have one trajectory for 200 ft, between 100 to 120 ft cut it to two pieces, you have before and after trajectory 
+Have one trajectory for 600 ft, between 600 to 620 ft cut it to two pieces, you have before and after trajectory 
 Run the code
 Look at the middle of the data and revolve 20 ft from the point
-Revolve 20 ft
 
-Missing part is 100->120 ft part 
+Missing part is 600->620 ft part 
 Go back 5 seconds from 100 ft. (Feed in to the prediction model)
-Integral: Get the trajectories from 120 ft forward 5 seconds (This is the future) assuming there is an overpass 
+Integral: Get the trajectories from 620 ft forward 5 seconds (This is the future) assuming there is an overpass 
 Connect the trajectories  
-Replace the 100->120ft part with the trajectory with 120 ft and 5 sec forward
-
+Replace the 600->620ft part with the trajectory with 620 ft and 5 sec forward
 
 Format of the output:
 - 6 movements, each movement has probability distribution
@@ -140,27 +138,23 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
 
  
-def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function to predict trajectories
+def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,count=0): # function to predict trajectories
     num_maneuvers = len(fut_pred) # This would be 6 because we have 6 possible maneuvers 
     input_data = input_data[input_data['lane']==lane].reset_index(drop=True)
     IDs = [] # get all the IDs
-    init_ID = -1
+    init_ID = -1 # default init_ID value 
 
-    # print('input data',input_data,input_data.keys())
-
-    # get all vehicle IDs
-    for i in range(len(input_data)):
+    for i in range(len(input_data)): # get all vehicle IDs
         if input_data['ID'][i] != init_ID:
             IDs.append(input_data['ID'][i])
             init_ID = input_data['ID'][i]
 
-    delta = 50 
-    input_data = input_data[(input_data['xloc'] >= overpass-delta) & (input_data['xloc'] <= overpass+delta)] # the overpass section that needs to be analyzed 
+    input_data = input_data[(input_data['xloc'] >= overpass_start) & (input_data['xloc'] <= overpass_end)] # the overpass section that needs to be analyzed 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Adjust for the specific lane I am analyzing
-    min_time = input_data['time'].min()
-    max_time = input_data['time'].max()
-    # print(f'min max: {min_time} | {max_time}')
+    print('input data',input_data)
 
+    min_time = input_data['time'].min() # input minimum time
+    max_time = input_data['time'].max() # input maximum time 
 
     best_trajectory = {
         'lane':lane,
@@ -176,19 +170,21 @@ def predict_trajectories(input_data, overpass,lane,fut_pred,count=0): # function
     }
 
     files_saved = []
-
-
-
     highest_integral_value = float('-inf')  # Initialize with a very small number
+    
+    print(f'IDs: {IDs}')
     
     for j in IDs:
         temp_data = input_data[input_data['ID']==j] 
         #print('temp data',temp_data.keys())
+        current_time = temp_data['time'].values[0]  # or any specific time you want to start from
+        end_time = current_time + 5  # 5 seconds later
+        filtered_data = temp_data[(temp_data['time'] >= current_time) & (temp_data['time'] <= end_time)]
          
         for m in range(num_maneuvers): # for each of the 6 maneuvers
             objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
-            x_temp_trajectory = temp_data['xloc'].values # x trajectory values
-            y_temp_trajectory = temp_data['yloc'].values # y trajectory values 
+            x_temp_trajectory = filtered_data['xloc'].values # x trajectory values
+            y_temp_trajectory = filtered_data['yloc'].values # y trajectory values 
             total_integral_for_trajectory = 0 # line integral summation for that particular trajectory 
 
             for i in range(len(x_temp_trajectory)-1):
@@ -295,40 +291,31 @@ def main(): # Main function
     
     ######################################################################################################################################################
     df = pd.read_csv('Run_1_final_rounded.csv') # read in the data 
-    original_data = df.copy() # copy
+    original_data = df.copy() # copy the dataframe
     print(df.keys()) # print the keys just in case 
 
-    lanes_to_analyze = [2,3,4,5]
-    # print(f'Unique lanes: {lanes_to_analyze}') 
-    
-    output_results = [] # output trajectories
-    output_results = {key:[] for key in lanes_to_analyze}
-
+    lanes_to_analyze = sorted(df['lane'].unique())[1:-1] # lanes to analyze 
+    print(f'Unique lanes: {lanes_to_analyze}') 
+     
+    output_results = {key:[] for key in lanes_to_analyze} # output trajectories 
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
-    temp_stop = 2 # index where we want to stop the simulation
+    temp_stop = 5 # index where we want to stop the simulation
 
     # Initialize network 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     full_path = os.path.join(directory, model_directory) # create a full path 
     net.load_state_dict(torch.load(full_path, map_location=torch.device(device))) # load the model onto the local machine 
 
-    ################################ CHECK GPU AVAILABILITY ###############################################################
+    ################################# CHECK GPU AVAILABILITY ###############################################################
     if args['use_cuda']: 
         net = net.cuda()
     #########################################################################################################################
 
-    ################################ INITIALIZE DATA LOADERS ################################################################
+    ################################# INITIALIZE DATA LOADERS ################################################################
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
     predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=3,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
-
-    ################################# TRAIN & VALIDATION LOSS VALUES ############################################################
-    accuracy = [] # we are going to store the accuracy values 
-    train_loss = [] # we are going to store the training loss values 
-    val_loss = [] # we are going to store the validation loss values 
-    prev_val_loss = math.inf # we are going to store the previous validation loss values
-    net.train_flag = False # neural network training flag is initialized to be False by default 
 
     ################################## SAVING DATA ##############################################################################
     fut_predictions = [] # future prediction values 
@@ -337,68 +324,62 @@ def main(): # Main function
     ################################## OUTPUT DATA ##############################################################################
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
 
-    lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
-        2:[1800,2200],
-        3:[1800,2200] 
-    }
+    
+    ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
+    overpass_start = 600 # overpass start location in feets
+    overpass_end = 620 # overpass end location in feets
 
-    ####################### Temporary variable for debugging ########################################
-    lanes_with_overpass = { # key is the lane number, value is the xloc where the overpasses are 
-        3:[1800] 
-    }
-    # batch_size = 512 # temporary
+    ################################## LANES TO BE ANALYZED #####################################################################################
 
-    ####################################################################################################
-
-    for lane in lanes_with_overpass: # for each lane to be analyzed 
+    for lane in lanes_to_analyze: # for each lane to be analyzed 
         predicted_traj = [] # we are going to store the predicted trajectories 
-        for overpass in lanes_with_overpass[lane]: # for each overpass for that lane
-            print(f'Lane: {lane} | Overpass: {overpass}') # print the lane and the overpass 
-            predicted_traj_temp = None # initialized the predicted trajectory to be appended 
-            count = 0
-            for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-                print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
+        print(f'Lane: {lane}') # print the lane  
+        predicted_traj_temp = None # initialized the predicted trajectory to be appended 
+        count = 0
+        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
+            print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
 
-                if i == temp_stop:
-                    break
-                
-                st_time = time.time() # start the timer 
-                hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
-        
-                if args['use_cuda']:
-                    hist = hist.cuda()
-                    nbrs = nbrs.cuda()
-                    mask = mask.cuda()
-                    lat_enc = lat_enc.cuda()
-                    lon_enc = lon_enc.cuda()
-                    fut = fut.cuda()
-                    op_mask = op_mask.cuda()
-                    maneuver_enc = maneuver_enc.cuda()
+            if i == temp_stop:
+                break
+            
+            st_time = time.time() # start the timer 
+            hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
+    
+            if args['use_cuda']:
+                hist = hist.cuda()
+                nbrs = nbrs.cuda()
+                mask = mask.cuda()
+                lat_enc = lat_enc.cuda()
+                lon_enc = lon_enc.cuda()
+                fut = fut.cuda()
+                op_mask = op_mask.cuda()
+                maneuver_enc = maneuver_enc.cuda()
 
-                fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
-                fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
+            fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+            fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
 
-                for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
-                    indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
-                    fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
+            for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
+                indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
+                fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
-                l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-                lossVals += l.detach() # increment the loss value 
-                counts += c.detach() # increment the count value 
-                points_np = points.numpy() # convert to numpy arrays 
-                fut_pred_np = [] # store the future pred points 
+            l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+            lossVals += l.detach() # increment the loss value 
+            counts += c.detach() # increment the count value 
+            points_np = points.numpy() # convert to numpy arrays 
+            fut_pred_np = [] # store the future pred points 
 
-                for k in range(6): #manuevers mean the 
-                    fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
-                    fut_pred_np.append(fut_pred_np_point)
+            for k in range(6): #manuevers mean the 
+                fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
+                fut_pred_np.append(fut_pred_np_point)
 
-                fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-                predicted_traj_temp,files = predict_trajectories(original_data, overpass,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
-                count += 1
-            predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
-        
-        temp_plot(files)
-        plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
+            fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
+            predicted_traj_temp,files = predict_trajectories(original_data, overpass_start,overpass_end,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
+            count += 1
+
+        predicted_traj.append(predicted_traj_temp) # append the predicted trajectories 
+    
+    # temp_plot(files)
+    plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
  
     
     # with open(directory+saving_directory+"output_results.data", "wb") as filehandle:

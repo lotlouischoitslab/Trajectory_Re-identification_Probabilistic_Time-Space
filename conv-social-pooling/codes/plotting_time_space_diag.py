@@ -1,15 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-smoothed_file = pd.read_csv('raw_trajectory.csv')
-
-lanes = [-5,-4,-3,-2,0,2, 3, 4, 5]
-
+smoothed_file = pd.read_csv('Run_1_final_rounded.csv') # read in the data 
+lanes = sorted(smoothed_file['lane'].unique())[1:-1] # lanes to analyze
 
 for lane in lanes:
     lane_data = smoothed_file[smoothed_file['lane']==lane].reset_index(drop=True)
-
 
     IDs = []
     all_ts = []
