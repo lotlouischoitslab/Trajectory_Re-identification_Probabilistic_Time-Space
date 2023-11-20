@@ -27,6 +27,12 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
+11/20/2023 
+Take one trajectory, cut it to two pieces (from the point you cut it 5 seconds before), (then go forward and take 10 seconds)
+call it left piece and right piece 
+Use the right piece
+plot the integral value 
+
 Get the final data, cut out a piece of it
 What we can do is I pick this section of the road (600 ft) and cut take about 20 ft
 Simulate an overpass 
@@ -60,47 +66,44 @@ Guidelines to understand the prediction function:
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
-def line_integral(x1, y1, x2, y2, obj): # x1 and y1 are when t = 0 and x2 and y2 are when t = 0.1  # let's also plot the x1,t1, x2,t2
-    # Compute square distances
-    x1_x2_sq = np.square(x1 - x2)
-    y1_y2_sq = np.square(y1 - y2)
-    
-    denom = 2 * obj[:, 2]
-    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
+def line_integral(x1, y1, x2, y2, obj):
+    cost = 1e-5
+    dx = x1 - x2
+    dy = y1 - y2
+    distance = math.sqrt(dx**2 + dy**2)
 
-    a = (x1_x2_sq + y1_y2_sq) / denom
-    b = (-2 * x1 + 2 * x2 + 2 * obj[:, 0] - 2 * x2 * obj[:, 0] + 
-         -2 * y1 + 2 * y2 + 2 * obj[:, 1] - 2 * y2 * obj[:, 1]) / denom
-    c = (np.square(x1 - obj[:, 0]) + np.square(y1 - obj[:, 1])) / denom
+    for i in range(len(obj)):
+        mu_x, mu_y, sigma_sq = obj[i][0],obj[i][1],obj[i][2]
+        if sigma_sq < 1e-9:  # Avoid division by a very small number
+            continue
 
-    
-    mask = np.abs(a) >= 1e-9 # Mask where 'a' is too close to zero
-    a_masked = a[mask]
-    b_masked = b[mask]
-    c_masked = c[mask]
-    obj_masked = obj[mask]
+        a = (dx**2 + dy**2) / (2 * sigma_sq)
 
-    
-    if a_masked.size == 0: # Return if empty after masking
-        return 1e-9
+        if a < 1e-9:  # Skip if 'a' is too small
+            a = 1e-9 
 
-    denom = 2 * np.sqrt(a_masked)
-    denom = np.clip(denom, 1e-9, np.inf)  # Avoid division by zero
+        b = ((-2 * x1**2 + 2 * x1 * x2 + 2 * x1 * mu_x - 2 * x2 * mu_x) +
+             (-2 * y1**2 + 2 * y1 * y2 + 2 * y1 * mu_y - 2 * y2 * mu_y)) / (2 * sigma_sq)
+        
+        c = ((x1 - mu_x)**2 + (y1 - mu_y)**2) / (2 * sigma_sq)
 
-    exp_arg = np.clip((b_masked * b_masked) / (4 * a_masked) - c_masked, -20, 20)
+        exp_arg = ((b**2) / (4 * a)) - c
+        exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
+        exp_part = math.exp(exp_arg)
 
-    cost = (np.exp(exp_arg) / (2 * np.pi * obj_masked[:, 2])) * \
-           (1 / np.sqrt(a_masked)) * (np.sqrt(np.pi) / 2) * \
-           (erf(np.sqrt(a_masked) + b_masked / denom) - erf(b_masked / denom)) * \
-           np.sqrt(x1_x2_sq + y1_y2_sq)
+        sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
+        erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
+        #print(f"exp_part: {exp_part}, sigma_sq: {sigma_sq}, sqrt_a: {sqrt_a}, erf_part: {erf_part}, distance: {distance}")
 
-    # Normalize the cost using Z-score normalization
-    std_cost = np.std(cost) + 1e-9
-    mean_cost = np.mean(cost)
-    normalized_cost = (cost - mean_cost) / std_cost
-    return normalized_cost.sum()
+        term_to_add = (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
+                (math.sqrt(math.pi) / 2) * erf_part * distance
 
-    
+        # print(f'term to add: {term_to_add}')
+        cost += term_to_add # add this term to the cost
+
+    # print(f'cost: {cost}')
+    return cost
+
 
 def temp_plot(files):
     count = 0
@@ -135,7 +138,9 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     muY_numpy = muY.detach().numpy() if isinstance(muY, torch.Tensor) else muY
     sigX_numpy = sigX.detach().numpy() if isinstance(sigX, torch.Tensor) else sigX
     sigY_numpy = sigY.detach().numpy() if isinstance(sigY, torch.Tensor) else sigY
-    return np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
+    result =  np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
+    # print(result)
+    return result 
 
  
 def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,count=0): # function to predict trajectories
@@ -154,9 +159,9 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
     min_time = np.min(overpass_data['time'].values) # input minimum time
     max_time = np.max(overpass_data['time'].values) # input maximum time 
     current_time = max_time # assign the current time as the max time
-    end_time = current_time + 5  # 5 seconds later
+    end_time = current_time + 10  # 5 seconds later
 
-    print(f'min max time: {min_time} | {max_time}') 
+    # print(f'min max time: {min_time} | {max_time}') 
 
     best_trajectory = {
         'ID':[],
@@ -173,28 +178,27 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
 
     files_saved = []
     highest_integral_value = float('-inf')  # Initialize with a very small number
-    print(f'IDs: {IDs}')
+    # print(f'IDs: {IDs}')
     
     for j in IDs: # for each ID
         temp_data = input_data[input_data['ID']==j] # temp data for filtering
-        filtered_data = temp_data[(temp_data['time'] >= current_time) & (temp_data['time'] <= end_time)] # filter the data
+        filtered_data = temp_data[(temp_data['time'] >= current_time) & (temp_data['time'] <= end_time)] # filter the data (cutting it to two)
     
-        print(f'min max time: {min_time} | {max_time}') 
+        # print(f'min max time: {min_time} | {max_time}') 
         temp_time = [] # this is the time we want to store
         temp_x = [] # this is the best x trajectory for that ID 
         temp_y = [] # this is the best y trajectory for that ID 
         filtered_data_length = len(filtered_data['xloc']) 
-        print(f'filter length: {filtered_data_length}')
 
-        if filtered_data_length > 0: 
+
+        if filtered_data_length > 0:  # added this condition because I do not want to deal with empty arrays 
             for m in range(num_maneuvers): # for each of the 6 maneuvers
                 objects_for_integral = create_object(fut_pred[m][:, :, 0], fut_pred[m][:, :, 1], fut_pred[m][:, :, 2], fut_pred[m][:, :, 3]) # get the muX, muY, sigX, sigY values
                 x_temp_trajectory = filtered_data['xloc'].values # x trajectory values
                 y_temp_trajectory = filtered_data['yloc'].values # y trajectory values 
-                print(filtered_data_length)
                 total_integral_for_trajectory = 0 # line integral summation for that particular trajectory 
 
-                for i in range(filtered_data_length-1): # for each trajectory coordinates
+                for i in range(len(x_temp_trajectory)-1): # for each trajectory coordinates
                     x1 = x_temp_trajectory[i] 
                     y1 = y_temp_trajectory[i] 
                     x2 = x_temp_trajectory[i+1]
@@ -203,22 +207,24 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
                 
                 print(f'time range: {current_time} | {end_time}')
                 min_max_series = np.linspace(current_time,end_time,filtered_data_length) # split the time evenly   
-                print(f'min max series: {min_max_series}')   
+                # print(f'min max series: {min_max_series}')   
                 files = {}  # Initialize a new dictionary for this set of data
                 files['time'] = min_max_series
                 files['xloc'] = x_temp_trajectory  # assign the best trajectories for x
                 files_saved.append(files)  # Save this set of data
+
+                print('current integral value',total_integral_for_trajectory) # current integral value
             
                 if total_integral_for_trajectory > highest_integral_value: # Check if this trajectory has the highest integral value so far
                     highest_integral_value = total_integral_for_trajectory # update the highest integral value
-                    print(f'Integral value: {total_integral_for_trajectory}')
+                    # print(f'Integral value: {total_integral_for_trajectory}') # check if integral value is updated or not
                     temp_time = min_max_series # this is the time variable temporarily assigned
                     temp_x = x_temp_trajectory # this x trajectory is temporarily assigned
                     temp_y = y_temp_trajectory # this y trajectory is temporarily assigned
 
-            print(temp_time) 
-            print(temp_x)
-            print(temp_y)
+            # print(temp_time) 
+            # print(temp_x)
+            # print(temp_y)
             temp_ID = [j for i in range(len(temp_x))] # assign the ID
             temp_lane = [lane for i in range(len(temp_x))] # assign the lane
             best_trajectory['ID'].extend(temp_ID) # assign the IDs 
@@ -226,6 +232,7 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
             best_trajectory['time'].extend(temp_time) # the time series plot we need to assign 
             best_trajectory['xloc'].extend(temp_x) # assign the best trajectories for x
             best_trajectory['yloc'].extend(temp_y) # assign the best trajectories for y
+          
         
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
     return best_trajectory,files_saved # return the best trajectory dictionary  
