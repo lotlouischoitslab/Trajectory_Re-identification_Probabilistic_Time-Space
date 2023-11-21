@@ -101,8 +101,8 @@ def line_integral(x1, y1, x2, y2, obj):
         # print(f'term to add: {term_to_add}')
         cost += term_to_add # add this term to the cost
 
-    # print(f'cost: {cost}')
-    return cost
+    print(f'cost: {cost}')
+    return cost # return the cost value
 
 
 def temp_plot(files):
@@ -159,9 +159,9 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
     min_time = np.min(overpass_data['time'].values) # input minimum time
     max_time = np.max(overpass_data['time'].values) # input maximum time 
     current_time = max_time # assign the current time as the max time
-    end_time = current_time + 10  # 5 seconds later
+    end_time = current_time + 5  # 5 seconds later
 
-    # print(f'min max time: {min_time} | {max_time}') 
+    print(f'min max time: {min_time} | {max_time}') 
 
     best_trajectory = {
         'ID':[],
@@ -179,6 +179,7 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
     files_saved = []
     highest_integral_value = float('-inf')  # Initialize with a very small number
     # print(f'IDs: {IDs}')
+    #IDs = [3799]  # temporarily 
     
     for j in IDs: # for each ID
         temp_data = input_data[input_data['ID']==j] # temp data for filtering
@@ -189,6 +190,7 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
         temp_x = [] # this is the best x trajectory for that ID 
         temp_y = [] # this is the best y trajectory for that ID 
         filtered_data_length = len(filtered_data['xloc']) 
+        print(f'filter length: {filtered_data_length}')
 
 
         if filtered_data_length > 0:  # added this condition because I do not want to deal with empty arrays 
@@ -246,17 +248,20 @@ def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the 
     fig, ax = plt.subplots()
 
     for j in IDs: # for each vehicle ID 
+        print(f'j: {j}')
         temp_data = lane_data[lane_data['ID'] == j]
         ts = temp_data['time'].to_numpy()
         ys = temp_data['xloc'].to_numpy()
         ax.plot(ts, ys, color='blue', linewidth=2, alpha=0.7, label='Original' if j == IDs[0] else "") # Plot original trajectory
 
-        md = modified_lane_data[modified_lane_data['ID'] == j]  # Plot modified trajectory
+ 
+    for k in IDs:
+        md = modified_lane_data[modified_lane_data['ID'] == k]  # Plot modified trajectory
         mod_ts = md['time'].to_numpy()
         mod_ys = md['xloc'].to_numpy()
-        ax.plot(mod_ts, mod_ys, color='red', linewidth=2, alpha=0.7, label='Predicted' if j == IDs[0] else "")
+        ax.plot(mod_ts, mod_ys, color='red', linewidth=2, alpha=0.7, label='Predicted' if k == IDs[0] else "")
 
-
+    
     ax.set_xlabel('Time (s)', fontsize=20)
     ax.set_ylabel('Location (m)', fontsize=20)
     ax.legend()
@@ -314,7 +319,7 @@ def main(): # Main function
      
     output_results = {key:[] for key in lanes_to_analyze} # output trajectories 
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
-    temp_stop = 10 # index where we want to stop the simulation
+    temp_stop = 5 # index where we want to stop the simulation
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -341,8 +346,8 @@ def main(): # Main function
 
     
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start = 600 # overpass start location in feets
-    overpass_end = 620 # overpass end location in feets
+    overpass_start = 180 # overpass start location in feets
+    overpass_end = 200 # overpass end location in feets
 
     ################################## LANES TO BE ANALYZED #####################################################################################
     predicted_traj = None # we are going to store the predicted trajectories 
