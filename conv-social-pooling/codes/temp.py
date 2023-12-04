@@ -27,6 +27,21 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
+12/4/2023
+TO-DO:
+1. Start writing the paper. Write down what I want to include (detailed outline) 
+Introduction, Methodology (sub-section allowed), Data (Description I-294), Results, Discussions, Conclusion
+What we want to include for Introduction: 
+Limitations, What this study does, Shortcomings from previous studies but what I want to address now
+One paragraph with what people like to see (main contributions)
+Finish one paragraph as how it is follows.
+
+MUST-DO: Rest of the chapter, write a detailed outline. Think about what to include
+Try learning Overleaf (LaTeX). Submit to TRR (Journal of TRB) or ASCE. ASCE is better option. 
+Download the ASCE template journal for transportation. 
+
+
+
 11/20/2023 
 Take one trajectory, cut it to two pieces (from the point you cut it 5 seconds before), (then go forward and take 10 seconds)
 call it left piece and right piece 
