@@ -27,6 +27,13 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
+12/13/2023
+Questions to ask:
+1. Does my outline look good?
+2. How to write the methodology?
+3. What else?
+
+
 12/4/2023
 TO-DO:
 1. Start writing the paper. Write down what I want to include (detailed outline) 
