@@ -33,7 +33,6 @@ Questions to ask:
 2. How to write the methodology?
 3. What else?
 
-
 12/4/2023
 TO-DO:
 1. Start writing the paper. Write down what I want to include (detailed outline) 
@@ -46,8 +45,6 @@ Finish one paragraph as how it is follows.
 MUST-DO: Rest of the chapter, write a detailed outline. Think about what to include
 Try learning Overleaf (LaTeX). Submit to TRR (Journal of TRB) or ASCE. ASCE is better option. 
 Download the ASCE template journal for transportation. 
-
-
 
 11/20/2023 
 Take one trajectory, cut it to two pieces (from the point you cut it 5 seconds before), (then go forward and take 10 seconds)
@@ -74,7 +71,6 @@ Format of the output:
 - This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
 - Every point one second during that 10 second horizon, we are getting normal distribution 2d where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
  
-        
 Guidelines to understand the prediction function: 
 - There are 6 different maneuvers the car can pick 
 - Each maneuver has 50 points
@@ -155,7 +151,7 @@ def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,c
         'time':[],
         'xloc':[],
         'yloc':[]
-    } # Placeholder for the best trajectory's x and y values
+    } # Placeholder for the best trajectory's x and y values 
 
     highest_integral_value = float('-inf')  # Initialize with a very small number
     temp_data = input_data 
