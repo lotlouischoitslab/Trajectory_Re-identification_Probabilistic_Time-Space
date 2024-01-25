@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
  
 from scipy.integrate import quad
 from scipy.special import erf
+from scipy.stats import multivariate_normal
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -27,12 +28,6 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
-12/13/2023
-Questions to ask:
-1. Does my outline look good?
-2. How to write the methodology?
-3. What else?
-
 12/4/2023
 TO-DO:
 1. Start writing the paper. Write down what I want to include (detailed outline) 
@@ -122,6 +117,51 @@ def line_integral(x1, y1, x2, y2, obj):
     # print(f'cost: {cost}')
     return cost
 
+ 
+
+def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
+    print(f'batch num: {batch_num}')
+    num_maneuvers = len(fut_pred)
+    split = fut_pred[0].shape[1]
+    x = np.linspace(-10, 10, split)
+    y = np.linspace(-10, 10, split)
+    X, Y = np.meshgrid(x, y)
+    fig, ax = plt.subplots(figsize=(12, 12))
+
+    for m in range(num_maneuvers):
+        print(f"Processing maneuver {m+1}/{num_maneuvers}")
+        muX = fut_pred[m][:, :, 0]
+        muY = fut_pred[m][:, :, 1]
+        sigX = fut_pred[m][:, :, 2]
+        sigY = fut_pred[m][:, :, 3]
+
+        # Vectorized computation of PDF
+        pos = np.dstack((X, Y))
+        total_pd = np.zeros_like(X)
+
+        # Flatten the arrays for vectorized computation
+        muX_flat = muX.flatten()
+        muY_flat = muY.flatten()
+        sigX_flat = sigX.flatten()
+        sigY_flat = sigY.flatten()
+
+        for i in range(len(muX_flat)):
+            print(f"Processing range {i+1}/{len(muX_flat)}")
+            mean = [muX_flat[i], muY_flat[i]]
+            cov = [[sigX_flat[i]**2, 0], [0, sigY_flat[i]**2]]
+            rv = multivariate_normal(mean, cov)
+            pd = rv.pdf(pos)
+            total_pd += pd.reshape(X.shape)
+
+        # Plotting
+        heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_title(f'Combined Heatmap for Maneuver {m+1}')
+        plt.colorbar(heatmap, ax=ax, shrink=0.8)
+        plt.savefig(f'plots/combined_heatmap_maneuver_{m+1}.png')
+        plt.close(fig)
+     
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
     # Ensure that the tensors do not require gradients before converting to numpy
@@ -130,8 +170,8 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     sigX_numpy = sigX.detach().numpy() if isinstance(sigX, torch.Tensor) else sigX
     sigY_numpy = sigY.detach().numpy() if isinstance(sigY, torch.Tensor) else sigY
     result =  np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
-    # print(result)
-    return result 
+    # print(result) # print the results 
+    return result # return the result created by stacking up the statistical variables. 
 
  
 def predict_trajectories(input_data, overpass_start,overpass_end,lane,fut_pred,count=0): # function to predict trajectories
@@ -288,7 +328,6 @@ def main(): # Main function
     print(f'Unique lanes: {lanes_to_analyze}') 
     
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
-    temp_stop = 5 # index where we want to stop the simulation
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start = 160 # overpass start location in feets
@@ -316,8 +355,6 @@ def main(): # Main function
 
     ################################## OUTPUT DATA ##############################################################################
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
-    
-
 
     ################################## LANES TO BE ANALYZED #####################################################################################
     predicted_traj = None # we are going to store the predicted trajectories 
@@ -325,10 +362,7 @@ def main(): # Main function
         print(f'Lane: {lane}') # print the lane  
         count = 0
         for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-            print(f'Index of Data: {i}') # just for testing, print out the index of the current data to be analyzed 
-
-            if i == temp_stop:
-                break
+            print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
             
             st_time = time.time() # start the timer 
             hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, points, maneuver_enc  = data # unpack the data   
@@ -361,16 +395,21 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            predicted_traj = predict_trajectories(original_data, overpass_start,overpass_end,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
-            count += 1
+            # Generate and save the distribution plots
+            if i == 0:
+                generate_normal_distribution(fut_pred_np, lane, i)
+                break
+      
+            # predicted_traj = predict_trajectories(original_data, overpass_start,overpass_end,lane,fut_pred_np,count) # where the function is called and I feed in maneurver pred and future prediction points         
+        #     count += 1
             
-        print('Predicted')
-        print(f"{len(predicted_traj['lane'])} | {len(predicted_traj['time'])} | {len(predicted_traj['xloc'])} | {len(predicted_traj['yloc'])}")
-        print('Original Dataframe')
-        print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
+        # print('Predicted')
+        # print(f"{len(predicted_traj['lane'])} | {len(predicted_traj['time'])} | {len(predicted_traj['xloc'])} | {len(predicted_traj['yloc'])}")
+        # print('Original Dataframe')
+        # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
 
-        predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
-        plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
+        # predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
+        # plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
 
 
 if __name__ == '__main__': # run the code
