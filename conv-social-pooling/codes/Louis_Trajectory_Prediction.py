@@ -160,8 +160,8 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
 
         # Plotting
         heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis')
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
+        ax.set_xlabel('X - Lateral Coordinate')
+        ax.set_ylabel('Y - Longitudinal Coordinate')
         ax.set_title(f'Combined Heatmap for Maneuver {m+1}')
         plt.colorbar(heatmap, ax=ax, shrink=0.8)
         plt.savefig(f'plots/combined_heatmap_maneuver_{m+1}.png')
