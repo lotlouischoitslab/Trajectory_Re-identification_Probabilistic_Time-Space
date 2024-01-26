@@ -150,8 +150,8 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
             if i % 10 == 0:
                 print(f'processing {i}/{len(muX_flat)}')
 
-            if i >= 10:
-                break 
+            # if i >= 10:
+            #     break 
             mean = [muX_flat[i], muY_flat[i]]
             cov = [[sigX_flat[i]**2, 0], [0, sigY_flat[i]**2]]
             rv = multivariate_normal(mean, cov)
@@ -399,7 +399,8 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            # Generate and save the distribution plots
+
+            # Generate and save the distribution plots just for one trajectory
             if i == 0:
                 generate_normal_distribution(fut_pred_np, lane, i)
                 break
