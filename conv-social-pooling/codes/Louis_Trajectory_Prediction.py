@@ -119,6 +119,7 @@ def line_integral(x1, y1, x2, y2, obj):
 
 
 # plot all in one same figure or keep the scale constant
+
 def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
     print(f'Batch num: {batch_num}')
     num_maneuvers = len(fut_pred)
@@ -126,13 +127,11 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
     x = np.linspace(-10, 10, split)
     y = np.linspace(-10, 10, split)
     X, Y = np.meshgrid(x, y)
-    global_max = max([np.max(fut_pred[m][:, :, 2:4]) for m in range(num_maneuvers)])
+    
+    total_pd = np.zeros_like(X)
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
-
-        # Create a new figure for each maneuver
-        fig, ax = plt.subplots(figsize=(12, 12))
 
         muX = fut_pred[m][:, :, 0]
         muY = fut_pred[m][:, :, 1]
@@ -140,7 +139,6 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
         sigY = fut_pred[m][:, :, 3]
 
         pos = np.dstack((X, Y))
-        total_pd = np.zeros_like(X)
 
         muX_flat = muX.flatten()
         muY_flat = muY.flatten()
@@ -148,26 +146,73 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
         sigY_flat = sigY.flatten()
 
         for i in range(len(muX_flat)):
-            if i % 10 == 0:
-                print(f'processing {i}/{len(muX_flat)}')
+            if i % 100 == 0:
+                print(f'Processing {i}/{len(muX_flat)}')
 
-            # if i >= 10:
-            #     break 
             mean = [muX_flat[i], muY_flat[i]]
             cov = [[sigX_flat[i]**2, 0], [0, sigY_flat[i]**2]]
             rv = multivariate_normal(mean, cov)
             pd = rv.pdf(pos)
             total_pd += pd.reshape(X.shape)
 
-        # Plotting
-        heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis', vmin=0, vmax=global_max)
-    
-        ax.set_xlabel('X - Lateral Coordinate')
-        ax.set_ylabel('Y - Longitudinal Coordinate')
-        ax.set_title(f'Combined Heatmap for Maneuver {m+1}')
-        plt.colorbar(heatmap, ax=ax, shrink=0.8)
-        plt.savefig(f'plots/combined_heatmap_maneuver_{m+1}.png')
-        plt.close(fig)  # Close the figure after saving     
+    # Plotting the combined heatmap
+    fig, ax = plt.subplots(figsize=(12, 12))
+    heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis')
+    ax.set_xlabel('X - Lateral Coordinate')
+    ax.set_ylabel('Y - Longitudinal Coordinate')
+    ax.set_title('Combined Heatmap for All Maneuvers')
+    plt.colorbar(heatmap, ax=ax, shrink=0.8)
+    plt.savefig('plots/combined_heatmap_all_maneuvers.png')
+    plt.close(fig)
+
+
+# def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
+#     print(f'Batch num: {batch_num}')
+#     num_maneuvers = len(fut_pred)
+#     split = fut_pred[0].shape[1]
+#     x = np.linspace(-10, 10, split)
+#     y = np.linspace(-10, 10, split)
+#     X, Y = np.meshgrid(x, y)
+
+#     for m in range(num_maneuvers):
+#         print(f"Processing maneuver {m+1}/{num_maneuvers}")
+
+#         # Create a new figure for each maneuver
+#         fig, ax = plt.subplots(figsize=(12, 12))
+
+#         muX = fut_pred[m][:, :, 0]
+#         muY = fut_pred[m][:, :, 1]
+#         sigX = fut_pred[m][:, :, 2]
+#         sigY = fut_pred[m][:, :, 3]
+
+#         pos = np.dstack((X, Y))
+#         total_pd = np.zeros_like(X)
+
+#         muX_flat = muX.flatten()
+#         muY_flat = muY.flatten()
+#         sigX_flat = sigX.flatten()
+#         sigY_flat = sigY.flatten()
+
+#         for i in range(len(muX_flat)):
+#             if i % 100 == 0:
+#                 print(f'processing {i}/{len(muX_flat)}')
+
+#             # if i >= 10:
+#             #     break 
+#             mean = [muX_flat[i], muY_flat[i]]
+#             cov = [[sigX_flat[i]**2, 0], [0, sigY_flat[i]**2]]
+#             rv = multivariate_normal(mean, cov)
+#             pd = rv.pdf(pos)
+#             total_pd += pd.reshape(X.shape)
+
+#         # Plotting
+#         heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis')
+#         ax.set_xlabel('X - Lateral Coordinate')
+#         ax.set_ylabel('Y - Longitudinal Coordinate')
+#         ax.set_title(f'Combined Heatmap for Maneuver {m+1}')
+#         plt.colorbar(heatmap, ax=ax, shrink=0.8)
+#         plt.savefig(f'plots/combined_heatmap_maneuver_{m+1}.png')
+#         plt.close(fig)  # Close the figure after saving     
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
     # Ensure that the tensors do not require gradients before converting to numpy
