@@ -118,7 +118,7 @@ def line_integral(x1, y1, x2, y2, obj):
     return cost
 
 
-
+# plot all in one same figure or keep the scale constant
 def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
     print(f'Batch num: {batch_num}')
     num_maneuvers = len(fut_pred)
@@ -126,6 +126,7 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
     x = np.linspace(-10, 10, split)
     y = np.linspace(-10, 10, split)
     X, Y = np.meshgrid(x, y)
+    global_max = max([np.max(fut_pred[m][:, :, 2:4]) for m in range(num_maneuvers)])
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
@@ -159,7 +160,8 @@ def generate_normal_distribution(fut_pred, maneuver_num, batch_num):
             total_pd += pd.reshape(X.shape)
 
         # Plotting
-        heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis')
+        heatmap = ax.imshow(total_pd, extent=(-10, 10, -10, 10), origin='lower', cmap='viridis', vmin=0, vmax=global_max)
+    
         ax.set_xlabel('X - Lateral Coordinate')
         ax.set_ylabel('Y - Longitudinal Coordinate')
         ax.set_title(f'Combined Heatmap for Maneuver {m+1}')
