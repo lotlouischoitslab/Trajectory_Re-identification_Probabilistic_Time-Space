@@ -123,45 +123,40 @@ def line_integral(x1, y1, x2, y2, obj):
 # Now let's plot the trajectories using x and y trajectories. Then bring into the starting point
 
 def generate_normal_distribution(fut_pred, lane, predicted_traj):
-    print(f'Batch num: {lane}')
     num_maneuvers = len(fut_pred)
-    x = np.array(predicted_traj['xloc'])
-    y = np.array(predicted_traj['yloc'])
-    X, Y = np.meshgrid(x, y)
-    extent = (x.min(), x.max(), y.min(), y.max())
+    x = np.linspace(-10,10,50)
+    y = np.linspace(-10,10,50)
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
-
         muX = fut_pred[m][:, :, 0]
         muY = fut_pred[m][:, :, 1]
         sigX = fut_pred[m][:, :, 2]
         sigY = fut_pred[m][:, :, 3]
+    
+        muX_scenario = muX[:, 0]
+        muY_scenario = muY[:, 0]
+        sigX_scenario = sigX[:, 0]
+        sigY_scenario = sigY[:, 0]
 
-        pos = np.dstack((X, Y))
-        total_pd = np.zeros_like(X)
+        X, Y = np.meshgrid(x, y)
+        Z = np.zeros(X.shape) # Initialize a zero matrix for the PDF values
 
-        muX_flat = muX.flatten()
-        muY_flat = muY.flatten()
-        sigX_flat = sigX.flatten()
-        sigY_flat = sigY.flatten()
-
-        # Generate the combined PDF for the current maneuver
-        for i in range(len(muX_flat)):
-            mean = [muX_flat[i], muY_flat[i]]
-            cov = [[sigX_flat[i]**2, 0], [0, sigY_flat[i]**2]]
+        # Calculate the PDF values for each point on the grid
+        for i in range(len(muX_scenario)):
+            mean = [muX_scenario[i], muY_scenario[i]]
+            cov = [[sigX_scenario[i]**2, 0], [0, sigY_scenario[i]**2]]  # Assuming no covariance
             rv = multivariate_normal(mean, cov)
-            pd = rv.pdf(pos)
-            total_pd += pd
+            Z += rv.pdf(np.dstack((X, Y)))
 
-        # Plotting as contour
+        # Plot the contour map
         plt.figure(figsize=(14, 6))
-        contour = plt.contourf(X, Y, total_pd, cmap='viridis', extent=extent)
+        contour = plt.contourf(X, Y, Z, cmap='viridis')
         plt.xlabel('X - Lateral Coordinate')
         plt.ylabel('Y - Longitudinal Coordinate')
         plt.title(f'Contour Plot for Maneuver {m+1}')
         plt.colorbar(contour)
-        plt.show()
+        plt.savefig('plots/maneuver'+str(m+1)+'.png')
         
  
 
