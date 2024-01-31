@@ -124,8 +124,12 @@ def line_integral(x1, y1, x2, y2, obj):
 
 def generate_normal_distribution(fut_pred, lane, predicted_traj):
     num_maneuvers = len(fut_pred)
-    x = np.linspace(-10,10,50)
-    y = np.linspace(-10,10,50)
+    # x = np.linspace(-10,10,50)
+    # y = np.linspace(-10,10,50)
+    x = predicted_traj['xloc']
+    y = predicted_traj['yloc']
+    Xc, Yc = np.meshgrid(x, y)
+    combined_Z = np.zeros(Xc.shape)
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
@@ -148,6 +152,8 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj):
             cov = [[sigX_scenario[i]**2, 0], [0, sigY_scenario[i]**2]]  # Assuming no covariance
             rv = multivariate_normal(mean, cov)
             Z += rv.pdf(np.dstack((X, Y)))
+        
+        combined_Z += Z
 
         # Plot the contour map
         plt.figure(figsize=(14, 6))
@@ -157,6 +163,16 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj):
         plt.title(f'Contour Plot for Maneuver {m+1}')
         plt.colorbar(contour)
         plt.savefig('plots/maneuver'+str(m+1)+'.png')
+    
+    # Plot the combined contour map
+    plt.figure(figsize=(14, 6))
+    contour = plt.contourf(Xc, Yc, combined_Z, cmap='viridis')
+    plt.xlabel('X - Lateral Coordinate')
+    plt.ylabel('Y - Longitudinal Coordinate')
+    plt.title('Combined Contour Plot for All Maneuvers')
+    plt.colorbar(contour)
+    plt.savefig('plots/combined_maneuver.png')
+  
         
  
 
