@@ -127,9 +127,9 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
     num_maneuvers = len(fut_pred)
     x = np.linspace(-100,100,100)  
     y = np.linspace(0,100,100)  
- 
     Xc, Yc = np.meshgrid(x, y)
     combined_Z = np.zeros(Xc.shape)
+    plt.figure(figsize=(18, 12)) 
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
@@ -151,13 +151,17 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         combined_Z += Z
 
         # Plot the contour map
-        plt.figure(figsize=(9, 6))
+        # plt.figure(figsize=(9, 6))
+        plt.subplot(2,3,m+1)
         contour = plt.contourf(X, Y, Z, cmap='viridis')
         plt.xlabel('X - Lateral Coordinate')
         plt.ylabel('Y - Longitudinal Coordinate')
         plt.title(f'Contour Plot for Maneuver {m+1}')
         plt.colorbar(contour)
-        plt.savefig('plots/maneuver'+str(m+1)+'.png')
+        # plt.savefig('plots/maneuver'+str(m+1)+'.png')
+    
+    plt.tight_layout()
+    plt.savefig('plots/all_maneuvers_subplot.png')
 
     # Plot the combined contour map for all maneuvers
     plt.figure(figsize=(9, 6))
