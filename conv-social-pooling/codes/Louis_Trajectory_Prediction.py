@@ -125,8 +125,8 @@ def line_integral(x1, y1, x2, y2, obj):
 
 def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
     num_maneuvers = len(fut_pred)
-    x = np.linspace(-100,100,100) # x = np.linspace(-100,100,50)
-    y = np.linspace(0,100,100) # y = np.linspace(-100,100,50)
+    x = np.linspace(-100,100,100)  
+    y = np.linspace(0,100,100)  
  
     Xc, Yc = np.meshgrid(x, y)
     combined_Z = np.zeros(Xc.shape)
