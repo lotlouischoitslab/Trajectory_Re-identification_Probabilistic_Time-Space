@@ -29,6 +29,28 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
+2/18/2024 
+Possible solution for the trajectory prediction part:
+1. First we will calculate the line integral 
+2. Create a function to detect overlaps using muX, muY, sigX and sigY
+3. Taking into account of line integral cost and overlap probability, create cost matrix
+4. For trajectories that have a high risk of overlapping, assign a high cost to discourage 
+their simultaneous selection. Conversely, trajectories with high line integral costs and low 
+overlap risks should have a lower match cost to encourage their selection.
+
+
+OPTIMIZATION PART:
+Objective: Minimize the total match cost across all trajectory pairs, selecting a set of trajectories that maximizes overall 
+quality while minimizing collision risk.
+
+Decision Variables: Define binary decision variables indicating whether a trajectory is selected for a vehicle.
+
+Constraints: Each vehicle is assigned exactly one trajectory.
+Trajectories with high overlap risks are not assigned simultaneously to different vehicles.
+
+
+
+
 12/4/2023
 TO-DO:
 1. Start writing the paper. Write down what I want to include (detailed outline) 
