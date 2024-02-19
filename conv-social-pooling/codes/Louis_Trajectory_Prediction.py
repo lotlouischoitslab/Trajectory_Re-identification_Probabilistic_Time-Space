@@ -211,6 +211,8 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 
 
  
+# NOTE: I need to figure out an optimization algorithm to put here
+
 def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pred, batch_num):
     num_maneuvers = len(fut_pred)
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)
