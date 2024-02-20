@@ -197,8 +197,6 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         
  
 
-
-
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
     # Ensure that the tensors do not require gradients before converting to numpy
     muX_numpy = muX.detach().numpy() if isinstance(muX, torch.Tensor) else muX
@@ -212,6 +210,8 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 
  
 # NOTE: I need to figure out an optimization algorithm to put here
+# TBD with Professor Talebpour
+
 
 def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pred, batch_num):
     num_maneuvers = len(fut_pred)
