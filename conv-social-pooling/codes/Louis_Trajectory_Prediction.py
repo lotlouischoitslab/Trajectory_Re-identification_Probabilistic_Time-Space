@@ -231,8 +231,7 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
         'lane': [],
         'time': [],
         'xloc': [],
-        'yloc': [],
-        'line_integral':[]
+        'yloc': [] 
     }
 
     highest_integral_value = float('-inf')
@@ -254,8 +253,6 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
 
         # Assume line_integral is a function you have defined elsewhere
         total_integral_for_trajectory = np.sum([line_integral(x_values[i], y_values[i], x_values[i+1], y_values[i+1], objects_for_integral) for i in range(len(x_values) - 1)])
-        best_trajectory['line_integral'].append(total_integral_for_trajectory)
-    
 
         trajectory = {
             'lane': [lane] * len(temp_time),
@@ -463,9 +460,11 @@ def main(): # Main function
         # print(f"{len(predicted_traj['lane'])} | {len(predicted_traj['time'])} | {len(predicted_traj['xloc'])} | {len(predicted_traj['yloc'])}")
         # print('Original Dataframe')
         # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
-
+        predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
         plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
- 
+
+
+
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
