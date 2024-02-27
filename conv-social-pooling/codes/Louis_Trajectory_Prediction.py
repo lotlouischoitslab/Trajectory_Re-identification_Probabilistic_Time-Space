@@ -262,6 +262,10 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
             'time': temp_time.tolist(),
             'xloc': x_values.tolist(),
             'yloc': y_values.tolist(),
+            'muX': muX.tolist(),
+            'muY': muY.tolist(),
+            'sigX': sigX.tolist(),
+            'sigY': sigY.tolist(),
             'line_integral': total_integral_for_trajectory
         }
 
@@ -283,20 +287,18 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
 
         print(f'Highest Integral value: {highest_integral_value}')
 
-    # After all trajectories are added, save them to a CSV
+    ######################### TEMPORARY CODE SO I CAN SAVE ALL THE DATA GENERATED ######################################################################
     df = pd.DataFrame([item for trajectory in trajectories for item in zip(trajectory['lane'], trajectory['time'], trajectory['xloc'], trajectory['yloc'], [trajectory['line_integral']] * len(trajectory['time']))], columns=['lane', 'time', 'xloc', 'yloc', 'line_integral'])
 
     for col in df.keys():
         print(col,len(df[col])) 
     
-    df.to_csv('run_trajectories.csv', index=False)
+    df.to_csv('run_trajectories.csv', index=False) # 
     print(f'Trajectories saved to "run_trajectories.csv"')
+    ###################################################################################################################################################
+
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
-    return best_trajectory 
-
-
- 
-
+    return best_trajectory # return the best trajectory 
 
 
 def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the trajectories 
