@@ -225,6 +225,8 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
 
     print(f'min max time: {min_time} | {max_time}') 
 
+    trajectories = [] # dummy variable so I can save the values each time this function is called 
+
     best_trajectory = {
         'lane': [],
         'time': [],
@@ -248,11 +250,24 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
 
         x_values = filtered_data['xloc'].values
         y_values = filtered_data['yloc'].values
- 
+        temp_time = np.linspace(current_time, end_time, len(x_values))
 
         # Assume line_integral is a function you have defined elsewhere
         total_integral_for_trajectory = np.sum([line_integral(x_values[i], y_values[i], x_values[i+1], y_values[i+1], objects_for_integral) for i in range(len(x_values) - 1)])
-        best_trajectory['line_integral'] = total_integral_for_trajectory 
+        best_trajectory['line_integral'].append(total_integral_for_trajectory)
+    
+
+        trajectory = {
+            'lane': [lane] * len(temp_time),
+            'time': temp_time.tolist(),
+            'xloc': x_values.tolist(),
+            'yloc': y_values.tolist(),
+            'line_integral': total_integral_for_trajectory
+        }
+
+        # Add the current trajectory to the list of trajectories
+        trajectories.append(trajectory)
+
 
         if total_integral_for_trajectory > highest_integral_value:
             highest_integral_value = total_integral_for_trajectory
@@ -268,8 +283,19 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
 
         print(f'Highest Integral value: {highest_integral_value}')
 
+    # After all trajectories are added, save them to a CSV
+    df = pd.DataFrame([item for trajectory in trajectories for item in zip(trajectory['lane'], trajectory['time'], trajectory['xloc'], trajectory['yloc'], [trajectory['line_integral']] * len(trajectory['time']))], columns=['lane', 'time', 'xloc', 'yloc', 'line_integral'])
+
+    for col in df.keys():
+        print(col,len(df[col])) 
+    
+    df.to_csv('run_trajectories.csv', index=False)
+    print(f'Trajectories saved to "run_trajectories.csv"')
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
-    return best_trajectory
+    return best_trajectory 
+
+
+ 
 
 
 
@@ -436,11 +462,8 @@ def main(): # Main function
         # print('Original Dataframe')
         # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
 
-        predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
         plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
-    
-    predicted_traj.to_csv('total_data_predicted.csv')
-
+ 
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
