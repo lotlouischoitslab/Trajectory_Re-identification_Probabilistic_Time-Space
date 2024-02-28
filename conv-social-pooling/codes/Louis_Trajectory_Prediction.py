@@ -212,28 +212,27 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated)
 
 
-def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pred, batch_num):
-    num_maneuvers = len(fut_pred)
-    input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)
-    delta = 10
-    before_overpass = input_data[(input_data['xloc'] <= overpass_start+delta)] 
-    before_overpass = before_overpass[before_overpass['lane'] == lane].reset_index(drop=True)
-
-    after_overpass = input_data[(input_data['xloc'] >= overpass_end)][:len(before_overpass)]
-    after_overpass = after_overpass[after_overpass['lane'] == lane].reset_index(drop=True)   
+def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pred, batch_num): # Predict trajectories function I am working on 
+    num_maneuvers = len(fut_pred) # basically 6 different maneuvers 
+    input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given 
+    
+    
+    delta = 10 # so from start point to start + delta point 
+    before_overpass = input_data[(input_data['xloc'] <= overpass_start+delta)] # get the data before overpass 
+    before_overpass = before_overpass[before_overpass['lane'] == lane].reset_index(drop=True) # filter out for that lane 
+    after_overpass = input_data[(input_data['xloc'] >= overpass_end)][:len(before_overpass)] # get the data after overpass 
+    after_overpass = after_overpass[after_overpass['lane'] == lane].reset_index(drop=True) # filter out for that lane 
 
     print(f'before overpass {len(before_overpass)}')
     print(f'after overpass {len(after_overpass)}')
 
-    time_values = list(before_overpass['time'].values)+list(after_overpass['time'].values)
-    
-    min_time = np.min(time_values)
-    max_time = np.max(time_values)
-
+    time_values = list(before_overpass['time'].values)+list(after_overpass['time'].values) # extract the time values out
+    min_time = np.min(time_values) # min time 
+    max_time = np.max(time_values) # max time 
     print(f'min max time: {min_time} | {max_time}') 
 
-    trajectories = [] # dummy variable so I can save the values each time this function is called 
-    highest_integral_value = float('-inf')
+    trajectories = [] # Temporary trajectory variable so I can save the values each time this function is called 
+    highest_integral_value = float('-inf') # We are going to keep updating the highest max integral value
     best_trajectory = {
         'lane': [],
         'time': [],
@@ -242,24 +241,22 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
     }
 
     
-    for m in range(num_maneuvers):
-        muX = fut_pred[m][:, batch_num, 0]
-        muY = fut_pred[m][:, batch_num, 1]
-        sigX = fut_pred[m][:, batch_num, 2]
-        sigY = fut_pred[m][:, batch_num, 3]
+    for m in range(num_maneuvers): # for each maneuver 
+        muX = fut_pred[m][:, batch_num, 0] # extract the muX values 
+        muY = fut_pred[m][:, batch_num, 1] # extract the muY values 
+        sigX = fut_pred[m][:, batch_num, 2] # extract the sigX values 
+        sigY = fut_pred[m][:, batch_num, 3] # extract the sigY values 
 
         print(f'muX: {len(muX)}')
         print(f'muY: {len(muY)}')
         print(f'sigX: {len(sigX)}')
         print(f'sigY: {len(sigY)}')
-
          
         objects_for_integral = create_object(muX, muY, sigX, sigY) # call the create object function
-        x1_list = before_overpass['xloc']
+        x1_list = before_overpass['xloc'] 
         y1_list = before_overpass['yloc']
         x2_list = after_overpass['xloc']
         y2_list = after_overpass['yloc']
-
 
         temp_time = np.linspace(min_time, max_time, len(x1_list)) # temp time frame 
         total_integral_for_trajectory = np.sum([line_integral(x1, y1, x2, y2, objects_for_integral) for x1,y1,x2,y2 in zip(x1_list,y1_list,x2_list,y2_list)])
@@ -267,8 +264,6 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
         integral_for_trajectory = [line_integral(x1, y1, x2, y2, objects_for_integral) for x1,y1,x2,y2 in zip(x1_list,y1_list,x2_list,y2_list)]
         print(f'length of line integral values: {len(integral_for_trajectory)}')
         print(f'total integral: {total_integral_for_trajectory}')
-
-
 
         trajectory = {
             'lane': [lane] * len(temp_time),
@@ -302,8 +297,8 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
     for col in df.keys():
         print(col,len(df[col])) 
     
-    df.to_csv('run_trajectories.csv', index=False) # 
-    print(f'Trajectories saved to "run_trajectories.csv"')
+    df.to_csv('run_trajectories.csv', index=False) # save the trajectories ran into a temporary file 
+    print(f'Trajectories saved to "run_trajectories.csv"') # just to let me know that the file is saved 
     ###################################################################################################################################################
 
     print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
