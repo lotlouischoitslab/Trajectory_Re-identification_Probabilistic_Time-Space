@@ -266,9 +266,9 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
 
         for i in range(len(x_list)-1):
             temp_val = line_integral(x_list[i],y_list[i],x_list[i+1],y_list[i+1],objects_for_integral)
-            trajectory['line_integral_'+str(count)] = temp_val 
+            trajectory['line_integral_'+str(counter)] = temp_val 
             total_integral_for_trajectory += temp_val 
-            count += 1 
+            counter += 1 
 
         trajectories.append(trajectory) # Add the current trajectory to the list of trajectories
 
