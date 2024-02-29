@@ -207,17 +207,17 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated)
  
 
-def predict_trajectories(input_data, current_point, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num): # predict trajectory function 
+def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
+    print(num_maneuvers)
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
-
-
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc]
-    print(possible_trajectories)
-        
-    current_data = input_data[(input_data['time'] >= overpass_start_time) & (input_data['time'] <= overpass_end_time)]
+    # print(possible_trajectories)
 
+    IDs_to_traverse = possible_trajectories['ID'].unique()
+ 
+    print(IDs_to_traverse)
 
     ######################### Initialize storage for all trajectories and the best trajectory #################################
     trajectories = []
@@ -228,38 +228,49 @@ def predict_trajectories(input_data, current_point, overpass_start_loc,overpass_
     for m in range(num_maneuvers): # Loop through each maneuver
         muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
         obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
-        
-        # Initialize storage for the current trajectory
-        current_trajectory = {
-            'lane':lane,
-            'xloc':[],
-            'yloc':[],
-            'muX':[],
-            'muY':[],
-            'sigX':[],
-            'sigY':[],
-            'line_integral_values': []
-        }
-        
+        start_time = min(possible_trajectories['time'])
+        end_time = start_time + 5 
+        # print('start time',start_time) 
+        # print('end time',end_time) 
+        # print(possible_trajectories)
 
-        for i in range(len(current_data) - 1): # Loop through each segment in current_data
-            x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
-            x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
-            segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment
-            current_trajectory['xloc'].append((x1,x2))
-            current_trajectory['yloc'].append((y1,y2))
-            current_trajectory['muX'].append(muX)
-            current_trajectory['muY'].append(muY)
-            current_trajectory['sigX'].append(sigX)
-            current_trajectory['sigY'].append(sigY)
-            current_trajectory['line_integral_values'].append(segment_integral)
-    
-            for seg_int in segment_integral: # for each calculated line integral value
-                if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
-                    highest_integral_value = seg_int # assign the highest line integral value
-                    best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
-        
-        trajectories.append(current_trajectory) # Store the current trajectory
+        for temp_ID in IDs_to_traverse:
+            # Initialize storage for the current trajectory
+            current_trajectory = {
+                'ID':temp_ID,
+                'lane':lane,
+                'xloc':[],
+                'yloc':[],
+                'muX':[],
+                'muY':[],
+                'sigX':[],
+                'sigY':[],
+                'line_integral_values': []
+            }
+            current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID]
+            current_data = current_data[current_data['time'] <= end_time]
+
+            if len(current_data) != 0:
+                print(current_data)
+                print(temp_ID)
+                for i in range(len(current_data) - 1): # Loop through each segment in current_data
+                    x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
+                    x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
+                    segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment
+                    current_trajectory['xloc'].append((x1,x2))
+                    current_trajectory['yloc'].append((y1,y2))
+                    current_trajectory['muX'].append(muX)
+                    current_trajectory['muY'].append(muY)
+                    current_trajectory['sigX'].append(sigX)
+                    current_trajectory['sigY'].append(sigY)
+                    current_trajectory['line_integral_values'].append(segment_integral)
+            
+                    for seg_int in segment_integral: # for each calculated line integral value
+                        if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
+                            highest_integral_value = seg_int # assign the highest line integral value
+                            best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
+                
+                trajectories.append(current_trajectory) # Store the current trajectory
     
     for key,temp in enumerate(trajectories): # for each stored dataframe
         trajectories_df = pd.DataFrame(temp) # convert to DataFrame
@@ -321,18 +332,18 @@ def main(): # Main function
 
     ######################################## TRAJECTORY DIRECTORIES ######################################################################################
     trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
-    #trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
+    # trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
 
     ####################################### MODEL DIRECTORIES ############################################################################################
     directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
-    #directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
+    # directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
     
     ######################################### PRED SET DIRECTORY #########################################################################################
     filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
-    #filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
+    # filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
     file_to_read = 'lane_2_data.csv'
@@ -355,7 +366,7 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 150, 160 
+    overpass_start_loc,overpass_end_loc = 160, 170 
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -423,8 +434,7 @@ def main(): # Main function
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
             trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
             
-            # Generate and save the distribution plots just for one trajectory
-            if i == 0:
+            if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane, predicted_traj,i)
                 break
 
