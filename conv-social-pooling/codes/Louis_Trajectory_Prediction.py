@@ -267,7 +267,7 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         best_trajectory_df = pd.DataFrame(best_trajectory)
         best_trajectory_df.to_csv('best_trajectory.csv', index=False)
     
-    return trajectories, best_trajectory
+    return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
 
 
 def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the trajectories 
