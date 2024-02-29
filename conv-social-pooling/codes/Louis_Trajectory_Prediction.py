@@ -211,35 +211,7 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated)
-def flatten_trajectories(trajectories):
-    # This function will flatten the trajectories for DataFrame conversion
-    flattened_data = []
-    for trajectory in trajectories:
-        lane = trajectory['lane']
-        maneuver = trajectory['maneuver']
-        xlocs = trajectory['xloc']
-        ylocs = trajectory['yloc']
-        muXs = trajectory['muX']
-        muYs = trajectory['muY']
-        sigXs = trajectory['sigX']
-        sigYs = trajectory['sigY']
-        line_integral_values = trajectory['line_integral_values']
-        
-        for i, integral_value in enumerate(line_integral_values):
-            flattened_data.append({
-                'lane': lane,
-                'maneuver': maneuver,
-                'segment_index': i,
-                'xloc': xlocs[i] if i < len(xlocs) else None,  # Ensure index is within bounds
-                'yloc': ylocs[i] if i < len(ylocs) else None,
-                'muX': muXs[i] if i < len(muXs) else None,
-                'muY': muYs[i] if i < len(muYs) else None,
-                'sigX': sigXs[i] if i < len(sigXs) else None,
-                'sigY': sigYs[i] if i < len(sigYs) else None,
-                'line_integral_value': integral_value,
-            })
-    return flattened_data
-
+ 
 
 def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num):
     # Filter data for the current lane
@@ -261,7 +233,6 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         # Initialize storage for the current trajectory
         current_trajectory = {
             'lane':lane,
-            'maneuver': m,
             'xloc':[],
             'yloc':[],
             'muX':[],
@@ -270,21 +241,23 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
             'sigY':[],
             'line_integral_values': []}
         
-        # Loop through each segment in current_data
-        for i in range(len(current_data) - 1):
-            # Calculate line integral for each segment
-            x1, y1 = current_data.iloc[i][['xloc', 'yloc']]
-            x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']]
-            segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral)
-            current_trajectory['xloc'].append(current_data['xloc'])
-            current_trajectory['yloc'].append(current_data['yloc'])
+        
+        # current_trajectory['xloc'] = current_data['xloc'] # assign the current x trajectories
+        # current_trajectory['yloc'] = current_data['yloc'] # assign the current y trajectories
+
+        for i in range(len(current_data) - 1): # Loop through each segment in current_data
+            x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
+            x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
+            segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment
+            current_trajectory['xloc'].append((x1,x2))
+            current_trajectory['yloc'].append((y1,y2))
             current_trajectory['muX'].append(muX)
             current_trajectory['muY'].append(muY)
             current_trajectory['sigX'].append(sigX)
             current_trajectory['sigY'].append(sigY)
             current_trajectory['line_integral_values'].append(segment_integral)
     
-            for seg_int in segment_integral:
+            for seg_int in segment_integral: # for each calculated line integral value
                 if seg_int > highest_integral_value:
                     highest_integral_value = seg_int
                     best_trajectory = current_trajectory
@@ -293,15 +266,13 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         trajectories.append(current_trajectory) # Store the current trajectory
     
     
-    flattened_trajectories = flatten_trajectories(trajectories) # Flatten the trajectories for a cleaner DataFrame
-    trajectories_df = pd.DataFrame(flattened_trajectories) # Convert to DataFrame
-    trajectories_df.to_csv('all_trajectories.csv', index=False) # Save to CSV
+    #flattened_trajectories = flatten_trajectories(trajectories) # Flatten the trajectories for a cleaner DataFrame
+    for key,temp in enumerate(trajectories):
+        trajectories_df = pd.DataFrame(temp) # Convert to DataFrame
+        trajectories_df.to_csv('all_combinations_trajectories/trajectory_maneuver_'+str(key+1)+'.csv', index=False) # Save to CSV
     
     if best_trajectory: # if we have a best 
-        flattened_best_trajectory = flatten_trajectories([best_trajectory])
-
-        # Convert the flattened best trajectory to a DataFrame and save
-        best_trajectory_df = pd.DataFrame(flattened_best_trajectory)
+        best_trajectory_df = pd.DataFrame(best_trajectory)
         best_trajectory_df.to_csv('best_trajectory.csv', index=False)
     
     return trajectories, best_trajectory
@@ -477,3 +448,6 @@ def main(): # Main function
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
+
+
+
