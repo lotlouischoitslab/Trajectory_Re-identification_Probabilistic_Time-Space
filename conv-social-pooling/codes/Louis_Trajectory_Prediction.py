@@ -215,15 +215,31 @@ def flatten_trajectories(trajectories):
     # This function will flatten the trajectories for DataFrame conversion
     flattened_data = []
     for trajectory in trajectories:
-        for index, value in enumerate(trajectory['line_integral_values']):
-            # Flatten each trajectory data into a single dictionary per row
+        lane = trajectory['lane']
+        maneuver = trajectory['maneuver']
+        xlocs = trajectory['xloc']
+        ylocs = trajectory['yloc']
+        muXs = trajectory['muX']
+        muYs = trajectory['muY']
+        sigXs = trajectory['sigX']
+        sigYs = trajectory['sigY']
+        line_integral_values = trajectory['line_integral_values']
+        
+        for i, integral_value in enumerate(line_integral_values):
             flattened_data.append({
-                'maneuver': trajectory['maneuver'],
-                'segment_index': index,
-                'line_integral_value': value,
-                # Include other trajectory-specific metrics if necessary
+                'lane': lane,
+                'maneuver': maneuver,
+                'segment_index': i,
+                'xloc': xlocs[i] if i < len(xlocs) else None,  # Ensure index is within bounds
+                'yloc': ylocs[i] if i < len(ylocs) else None,
+                'muX': muXs[i] if i < len(muXs) else None,
+                'muY': muYs[i] if i < len(muYs) else None,
+                'sigX': sigXs[i] if i < len(sigXs) else None,
+                'sigY': sigYs[i] if i < len(sigYs) else None,
+                'line_integral_value': integral_value,
             })
     return flattened_data
+
 
 def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num):
     # Filter data for the current lane
@@ -282,7 +298,10 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
     trajectories_df.to_csv('all_trajectories.csv', index=False) # Save to CSV
     
     if best_trajectory: # if we have a best 
-        best_trajectory_df = pd.DataFrame([best_trajectory])
+        flattened_best_trajectory = flatten_trajectories([best_trajectory])
+
+        # Convert the flattened best trajectory to a DataFrame and save
+        best_trajectory_df = pd.DataFrame(flattened_best_trajectory)
         best_trajectory_df.to_csv('best_trajectory.csv', index=False)
     
     return trajectories, best_trajectory
