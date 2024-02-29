@@ -213,22 +213,20 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated)
  
 
-def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num):
-    # Filter data for the current lane
-    num_maneuvers = len(fut_pred) # basically 6 different maneuvers 
+def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num): # predict trajectory function 
+    num_maneuvers = len(fut_pred) # Wer have 6 different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given 
-    delta = 0
-    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start+delta)] # get the data before overpass     
-    # Initialize storage for all trajectories and the best trajectory
+    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start)] # get the data before overpass     
+    
+    ######################### Initialize storage for all trajectories and the best trajectory #################################
     trajectories = []
     best_trajectory = None
     highest_integral_value = float('-inf')
+    ###########################################################################################################################
     
-    # Loop through each maneuver
-    for m in range(num_maneuvers):
-        # Extract maneuver-specific predictive parameters
-        muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T
-        obj_for_integral = create_object(muX, muY, sigX, sigY)
+    for m in range(num_maneuvers): # Loop through each maneuver
+        muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+        obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
         
         # Initialize storage for the current trajectory
         current_trajectory = {
@@ -241,9 +239,6 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
             'sigY':[],
             'line_integral_values': []}
         
-        
-        # current_trajectory['xloc'] = current_data['xloc'] # assign the current x trajectories
-        # current_trajectory['yloc'] = current_data['yloc'] # assign the current y trajectories
 
         for i in range(len(current_data) - 1): # Loop through each segment in current_data
             x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
@@ -258,20 +253,17 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
             current_trajectory['line_integral_values'].append(segment_integral)
     
             for seg_int in segment_integral: # for each calculated line integral value
-                if seg_int > highest_integral_value:
-                    highest_integral_value = seg_int
-                    best_trajectory = current_trajectory
-        
+                if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
+                    highest_integral_value = seg_int # assign the highest line integral value
+                    best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
         
         trajectories.append(current_trajectory) # Store the current trajectory
     
-    
-    #flattened_trajectories = flatten_trajectories(trajectories) # Flatten the trajectories for a cleaner DataFrame
-    for key,temp in enumerate(trajectories):
-        trajectories_df = pd.DataFrame(temp) # Convert to DataFrame
+    for key,temp in enumerate(trajectories): # for each stored dataframe
+        trajectories_df = pd.DataFrame(temp) # convert to DataFrame
         trajectories_df.to_csv('all_combinations_trajectories/trajectory_maneuver_'+str(key+1)+'.csv', index=False) # Save to CSV
     
-    if best_trajectory: # if we have a best 
+    if best_trajectory: # if we have the best trajectory
         best_trajectory_df = pd.DataFrame(best_trajectory)
         best_trajectory_df.to_csv('best_trajectory.csv', index=False)
     
