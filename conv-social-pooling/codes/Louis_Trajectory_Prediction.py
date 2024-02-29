@@ -103,13 +103,15 @@ Guidelines to understand the prediction function:
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
 def line_integral(x1, y1, x2, y2, obj):
-    cost = 1e-5
+    #cost = 1e-5
+    cost = []
     dx = x1 - x2
     dy = y1 - y2
     distance = math.sqrt(dx**2 + dy**2)
 
     for i in range(len(obj)):
         mu_x, mu_y, sigma_sq = obj[i][0],obj[i][1],obj[i][2]
+
         if sigma_sq < 1e-9:  # Avoid division by a very small number
             continue
 
@@ -134,12 +136,12 @@ def line_integral(x1, y1, x2, y2, obj):
         term_to_add = (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
                 (math.sqrt(math.pi) / 2) * erf_part * distance
 
-        # print(f'term to add: {term_to_add}')
-        cost += term_to_add # add this term to the cost
+        print(f'term to add: {term_to_add}')
+        #cost += term_to_add # add this term to the cost
+        cost.append(term_to_add)
 
-    # print(f'cost: {cost}')
+    print(f'cost: {len(cost)}')
     return cost
-
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -207,96 +209,83 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
     return result # return the result created by stacking up the statistical variables. 
 
 
- 
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated)
+def flatten_trajectories(trajectories):
+    # This function will flatten the trajectories for DataFrame conversion
+    flattened_data = []
+    for trajectory in trajectories:
+        for index, value in enumerate(trajectory['line_integral_values']):
+            # Flatten each trajectory data into a single dictionary per row
+            flattened_data.append({
+                'maneuver': trajectory['maneuver'],
+                'segment_index': index,
+                'line_integral_value': value,
+                # Include other trajectory-specific metrics if necessary
+            })
+    return flattened_data
 
-
-def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num): # Predict trajectories function I am working on 
+def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num):
+    # Filter data for the current lane
     num_maneuvers = len(fut_pred) # basically 6 different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given 
     delta = 0
-    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start+delta)] # get the data before overpass 
-    time_values = list(current_data['time'].values) # extract the time values out
-    min_time = np.min(time_values) # min time 
-    max_time = np.max(time_values) # max time 
-    print(f'min max time: {min_time} | {max_time}') 
-
-    x_list = list(current_data['xloc'].values)
-    y_list = list(current_data['yloc'].values)
-
-    trajectories = [] # Temporary trajectory variable so I can save the values each time this function is called 
-    highest_integral_value = float('-inf') # We are going to keep updating the highest max integral value
-    best_trajectory = {
-        'lane': [],
-        'time': [],
-        'xloc': [],
-        'yloc': [] 
-    }
-
-    counter = 0 # counter variable to count the integral calculations stored in temporary trajectory file
-
+    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start+delta)] # get the data before overpass     
+    # Initialize storage for all trajectories and the best trajectory
+    trajectories = []
+    best_trajectory = None
+    highest_integral_value = float('-inf')
     
-    for m in range(num_maneuvers): # for each maneuver 
-        muX = fut_pred[m][:, batch_num, 0] # extract the muX values 
-        muY = fut_pred[m][:, batch_num, 1] # extract the muY values 
-        sigX = fut_pred[m][:, batch_num, 2] # extract the sigX values 
-        sigY = fut_pred[m][:, batch_num, 3] # extract the sigY values 
-
-        print(f'muX: {len(muX)}')
-        print(f'muY: {len(muY)}')
-        print(f'sigX: {len(sigX)}')
-        print(f'sigY: {len(sigY)}')
-         
-        objects_for_integral = create_object(muX, muY, sigX, sigY) # call the create object function
-        temp_time = np.linspace(min_time, max_time, len(current_data['xloc'])) # temp time frame 
-
-        trajectory = {
-            'lane': [lane] * len(temp_time),
-            'time': temp_time.tolist(),
-            'xloc': x_list,
-            'yloc': y_list,
-            'muX': muX.tolist(),
-            'muY': muY.tolist(),
-            'sigX': sigX.tolist(),
-            'sigY': sigY.tolist(),
-        }
-
-        total_integral_for_trajectory = 0 
-
-        for i in range(len(x_list)-1):
-            temp_val = line_integral(x_list[i],y_list[i],x_list[i+1],y_list[i+1],objects_for_integral)
-            trajectory['line_integral_'+str(counter)] = temp_val 
-            total_integral_for_trajectory += temp_val 
-            counter += 1 
-
-        trajectories.append(trajectory) # Add the current trajectory to the list of trajectories
-
-        # if total_integral_for_trajectory > highest_integral_value:
-        #     highest_integral_value = total_integral_for_trajectory
-        #     temp_x = x_values
-        #     temp_y = y_values
-
-        # temp_lane = [lane] * len(temp_x)
-        # best_trajectory['lane'] = temp_lane
-        # best_trajectory['time'] = temp_time
-        # best_trajectory['xloc'] = temp_x
-        # best_trajectory['yloc'] = temp_y
-
-        print(f'Highest Integral value: {highest_integral_value}')
-
-    ######################### TEMPORARY CODE SO I CAN SAVE ALL THE DATA GENERATED ######################################################################
-    df = pd.DataFrame([item for trajectory in trajectories for item in zip(trajectory[tkey] for tkey in trajectory.keys())], columns=trajectory.keys())
-
-    for col in df.keys():
-        print(col,len(df[col])) 
+    # Loop through each maneuver
+    for m in range(num_maneuvers):
+        # Extract maneuver-specific predictive parameters
+        muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T
+        obj_for_integral = create_object(muX, muY, sigX, sigY)
+        
+        # Initialize storage for the current trajectory
+        current_trajectory = {
+            'lane':lane,
+            'maneuver': m,
+            'xloc':[],
+            'yloc':[],
+            'muX':[],
+            'muY':[],
+            'sigX':[],
+            'sigY':[],
+            'line_integral_values': []}
+        
+        # Loop through each segment in current_data
+        for i in range(len(current_data) - 1):
+            # Calculate line integral for each segment
+            x1, y1 = current_data.iloc[i][['xloc', 'yloc']]
+            x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']]
+            segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral)
+            current_trajectory['xloc'].append(current_data['xloc'])
+            current_trajectory['yloc'].append(current_data['yloc'])
+            current_trajectory['muX'].append(muX)
+            current_trajectory['muY'].append(muY)
+            current_trajectory['sigX'].append(sigX)
+            current_trajectory['sigY'].append(sigY)
+            current_trajectory['line_integral_values'].append(segment_integral)
     
-    df.to_csv('run_trajectories.csv', index=False) # save the trajectories ran into a temporary file 
-    print(f'Trajectories saved to "run_trajectories.csv"') # just to let me know that the file is saved 
-    ###################################################################################################################################################
-
-    print(f"assertions: {len(best_trajectory['time'])} | {len(best_trajectory['xloc'])} | {len(best_trajectory['yloc'])}")
-    return best_trajectory # return the best trajectory 
+            for seg_int in segment_integral:
+                if seg_int > highest_integral_value:
+                    highest_integral_value = seg_int
+                    best_trajectory = current_trajectory
+        
+        
+        trajectories.append(current_trajectory) # Store the current trajectory
+    
+    
+    flattened_trajectories = flatten_trajectories(trajectories) # Flatten the trajectories for a cleaner DataFrame
+    trajectories_df = pd.DataFrame(flattened_trajectories) # Convert to DataFrame
+    trajectories_df.to_csv('all_trajectories.csv', index=False) # Save to CSV
+    
+    if best_trajectory: # if we have a best 
+        best_trajectory_df = pd.DataFrame([best_trajectory])
+        best_trajectory_df.to_csv('best_trajectory.csv', index=False)
+    
+    return trajectories, best_trajectory
 
 
 def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the trajectories 
@@ -450,8 +439,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
- 
-            predicted_traj = predict_trajectories(original_data, current_point, overpass_start,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = predict_trajectories(original_data, current_point, overpass_start,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
             
             # Generate and save the distribution plots just for one trajectory
             if i == 0:
@@ -463,7 +451,7 @@ def main(): # Main function
         # print('Original Dataframe')
         # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
         predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
-        plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
+        #plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
 
 
 
