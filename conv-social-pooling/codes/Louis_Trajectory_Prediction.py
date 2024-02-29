@@ -222,6 +222,9 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
     max_time = np.max(time_values) # max time 
     print(f'min max time: {min_time} | {max_time}') 
 
+    x_list = list(current_data['xloc'].values)
+    y_list = list(current_data['yloc'].values)
+
     trajectories = [] # Temporary trajectory variable so I can save the values each time this function is called 
     highest_integral_value = float('-inf') # We are going to keep updating the highest max integral value
     best_trajectory = {
@@ -231,7 +234,7 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         'yloc': [] 
     }
 
-    counter = 0 
+    counter = 0 # counter variable to count the integral calculations stored in temporary trajectory file
 
     
     for m in range(num_maneuvers): # for each maneuver 
@@ -251,8 +254,8 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         trajectory = {
             'lane': [lane] * len(temp_time),
             'time': temp_time.tolist(),
-            'xloc': x1_list.tolist()+x2_list.tolist(),
-            'yloc': y1_list.tolist()+y2_list.tolist(),
+            'xloc': x_list,
+            'yloc': y_list,
             'muX': muX.tolist(),
             'muY': muY.tolist(),
             'sigX': sigX.tolist(),
@@ -261,9 +264,9 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
 
         total_integral_for_trajectory = 0 
 
-        for i in range(len(current_data['xloc'])-1):
-            temp_val = line_integral(x[i],y[i],x[i+1],y[i+1],objects_for_integral)
-            trajectory['line integral'+str(count)] = temp_val 
+        for i in range(len(x_list)-1):
+            temp_val = line_integral(x_list[i],y_list[i],x_list[i+1],y_list[i+1],objects_for_integral)
+            trajectory['line_integral_'+str(count)] = temp_val 
             total_integral_for_trajectory += temp_val 
             count += 1 
 
