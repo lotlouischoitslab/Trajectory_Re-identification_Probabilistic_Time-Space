@@ -286,7 +286,7 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         print(f'Highest Integral value: {highest_integral_value}')
 
     ######################### TEMPORARY CODE SO I CAN SAVE ALL THE DATA GENERATED ######################################################################
-    df = pd.DataFrame([item for trajectory in trajectories for item in zip(trajectory['lane'], trajectory['time'], trajectory['xloc'], trajectory['yloc'],trajectory['muX'],trajectory['muY'],trajectory['sigX'],trajectory['sigY'], trajectory['line_integral'] )], columns=trajectory.keys())
+    df = pd.DataFrame([item for trajectory in trajectories for item in zip(trajectory[tkey] for tkey in trajectory.keys())], columns=trajectory.keys())
 
     for col in df.keys():
         print(col,len(df[col])) 
