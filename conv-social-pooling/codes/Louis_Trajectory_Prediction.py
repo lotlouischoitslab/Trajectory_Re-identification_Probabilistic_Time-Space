@@ -212,21 +212,12 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated)
 
 
-def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pred, batch_num): # Predict trajectories function I am working on 
+def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num): # Predict trajectories function I am working on 
     num_maneuvers = len(fut_pred) # basically 6 different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given 
-    
-    
-    delta = 10 # so from start point to start + delta point 
-    before_overpass = input_data[(input_data['xloc'] <= overpass_start+delta)] # get the data before overpass 
-    before_overpass = before_overpass[before_overpass['lane'] == lane].reset_index(drop=True) # filter out for that lane 
-    after_overpass = input_data[(input_data['xloc'] >= overpass_end)][:len(before_overpass)] # get the data after overpass 
-    after_overpass = after_overpass[after_overpass['lane'] == lane].reset_index(drop=True) # filter out for that lane 
-
-    print(f'before overpass {len(before_overpass)}')
-    print(f'after overpass {len(after_overpass)}')
-
-    time_values = list(before_overpass['time'].values)+list(after_overpass['time'].values) # extract the time values out
+    delta = 0
+    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start+delta)] # get the data before overpass 
+    time_values = list(current_data['time'].values) # extract the time values out
     min_time = np.min(time_values) # min time 
     max_time = np.max(time_values) # max time 
     print(f'min max time: {min_time} | {max_time}') 
@@ -239,6 +230,8 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
         'xloc': [],
         'yloc': [] 
     }
+
+    counter = 0 
 
     
     for m in range(num_maneuvers): # for each maneuver 
@@ -253,15 +246,9 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
         print(f'sigY: {len(sigY)}')
          
         objects_for_integral = create_object(muX, muY, sigX, sigY) # call the create object function
-        x1_list = before_overpass['xloc'] 
-        y1_list = before_overpass['yloc']
-        x2_list = after_overpass['xloc']
-        y2_list = after_overpass['yloc']
+        temp_time = np.linspace(min_time, max_time, len(current_data['xloc'])) # temp time frame 
 
-        temp_time = np.linspace(min_time, max_time, len(x1_list)) # temp time frame 
-        total_integral_for_trajectory = np.sum([line_integral(x1, y1, x2, y2, objects_for_integral) for x1,y1,x2,y2 in zip(x1_list,y1_list,x2_list,y2_list)])
-
-        integral_for_trajectory = [line_integral(x1, y1, x2, y2, objects_for_integral) for x1,y1,x2,y2 in zip(x1_list,y1_list,x2_list,y2_list)]
+        
         print(f'length of line integral values: {len(integral_for_trajectory)}')
         print(f'total integral: {total_integral_for_trajectory}')
 
@@ -275,6 +262,14 @@ def predict_trajectories(input_data, overpass_start, overpass_end, lane, fut_pre
             'sigX': sigX.tolist(),
             'sigY': sigY.tolist(),
         }
+
+        total_integral_for_trajectory = 0 
+
+        for i in range(len(current_data['xloc'])-1):
+            temp_val = line_integral(x[i],y[i],x[i+1],y[i+1],objects_for_integral)
+            trajectory['line integral'+str(count)] = temp_val 
+            total_integral_for_trajectory += temp_val 
+            count += 1 
 
         trajectories.append(trajectory) # Add the current trajectory to the list of trajectories
 
@@ -389,9 +384,8 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-  
+    current_point = 140 # current point location in feets (5 seconds before)
     overpass_start = 160 # overpass start location in feets
-    overpass_end = 180 # overpass end location in feets
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -458,7 +452,7 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
  
-            predicted_traj = predict_trajectories(original_data, overpass_start, overpass_end,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            predicted_traj = predict_trajectories(original_data, current_point, overpass_start,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
             
             # Generate and save the distribution plots just for one trajectory
             if i == 0:
