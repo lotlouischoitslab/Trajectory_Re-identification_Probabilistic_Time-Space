@@ -248,10 +248,6 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
         objects_for_integral = create_object(muX, muY, sigX, sigY) # call the create object function
         temp_time = np.linspace(min_time, max_time, len(current_data['xloc'])) # temp time frame 
 
-        
-        print(f'length of line integral values: {len(integral_for_trajectory)}')
-        print(f'total integral: {total_integral_for_trajectory}')
-
         trajectory = {
             'lane': [lane] * len(temp_time),
             'time': temp_time.tolist(),
