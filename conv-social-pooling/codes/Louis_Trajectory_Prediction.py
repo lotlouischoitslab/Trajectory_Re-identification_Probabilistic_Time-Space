@@ -128,16 +128,12 @@ def line_integral(x1, y1, x2, y2, obj):
         exp_arg = ((b**2) / (4 * a)) - c
         exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
         exp_part = math.exp(exp_arg)
-
         sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
         erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
-        #print(f"exp_part: {exp_part}, sigma_sq: {sigma_sq}, sqrt_a: {sqrt_a}, erf_part: {erf_part}, distance: {distance}")
-
         term_to_add = (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
                 (math.sqrt(math.pi) / 2) * erf_part * distance
 
         print(f'term to add: {term_to_add}')
-        #cost += term_to_add # add this term to the cost
         cost.append(term_to_add)
 
     print(f'cost: {len(cost)}')
@@ -184,10 +180,9 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         plt.colorbar(contour)
         # plt.savefig('plots/maneuver'+str(m+1)+'.png')
     
+    # Plot the combined contour map for all maneuvers
     plt.tight_layout()
     plt.savefig('plots/all_maneuvers_subplot.png')
-
-    # Plot the combined contour map for all maneuvers
     plt.figure(figsize=(9, 6))
     combined_contour = plt.contourf(Xc, Yc, combined_Z, cmap='viridis')
     plt.xlabel('X - Lateral Coordinate')
@@ -195,7 +190,6 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
     plt.title('Combined Contour Plot for All Maneuvers')
     plt.colorbar(combined_contour)
     plt.savefig('plots/combined_maneuver.png')
-  
         
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
@@ -237,7 +231,8 @@ def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pr
             'muY':[],
             'sigX':[],
             'sigY':[],
-            'line_integral_values': []}
+            'line_integral_values': []
+        }
         
 
         for i in range(len(current_data) - 1): # Loop through each segment in current_data
@@ -275,7 +270,6 @@ def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the 
     lane_data = smoothed_file[smoothed_file['lane'] == lane].reset_index(drop=True) # extract the lane data 
     modified_lane_data = modified_data[modified_data['lane'] == lane].reset_index(drop=True) # extract the lane data 
     fig, ax = plt.subplots()
-
     temp_data = lane_data 
     ts = temp_data['time'].to_numpy()
     ys = temp_data['xloc'].to_numpy()
@@ -290,7 +284,6 @@ def plot_trajectory(lane, smoothed_file, modified_data): # Function to plot the 
     ax.set_ylabel('Location (m)', fontsize=20)
     ax.legend()
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-
     fig.set_size_inches(60, 30)
     fig.savefig(f'plots/Louis_Lane_temp_{lane}-x.png', dpi=300)  # Adjust the DPI for better resolution
 
@@ -434,8 +427,6 @@ def main(): # Main function
         # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
         predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
         #plot_trajectory(lane, df, predicted_traj) # plot the predicted trajectories
-
-
 
 
 if __name__ == '__main__': # run the code
