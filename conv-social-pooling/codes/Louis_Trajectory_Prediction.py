@@ -133,10 +133,10 @@ def line_integral(x1, y1, x2, y2, obj):
         term_to_add = (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
                 (math.sqrt(math.pi) / 2) * erf_part * distance
 
-        print(f'term to add: {term_to_add}')
+        #print(f'term to add: {term_to_add}')
         cost.append(term_to_add)
 
-    print(f'cost: {len(cost)}')
+    #print(f'cost: {len(cost)}')
     return cost
 
 # The heatmap values on the right show the value of the normal distribution
@@ -207,11 +207,19 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated)
  
 
-def predict_trajectories(input_data, current_point, overpass_start, lane, fut_pred, batch_num): # predict trajectory function 
+def predict_trajectories(input_data, current_point, overpass_start_time,overpass_end_time, lane, fut_pred, batch_num): # predict trajectory function 
+    # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # Wer have 6 different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given 
-    current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start)] # get the data before overpass     
-    
+    # current_data = input_data[(input_data['xloc'] >= current_point) & (input_data['xloc'] <= overpass_start)] # get the data before overpass     
+    delta = 3 # we want to predict 3 seconds after the overpass 
+    current_data = input_data[(input_data['time'] >= overpass_start_time) & (input_data['time'] <= overpass_end_time)]
+
+    temp_traj_start_pos = current_data[current_data['time'] == overpass_start_time]
+    print(temp_traj_start_pos,'start of overpass')
+    temp_traj_end_pos = current_data[current_data['time'] == overpass_end_time]
+    print(temp_traj_end_pos,'end of overpass')
+
     ######################### Initialize storage for all trajectories and the best trajectory #################################
     trajectories = []
     best_trajectory = None
@@ -348,7 +356,7 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     current_point = 140 # current point location in feets (5 seconds before)
-    overpass_start = 160 # overpass start location in feets
+    overpass_start_time,overpass_end_time = 201,206 # the time interval where the overpass is located at
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -414,7 +422,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            trajectory,predicted_traj = predict_trajectories(original_data, current_point, overpass_start,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = predict_trajectories(original_data, current_point, overpass_start_time,overpass_end_time,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
             
             # Generate and save the distribution plots just for one trajectory
             if i == 0:
