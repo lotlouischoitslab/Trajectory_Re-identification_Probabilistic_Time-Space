@@ -225,7 +225,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
     # print(start_time_data)
 
-    start_time = min(start_time_data['time'])   
+    start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
     end_time = start_time + 5 # we are going to check for 5 seconds from start time
   
     print('start time',start_time) 
