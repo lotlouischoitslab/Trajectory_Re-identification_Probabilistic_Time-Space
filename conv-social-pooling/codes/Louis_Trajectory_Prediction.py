@@ -256,6 +256,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             # print('current')
             # print(current_data)
             print('length of traj after overpass',len(current_data))
+            time = np.linspace(start_time,end_time,len(current_data)-1)
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
@@ -264,8 +265,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                     obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
                     segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
-                    current_trajectory['xloc'].append((x1,x2)) # this is individual (x1,x2)
-                    current_trajectory['yloc'].append((y1,y2)) # this is individual (y1,y2)
+                    
+                    current_trajectory['time'].append(time[i]) # this is the individual time stamps 
+                    current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
+                    current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
                     current_trajectory['muX'].append(muX) # this has 50 points
                     current_trajectory['muY'].append(muY) # this has 50 points
                     current_trajectory['sigX'].append(sigX) # this has 50 points
