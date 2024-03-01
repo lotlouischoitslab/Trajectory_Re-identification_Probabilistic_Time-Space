@@ -213,8 +213,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     # print(num_maneuvers)
 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
-    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc]
-    IDs_to_traverse = possible_trajectories['ID'].unique()
+    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc] # the possible set of trajectories can be pass the overpass location
+    IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs 
     # print(IDs_to_traverse)
 
     ######################### Initialize storage for all trajectories and the best trajectory #################################
@@ -277,8 +277,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         trajectories_df.to_csv('all_combinations_trajectories/batch_'+str(batch_num)+'_trajectory_combo_'+str(key+1)+'.csv', index=False) # Save to CSV
     
     if best_trajectory: # if we have the best trajectory
-        best_trajectory_df = pd.DataFrame(best_trajectory)
-        best_trajectory_df.to_csv('batch_'+str(batch_num)+'_best_trajectory.csv', index=False)
+        best_trajectory_df = pd.DataFrame(best_trajectory) # convert the best trajectory data into dataframe format 
+        best_trajectory_df.to_csv('batch_'+str(batch_num)+'_best_trajectory.csv', index=False) # then convert to csv
     
     return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
 
@@ -366,7 +366,7 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 180, 200 # both in meters 
+    overpass_start_loc,overpass_end_loc = 140, 160 # both in meters 
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
