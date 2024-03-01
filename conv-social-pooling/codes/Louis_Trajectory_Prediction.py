@@ -204,7 +204,7 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 
 
 # NOTE: I need to figure out an optimization algorithm to put here
-# TBD with Professor Talebpour (to be negotiated)
+# TBD with Professor Talebpour (to be negotiated) 
  
 
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num): # predict trajectory function 
@@ -238,6 +238,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_trajectory = {
             'ID':temp_ID,
             'lane':lane,
+            'time':[],
             'xloc':[],
             'yloc':[],
             'maneuver':[],
@@ -254,6 +255,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         if len(current_data) != 0: # we don't want empty trajectories 
             # print('current')
             # print(current_data)
+            print('length of traj after overpass',len(current_data))
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
