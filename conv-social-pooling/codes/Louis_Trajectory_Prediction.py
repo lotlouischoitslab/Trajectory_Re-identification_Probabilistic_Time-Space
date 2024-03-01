@@ -221,7 +221,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = None # initialize the best trajectory as none first 
     highest_integral_value = float('-inf') # assign a really large negative value 
-    tol = 0.1  # set a tolerance value 
+    tol = 0.1 # set a tolerance value 
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
     # print(start_time_data)
 
