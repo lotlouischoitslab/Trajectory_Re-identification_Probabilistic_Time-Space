@@ -210,19 +210,19 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
-    print(num_maneuvers)
+    # print(num_maneuvers)
 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc]
     IDs_to_traverse = possible_trajectories['ID'].unique()
-    print(IDs_to_traverse)
+    # print(IDs_to_traverse)
 
     ######################### Initialize storage for all trajectories and the best trajectory #################################
-    trajectories = []
-    best_trajectory = None
-    highest_integral_value = float('-inf')
-    start_time = min(possible_trajectories['time'])
-    end_time = start_time + 5 
+    trajectories = [] # final set of trajectories that we would have traversed 
+    best_trajectory = None # initialize the best trajectory as none first 
+    highest_integral_value = float('-inf') # assign a really large negative value 
+    start_time = min(possible_trajectories['time']) # start time 
+    end_time = start_time + 5 # we are going to check for 5 seconds from start time to end time 
   
     # print('start time',start_time) 
     # print('end time',end_time) 
@@ -244,10 +244,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             'line_integral_values': []
         }
 
-        current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID]
-        current_data = current_data[current_data['time'] <= end_time]
+        current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
+        current_data = current_data[current_data['time'] <= end_time] # make sure it is given within the boundaries 
         
-        if len(current_data) != 0:
+        if len(current_data) != 0: # we don't want empty trajectories 
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
@@ -273,14 +273,12 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             trajectories.append(current_trajectory) # Store the current trajectory
     
     for key,temp in enumerate(trajectories): # for each stored dataframe
-        print('traj key',key)
-        # print(temp)
         trajectories_df = pd.DataFrame(temp) # convert to DataFrame
-        trajectories_df.to_csv('all_combinations_trajectories/trajectory_combo_'+str(key+1)+'.csv', index=False) # Save to CSV
+        trajectories_df.to_csv('all_combinations_trajectories/batch_'+str(batch_num)+'_trajectory_combo_'+str(key+1)+'.csv', index=False) # Save to CSV
     
     if best_trajectory: # if we have the best trajectory
         best_trajectory_df = pd.DataFrame(best_trajectory)
-        best_trajectory_df.to_csv('best_trajectory.csv', index=False)
+        best_trajectory_df.to_csv('batch_'+str(batch_num)+'_best_trajectory.csv', index=False)
     
     return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
 
