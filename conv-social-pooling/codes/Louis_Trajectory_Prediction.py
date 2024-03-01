@@ -211,59 +211,59 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
     print(num_maneuvers)
+
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc]
-    # print(possible_trajectories)
-
     IDs_to_traverse = possible_trajectories['ID'].unique()
- 
     print(IDs_to_traverse)
 
     ######################### Initialize storage for all trajectories and the best trajectory #################################
     trajectories = []
     best_trajectory = None
     highest_integral_value = float('-inf')
+    start_time = min(possible_trajectories['time'])
+    end_time = start_time + 5 
+  
+    # print('start time',start_time) 
+    # print('end time',end_time) 
+    # print(possible_trajectories)
     ###########################################################################################################################
     
-    for m in range(num_maneuvers): # Loop through each maneuver
-        muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
-        obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
-        start_time = min(possible_trajectories['time'])
-        end_time = start_time + 5 
-        # print('start time',start_time) 
-        # print('end time',end_time) 
-        # print(possible_trajectories)
+    for temp_ID in IDs_to_traverse: # for each trajectory ID 
+        # Initialize storage for the current trajectory
+        current_trajectory = {
+            'ID':temp_ID,
+            'lane':lane,
+            'xloc':[],
+            'yloc':[],
+            'muX':[],
+            'muY':[],
+            'sigX':[],
+            'sigY':[],
+            'line_integral_values': []
+        }
 
-        for temp_ID in IDs_to_traverse:
-            # Initialize storage for the current trajectory
-            current_trajectory = {
-                'ID':temp_ID,
-                'lane':lane,
-                'xloc':[],
-                'yloc':[],
-                'muX':[],
-                'muY':[],
-                'sigX':[],
-                'sigY':[],
-                'line_integral_values': []
-            }
-            current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID]
-            current_data = current_data[current_data['time'] <= end_time]
+        current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID]
+        current_data = current_data[current_data['time'] <= end_time]
 
-            if len(current_data) != 0:
-                print(current_data)
-                print(temp_ID)
+        if len(current_data) != 0:
+            # print(current_data)
+            # print(temp_ID)
+            for m in range(num_maneuvers): # Loop through each maneuver
+                muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+                obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
+
                 for i in range(len(current_data) - 1): # Loop through each segment in current_data
                     x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                     x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
-                    segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment
-                    current_trajectory['xloc'].append((x1,x2))
-                    current_trajectory['yloc'].append((y1,y2))
-                    current_trajectory['muX'].append(muX)
-                    current_trajectory['muY'].append(muY)
-                    current_trajectory['sigX'].append(sigX)
-                    current_trajectory['sigY'].append(sigY)
-                    current_trajectory['line_integral_values'].append(segment_integral)
+                    segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
+                    current_trajectory['xloc'].append((x1,x2)) # this is individual (x1,x2)
+                    current_trajectory['yloc'].append((y1,y2)) # this is individual (y1,y2)
+                    current_trajectory['muX'].append(muX) # this has 50 points
+                    current_trajectory['muY'].append(muY) # this has 50 points
+                    current_trajectory['sigX'].append(sigX) # this has 50 points
+                    current_trajectory['sigY'].append(sigY) # this has 50 points
+                    current_trajectory['line_integral_values'].append(segment_integral) # 50 line integral values will be appended
             
                     for seg_int in segment_integral: # for each calculated line integral value
                         if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
@@ -273,6 +273,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                 trajectories.append(current_trajectory) # Store the current trajectory
     
     for key,temp in enumerate(trajectories): # for each stored dataframe
+        print('traj key',key)
         trajectories_df = pd.DataFrame(temp) # convert to DataFrame
         trajectories_df.to_csv('all_combinations_trajectories/trajectory_maneuver_'+str(key+1)+'.csv', index=False) # Save to CSV
     
@@ -366,7 +367,7 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 160, 170 
+    overpass_start_loc,overpass_end_loc = 190, 290 
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
