@@ -130,7 +130,7 @@ def line_integral(x1, y1, x2, y2, obj):
     cost += (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
             (math.sqrt(math.pi) / 2) * erf_part * distance
 
-    print(f'cost: {len(cost)}')
+    # print(f'cost: {cost}')
     return cost
 
 # The heatmap values on the right show the value of the normal distribution
@@ -187,14 +187,14 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
-    result =  np.column_stack([muX, muY, (sigX-sigY)**2])
+    result = [muX, muY, (sigX-sigY)**2] # stack up the statistical variables
     # print(result) # print the results 
     return result # return the result created by stacking up the statistical variables. 
 
 
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
- 
+
 
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
@@ -244,7 +244,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         if len(current_data) != 0: # we don't want empty trajectories 
             # print('current')
             # print(current_data)
-            print('length of traj after overpass',len(current_data))
+            # print('length of traj after overpass',len(current_data))
             traj_time = current_data['time'].values
             print('current time',traj_time)
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
@@ -252,7 +252,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
                 for m in range(num_maneuvers): # Loop through each maneuver
                     # print('check ID',temp_ID)
-                
                     muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                     stat_start_time = round(start_time,2)
                     stat_end_time = round(end_time,2)
@@ -266,18 +265,19 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         } for i in range(len(stat_time_frame))
                     }
 
+                    print('time traj',traj_time[i])
+
                     if traj_time[i] in stat_time_frame:
+                        print('stat and time traj',traj_time[i])
                         temp_time = traj_time[i] 
                         temp_muX = pred_prob[traj_time[i]]['muX']
                         temp_muY = pred_prob[traj_time[i]]['muY']
                         temp_sigX = pred_prob[traj_time[i]]['sigX']
                         temp_sigY = pred_prob[traj_time[i]]['sigY']
-                        print('temp muX',temp_muX)
-                        print('temp muY',temp_muY)
-                        print('temp sigX',temp_sigX)
-                        print('temp sigY',temp_sigY)
-
-                     
+                        # print('temp muX',temp_muX)
+                        # print('temp muY',temp_muY)
+                        # print('temp sigX',temp_sigX)
+                        # print('temp sigY',temp_sigY)
                     
                         obj_for_integral = create_object(temp_muX, temp_muY, temp_sigX, temp_sigY) # get the probabilistic parameters
                         segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
@@ -289,23 +289,23 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         current_trajectory['muY'].append(temp_muY) # this has 50 points
                         current_trajectory['sigX'].append(temp_sigX) # this has 50 points
                         current_trajectory['sigY'].append(temp_sigY) # this has 50 points
-                        current_trajectory['line_integral_values'].append(segment_integral)  
+                        current_trajectory['line_integral_values'].append(segment_integral) # append the line integral
                         current_trajectory['maneuver'].append(m+1) # append the maneuver
                         
-                        for seg_int in segment_integral: # for each calculated line integral value
-                            if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
-                                highest_integral_value = seg_int # assign the highest line integral value
-                                best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
-                
-            trajectories.append(current_trajectory) # Store the current trajectory
+                        if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
+                            highest_integral_value = segment_integral # assign the highest line integral value
+                            best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
+            
+                        trajectories.append(current_trajectory) # Store the current trajectory
     
     for key,temp in enumerate(trajectories): # for each stored dataframe
         trajectories_df = pd.DataFrame(temp) # convert to DataFrame
-        trajectories_df.to_csv('all_combinations_trajectories/batch_'+str(batch_num)+'_trajectory_combo_'+str(key+1)+'.csv', index=False) # Save to CSV
+        # trajectories_df.to_csv('all_combinations_trajectories/batch_'+str(batch_num)+'_trajectory_combo_'+str(key+1)+'.csv', index=False) # Save to CSV
+        trajectories_df.to_csv('all_combinations_trajectories/batch_'+str(batch_num)+'_trajectory_combo.csv', index=False) # Save to CSV
     
     if best_trajectory: # if we have the best trajectory
         best_trajectory_df = pd.DataFrame(best_trajectory) # convert the best trajectory data into dataframe format 
-        best_trajectory_df.to_csv('batch_'+str(batch_num)+'_best_trajectory.csv', index=False) # then convert to csv
+        best_trajectory_df.to_csv('best_trajectories/batch_'+str(batch_num)+'_best_trajectory.csv', index=False) # then convert to csv
     
     return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
 
