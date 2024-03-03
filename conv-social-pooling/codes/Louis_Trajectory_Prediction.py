@@ -103,40 +103,34 @@ Guidelines to understand the prediction function:
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
 def line_integral(x1, y1, x2, y2, obj):
-    #cost = 1e-5
-    cost = []
-    dx = x1 - x2
-    dy = y1 - y2
+    cost = 1e-5 # give it a small value 
+    dx = x1 - x2 # get the difference between x
+    dy = y1 - y2 # get the difference between y
     distance = math.sqrt(dx**2 + dy**2)
+    mu_x, mu_y, sigma_sq = obj[0],obj[1],obj[2]
 
-    for i in range(len(obj)):
-        mu_x, mu_y, sigma_sq = obj[i][0],obj[i][1],obj[i][2]
+    if sigma_sq < 1e-9:  # Avoid division by a very small number
+        sigma_sq = 1e-9 
 
-        if sigma_sq < 1e-9:  # Avoid division by a very small number
-            continue
+    a = (dx**2 + dy**2) / (2 * sigma_sq)
 
-        a = (dx**2 + dy**2) / (2 * sigma_sq)
+    if a < 1e-9:  # Skip if 'a' is too small
+        a = 1e-9 
 
-        if a < 1e-9:  # Skip if 'a' is too small
-            a = 1e-9 
+    b = ((-2 * x1**2 + 2 * x1 * x2 + 2 * x1 * mu_x - 2 * x2 * mu_x) +
+            (-2 * y1**2 + 2 * y1 * y2 + 2 * y1 * mu_y - 2 * y2 * mu_y)) / (2 * sigma_sq)
+    
+    c = ((x1 - mu_x)**2 + (y1 - mu_y)**2) / (2 * sigma_sq)
 
-        b = ((-2 * x1**2 + 2 * x1 * x2 + 2 * x1 * mu_x - 2 * x2 * mu_x) +
-             (-2 * y1**2 + 2 * y1 * y2 + 2 * y1 * mu_y - 2 * y2 * mu_y)) / (2 * sigma_sq)
-        
-        c = ((x1 - mu_x)**2 + (y1 - mu_y)**2) / (2 * sigma_sq)
+    exp_arg = ((b**2) / (4 * a)) - c
+    exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
+    exp_part = math.exp(exp_arg)
+    sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
+    erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
+    cost += (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
+            (math.sqrt(math.pi) / 2) * erf_part * distance
 
-        exp_arg = ((b**2) / (4 * a)) - c
-        exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
-        exp_part = math.exp(exp_arg)
-        sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
-        erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
-        term_to_add = (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
-                (math.sqrt(math.pi) / 2) * erf_part * distance
-
-        #print(f'term to add: {term_to_add}')
-        cost.append(term_to_add)
-
-    #print(f'cost: {len(cost)}')
+    print(f'cost: {len(cost)}')
     return cost
 
 # The heatmap values on the right show the value of the normal distribution
@@ -193,12 +187,7 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
-    # Ensure that the tensors do not require gradients before converting to numpy
-    muX_numpy = muX.detach().numpy() if isinstance(muX, torch.Tensor) else muX
-    muY_numpy = muY.detach().numpy() if isinstance(muY, torch.Tensor) else muY
-    sigX_numpy = sigX.detach().numpy() if isinstance(sigX, torch.Tensor) else sigX
-    sigY_numpy = sigY.detach().numpy() if isinstance(sigY, torch.Tensor) else sigY
-    result =  np.column_stack([muX_numpy, muY_numpy, (sigX_numpy-sigY_numpy)**2])
+    result =  np.column_stack([muX, muY, (sigX-sigY)**2])
     # print(result) # print the results 
     return result # return the result created by stacking up the statistical variables. 
 
@@ -207,7 +196,7 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 # TBD with Professor Talebpour (to be negotiated) 
  
 
-def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num): # predict trajectory function 
+def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
     # print(num_maneuvers)
@@ -226,7 +215,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     # print(start_time_data)
 
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
-    end_time = start_time + 5 # we are going to check for 5 seconds from start time
+    end_time = start_time + delta # we are going to check for 5 seconds from start time
   
     print('start time',start_time) 
     print('end time',end_time) 
@@ -256,30 +245,57 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             # print('current')
             # print(current_data)
             print('length of traj after overpass',len(current_data))
-            time = np.linspace(start_time,end_time,len(current_data)-1)
+            traj_time = current_data['time'].values
+            print('current time',traj_time)
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
                 for m in range(num_maneuvers): # Loop through each maneuver
                     # print('check ID',temp_ID)
+                
                     muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
-                    obj_for_integral = create_object(muX, muY, sigX, sigY) # get the probabilistic parameters
-                    segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
+                    stat_start_time = round(start_time,2)
+                    stat_end_time = round(end_time,2)
+                    stat_time_frame = np.arange(stat_start_time, stat_end_time, 0.1)
+                    pred_prob = {
+                        stat_time_frame[i]: {
+                            'muX': muX[i],
+                            'muY': muY[i],
+                            'sigX': sigX[i],
+                            'sigY': sigY[i]
+                        } for i in range(len(stat_time_frame))
+                    }
+
+                    if traj_time[i] in stat_time_frame:
+                        temp_time = traj_time[i] 
+                        temp_muX = pred_prob[traj_time[i]]['muX']
+                        temp_muY = pred_prob[traj_time[i]]['muY']
+                        temp_sigX = pred_prob[traj_time[i]]['sigX']
+                        temp_sigY = pred_prob[traj_time[i]]['sigY']
+                        print('temp muX',temp_muX)
+                        print('temp muY',temp_muY)
+                        print('temp sigX',temp_sigX)
+                        print('temp sigY',temp_sigY)
+
+                     
                     
-                    current_trajectory['time'].append(time[i]) # this is the individual time stamps 
-                    current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
-                    current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
-                    current_trajectory['muX'].append(muX) # this has 50 points
-                    current_trajectory['muY'].append(muY) # this has 50 points
-                    current_trajectory['sigX'].append(sigX) # this has 50 points
-                    current_trajectory['sigY'].append(sigY) # this has 50 points
-                    current_trajectory['line_integral_values'].append(segment_integral) # 50 line integral values will be appended
-                    current_trajectory['maneuver'].append(m+1) # append the maneuver
-                    
-                    for seg_int in segment_integral: # for each calculated line integral value
-                        if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
-                            highest_integral_value = seg_int # assign the highest line integral value
-                            best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
+                        obj_for_integral = create_object(temp_muX, temp_muY, temp_sigX, temp_sigY) # get the probabilistic parameters
+                        segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
+                        
+                        current_trajectory['time'].append(traj_time[i]) # this is the individual time stamps 
+                        current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
+                        current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
+                        current_trajectory['muX'].append(temp_muX) # this has 50 points
+                        current_trajectory['muY'].append(temp_muY) # this has 50 points
+                        current_trajectory['sigX'].append(temp_sigX) # this has 50 points
+                        current_trajectory['sigY'].append(temp_sigY) # this has 50 points
+                        current_trajectory['line_integral_values'].append(segment_integral)  
+                        current_trajectory['maneuver'].append(m+1) # append the maneuver
+                        
+                        for seg_int in segment_integral: # for each calculated line integral value
+                            if seg_int > highest_integral_value: # check if the selected line integral value is greater than or not
+                                highest_integral_value = seg_int # assign the highest line integral value
+                                best_trajectory = current_trajectory # assign the current trajectory to the best trajectory 
                 
             trajectories.append(current_trajectory) # Store the current trajectory
     
@@ -378,7 +394,7 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc,overpass_end_loc = 160, 180 # both in meters 
-
+    delta = 5 # time interval that we will be predicting for
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     full_path = os.path.join(directory, model_directory) # create a full path 
@@ -443,7 +459,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane, predicted_traj,i)
