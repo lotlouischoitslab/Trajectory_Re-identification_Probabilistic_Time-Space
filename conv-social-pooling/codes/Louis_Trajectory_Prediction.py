@@ -96,7 +96,7 @@ Guidelines to understand the prediction function:
 - Take each maneuver ALL the 50 points. the corresponding point
 - Take the line integral of that particular distrubtuion
 - Do this for all 50 points 
-- Sum them up 
+- Sum everything up 
 - Then do this for all trajectories 
 - Pick the manuever and the trajectory with the highest total value of the line integral
 '''
@@ -106,8 +106,8 @@ def line_integral(x1, y1, x2, y2, obj):
     cost = 1e-5 # give it a small value 
     dx = x1 - x2 # get the difference between x
     dy = y1 - y2 # get the difference between y
-    distance = math.sqrt(dx**2 + dy**2)
-    mu_x, mu_y, sigma_sq = obj[0],obj[1],obj[2]
+    distance = math.sqrt(dx**2 + dy**2) # calculate the distance between x and y
+    mu_x, mu_y, sigma_sq = obj # get the parameters
 
     if sigma_sq < 1e-9:  # Avoid division by a very small number
         sigma_sq = 1e-9 
@@ -194,7 +194,6 @@ def create_object(muX, muY, sigX, sigY): # Helper function to create an object o
 
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
-
 
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
