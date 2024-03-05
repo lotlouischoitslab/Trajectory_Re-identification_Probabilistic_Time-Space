@@ -107,7 +107,7 @@ def line_integral(x1, y1, x2, y2, obj):
     dx = x1 - x2 # get the difference between x
     dy = y1 - y2 # get the difference between y
     distance = math.sqrt(dx**2 + dy**2) # calculate the distance between x and y
-    mu_x, mu_y, sigma_sq = obj # get the parameters
+    muX, muY, sigX, sigY = obj # get the parameters
 
     if sigma_sq < 1e-9:  # Avoid division by a very small number
         sigma_sq = 1e-9 
@@ -132,6 +132,41 @@ def line_integral(x1, y1, x2, y2, obj):
 
     # print(f'cost: {cost}')
     return cost
+
+
+def line_integral(x1, y1, x2, y2, obj):
+    """
+    Calculate the line integral of a probabilistic function along a straight line.
+    
+    Parameters:
+    - x1, y1: Starting point of the line.
+    - x2, y2: Ending point of the line.
+    - muX, muY: Mean values of the Gaussian distribution in x and y.
+    - sigX, sigY: Standard deviations of the Gaussian distribution in x and y.
+    
+    Returns:
+    - Integral value as a float.
+    """
+    muX, muY, sigX, sigY = obj # get the parameters
+    
+    # Define the probabilistic function as a Gaussian distribution
+    def prob_function(x, y, muX, muY, sigX, sigY):
+        rv = multivariate_normal([muX, muY], [[sigX**2, 0], [0, sigY**2]])
+        return rv.pdf([x, y])
+    
+    # Parametrize the line segment
+    def line_param(t, x1, y1, x2, y2):
+        return x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+
+    # Define the integrand function
+    def integrand(t):
+        x, y = line_param(t, x1, y1, x2, y2)
+        return prob_function(x, y, muX, muY, sigX, sigY)
+    
+    # Perform numerical integration along the line from t=0 to t=1
+    integral, _ = quad(integrand, 0, 1)
+    
+    return integral
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -187,7 +222,7 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
         
 
 def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
-    result = [muX, muY, (sigX-sigY)**2] # stack up the statistical variables
+    result = [muX, muY, sigX, sigY] # stack up the statistical variables
     # print(result) # print the results 
     return result # return the result created by stacking up the statistical variables. 
 
@@ -267,6 +302,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     print('time traj',traj_time[i])
 
                     if traj_time[i] in stat_time_frame:
+                        x1,x2 = 0, 20 # tmemp
+                        y1,y2 = 0,20
                         print('stat and time traj',traj_time[i])
                         temp_time = traj_time[i] 
                         temp_muX = pred_prob[traj_time[i]]['muX']
