@@ -102,39 +102,39 @@ Guidelines to understand the prediction function:
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    cost = 1e-5 # give it a small value 
-    dx = x1 - x2 # get the difference between x
-    dy = y1 - y2 # get the difference between y
-    distance = math.sqrt(dx**2 + dy**2) # calculate the distance between x and y
+# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
+#     cost = 1e-5 # give it a small value 
+#     dx = x1 - x2 # get the difference between x
+#     dy = y1 - y2 # get the difference between y
+#     distance = math.sqrt(dx**2 + dy**2) # calculate the distance between x and y
      
 
-    if sigma_sq < 1e-9:  # Avoid division by a very small number
-        sigma_sq = 1e-9 
+#     if sigma_sq < 1e-9:  # Avoid division by a very small number
+#         sigma_sq = 1e-9 
 
-    a = (dx**2 + dy**2) / (2 * sigma_sq)
+#     a = (dx**2 + dy**2) / (2 * sigma_sq)
 
-    if a < 1e-9:  # Skip if 'a' is too small
-        a = 1e-9 
+#     if a < 1e-9:  # Skip if 'a' is too small
+#         a = 1e-9 
 
-    b = ((-2 * x1**2 + 2 * x1 * x2 + 2 * x1 * mu_x - 2 * x2 * mu_x) +
-            (-2 * y1**2 + 2 * y1 * y2 + 2 * y1 * mu_y - 2 * y2 * mu_y)) / (2 * sigma_sq)
+#     b = ((-2 * x1**2 + 2 * x1 * x2 + 2 * x1 * mu_x - 2 * x2 * mu_x) +
+#             (-2 * y1**2 + 2 * y1 * y2 + 2 * y1 * mu_y - 2 * y2 * mu_y)) / (2 * sigma_sq)
     
-    c = ((x1 - mu_x)**2 + (y1 - mu_y)**2) / (2 * sigma_sq)
+#     c = ((x1 - mu_x)**2 + (y1 - mu_y)**2) / (2 * sigma_sq)
 
-    exp_arg = ((b**2) / (4 * a)) - c
-    exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
-    exp_part = math.exp(exp_arg)
-    sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
-    erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
-    cost += (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
-            (math.sqrt(math.pi) / 2) * erf_part * distance
+#     exp_arg = ((b**2) / (4 * a)) - c
+#     exp_arg = max(min(exp_arg, 5), -5)  # Limit the range of the exponential argument
+#     exp_part = math.exp(exp_arg)
+#     sqrt_a = math.sqrt(max(a, 0.01))  # Ensure non-negative argument for sqrt
+#     erf_part = math.erf(sqrt_a + b / (2 * sqrt_a)) - math.erf(b / (2 * sqrt_a)) + 1e-4
+#     cost += (exp_part / (2 * math.pi * sigma_sq)) * (1 / sqrt_a) * \
+#             (math.sqrt(math.pi) / 2) * erf_part * distance
 
-    # print(f'cost: {cost}')
-    return cost
+#     # print(f'cost: {cost}')
+#     return cost
 
 
-def line_integral(x1, y1, x2, y2, obj):
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discussed with Yanlin 
     """
     Calculate the line integral of a probabilistic function along a straight line.
     
@@ -147,7 +147,6 @@ def line_integral(x1, y1, x2, y2, obj):
     Returns:
     - Integral value as a float.
     """
-    muX, muY, sigX, sigY = obj # get the parameters
     
     # Define the probabilistic function as a Gaussian distribution
     def prob_function(x, y, muX, muY, sigX, sigY):
