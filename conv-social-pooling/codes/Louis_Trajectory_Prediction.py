@@ -102,12 +102,12 @@ Guidelines to understand the prediction function:
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #########################################
-def line_integral(x1, y1, x2, y2, obj):
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
     cost = 1e-5 # give it a small value 
     dx = x1 - x2 # get the difference between x
     dy = y1 - y2 # get the difference between y
     distance = math.sqrt(dx**2 + dy**2) # calculate the distance between x and y
-    muX, muY, sigX, sigY = obj # get the parameters
+     
 
     if sigma_sq < 1e-9:  # Avoid division by a very small number
         sigma_sq = 1e-9 
@@ -220,13 +220,7 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
     plt.colorbar(combined_contour)
     plt.savefig('plots/combined_maneuver.png')
         
-
-def create_object(muX, muY, sigX, sigY): # Helper function to create an object of muX, muY, sigX, sigY 
-    result = [muX, muY, sigX, sigY] # stack up the statistical variables
-    # print(result) # print the results 
-    return result # return the result created by stacking up the statistical variables. 
-
-
+  
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
 
@@ -303,7 +297,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
 
                     if traj_time[i] in stat_time_frame:
                         x1,x2 = 0, 20 # tmemp
-                        y1,y2 = 0,20
+                        y1,y2 = 0, 20
                         print('stat and time traj',traj_time[i])
                         temp_time = traj_time[i] 
                         temp_muX = pred_prob[traj_time[i]]['muX']
@@ -315,9 +309,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         # print('temp sigX',temp_sigX)
                         # print('temp sigY',temp_sigY)
                     
-                        obj_for_integral = create_object(temp_muX, temp_muY, temp_sigX, temp_sigY) # get the probabilistic parameters
-                        segment_integral = line_integral(x1, y1, x2, y2, obj_for_integral) # Calculate line integral for each segment (return 50 values)
-                        
+                        segment_integral = line_integral(x1, y1, x2, y2, temp_muX,temp_muY,temp_sigX,temp_sigY) # Calculate line integral for each segment (return 50 values)
+            
                         current_trajectory['time'].append(traj_time[i]) # this is the individual time stamps 
                         current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
                         current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
