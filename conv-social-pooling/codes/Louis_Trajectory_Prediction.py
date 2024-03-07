@@ -295,8 +295,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     print('time traj',traj_time[i])
 
                     if traj_time[i] in stat_time_frame:
-                        x1,x2 = 0, 20 # tmemp
-                        y1,y2 = 0, 20
+                        # x1,x2 = 0, 20 # temp values
+                        # y1,y2 = 0, 20 # temp values
                         print('stat and time traj',traj_time[i])
                         temp_time = traj_time[i] 
                         temp_muX = pred_prob[traj_time[i]]['muX']
