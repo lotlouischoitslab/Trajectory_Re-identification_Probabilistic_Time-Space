@@ -228,7 +228,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     end_time = start_time + delta # we are going to check for 5 seconds from start time
     ###########################################################################################################################
     
-
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         # Initialize storage for the current trajectory
         current_trajectory = {
@@ -247,7 +246,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[current_data['time'] <= end_time] # make sure it is given within the boundaries 
-
         
         if len(current_data) != 0: # we don't want empty trajectories 
             # print('current')
