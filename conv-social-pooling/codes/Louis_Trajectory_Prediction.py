@@ -201,22 +201,20 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs 
     # print(IDs_to_traverse)
 
-    ######################### Initialize storage for all trajectories and the best trajectory #################################
+    ######################### INITIALIZE DATA FOR ALL TRAJECTORIES AND THE BEST TRAJECTORY #################################
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = None # initialize the best trajectory as none first 
     highest_integral_value = float('-inf') # assign a really large negative value 
     tol = 0.1 # set a tolerance value 
+    
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-    # print(start_time_data)
-
+    stat_time_frame = np.arange(0,delta, 0.1) # adjust the global time frame for the probabilistic parameters muX, muY, sigX, sigY  
+    
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
     end_time = start_time + delta # we are going to check for 5 seconds from start time
-  
-    print('start time',start_time) 
-    print('end time',end_time) 
-    # print(possible_trajectories)
     ###########################################################################################################################
     
+
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         # Initialize storage for the current trajectory
         current_trajectory = {
@@ -240,20 +238,21 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             # print('current')
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
-            traj_time = current_data['time'].values
+
+            traj_time = [round(t-min(current_data['time'].values),1) for t in current_data['time']] # adjust the trajectory time frame 
             print('current time',traj_time)
+
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
                 print(f'first: {(x1,y1)}')
                 print(f'second: {(x2,y2)}')
-                
+
                 for m in range(num_maneuvers): # Loop through each maneuver
                     # print('check ID',temp_ID)
                     muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
-                    stat_start_time = round(start_time,2)
-                    stat_end_time = round(end_time,2)
-                    stat_time_frame = np.arange(stat_start_time, stat_end_time, 0.1)
+            
+                    
                     pred_prob = {
                         stat_time_frame[i]: {
                             'muX': muX[i],
