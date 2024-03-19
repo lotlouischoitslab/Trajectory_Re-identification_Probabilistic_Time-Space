@@ -245,6 +245,9 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             for i in range(len(current_data) - 1): # Loop through each segment in current_data
                 x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                 x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
+                print(f'first: {(x1,y1)}')
+                print(f'second: {(x2,y2)}')
+                
                 for m in range(num_maneuvers): # Loop through each maneuver
                     # print('check ID',temp_ID)
                     muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
