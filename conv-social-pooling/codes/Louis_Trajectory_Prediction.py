@@ -69,23 +69,23 @@ Use the right piece
 plot the integral value 
 
 Get the final data, cut out a piece of it
-What we can do is I pick this section of the road (600 ft) and cut take about 20 ft
+What we can do is I pick this section of the road (160 ft) and cut take about 20 ft
 Simulate an overpass 
-Have one trajectory for 600 ft, between 600 to 620 ft cut it to two pieces, you have before and after trajectory 
+Have one trajectory for 160 ft, between 160 to 180 ft cut it to two pieces, you have before and after trajectory 
 Run the code
 Look at the middle of the data and revolve 20 ft from the point
 
-Missing part is 600->620 ft part 
-Go back 5 seconds from 600 ft. (Feed in to the prediction model)
-Integral: Get the trajectories from 620 ft forward 5 seconds (This is the future) assuming there is an overpass 
+Missing part is 160->180 ft part 
+Go back 5 seconds from 160 ft. (Feed in to the prediction model)
+Integral: Get the trajectories from 180 ft forward 5 seconds (This is the future) assuming there is an overpass 
 Connect the trajectories  
-Replace the 600->620ft part with the trajectory with 620 ft and 5 sec forward
+Replace the 160->180ft part with the trajectory with 180 ft and 5 sec forward
 
 Format of the output:
 - 6 movements, each movement has probability distribution
 - Actions are Straight, Accel, straight, decel, right, decel, left, decl 
 - This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
-- Every point one second during that 10 second horizon, we are getting normal distribution 2d where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
+- Every point one second during that 10 second horizon, we are getting normal distribution 2D where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
  
 Guidelines to understand the prediction function: 
 - There are 6 different maneuvers the car can pick 
@@ -99,11 +99,10 @@ Guidelines to understand the prediction function:
 - Pick the manuever and the trajectory with the highest total value of the line integral
 '''
 
-############################################# LINE INTEGRAL CALCULATIONS #########################################
+############################################# LINE INTEGRAL CALCULATIONS ######################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discussed with Yanlin 
     """
     Calculate the line integral of a probabilistic function along a straight line.
-    
     Parameters:
     - x1, y1: Starting point of the line.
     - x2, y2: Ending point of the line.
@@ -189,7 +188,6 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
   
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
-
 
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
