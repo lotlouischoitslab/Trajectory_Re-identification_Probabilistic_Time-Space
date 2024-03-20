@@ -49,8 +49,6 @@ Constraints: Each vehicle is assigned exactly one trajectory.
 Trajectories with high overlap risks are not assigned simultaneously to different vehicles.
 
 
-
-
 12/4/2023
 TO-DO:
 1. Start writing the paper. Write down what I want to include (detailed outline) 
@@ -247,7 +245,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[current_data['time'] <= end_time] # make sure it is given within the boundaries 
         
-        if len(current_data) != 0: # we don't want empty trajectories 
+        if len(current_data) != 0: # we don't want any empty trajectories 
             # print('current')
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
@@ -266,8 +264,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                 x2 -= min_x # Adjust the y1 position for the line integral calculation 
                 y2 -= min_y # Adjust the y2 position for the line integral calculation 
 
-                print(f'first: {(x1,y1)}')
-                print(f'second: {(x2,y2)}')
+                print(f'first: {(x1,y1)}') # Just for checking 
+                print(f'second: {(x2,y2)}') # Just for checking 
 
                 for m in range(num_maneuvers): # Loop through each maneuver
                     # print('check ID',temp_ID)
