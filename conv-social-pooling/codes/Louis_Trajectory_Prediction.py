@@ -244,7 +244,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_data = current_data[current_data['time'] <= end_time] # make sure it is given within the boundaries 
         
         if len(current_data) != 0: # we don't want any empty trajectories 
-            # print('current')
+            # print('current') 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
 
