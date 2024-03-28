@@ -342,15 +342,17 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             min_x = min(current_data['xloc'].values)
             # min_y = min(current_data['yloc'].values)
             traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
-            print('traj time',traj_time)
-            print('stat time',stat_time_frame)
+            # print('traj time',traj_time)
+           
 
             for m in range(num_maneuvers):
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                 check_traj_time = min(traj_time) 
                 print(f'check traj time: {check_traj_time}')
+                print('stat time',stat_time_frame)
 
                 if check_traj_time in stat_time_frame:
+                    print(f'check traj time in stat time frame: {check_traj_time}')
                     current_data = current_data[(current_data['time'] >= check_traj_time) & (current_data['time'] <= end_time)]
                     start_idx = list(stat_time_frame).index(check_traj_time)
                     end_idx = len(stat_time_frame)-1
