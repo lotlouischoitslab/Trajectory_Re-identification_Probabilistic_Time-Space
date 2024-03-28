@@ -130,7 +130,7 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discu
     # Perform numerical integration along the line from t=0 to t=1
     integral, _ = quad(integrand, 0, 1)
     
-    print(f'integral value: {integral}')
+    # print(f'integral value: {integral}')
     return integral
 
 # The heatmap values on the right show the value of the normal distribution
@@ -312,12 +312,12 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
     end_time = start_time + delta # we are going to check for 5 seconds from start time
+    print(f'Analyze from {start_time} -> {end_time} seconds')
     ###########################################################################################################################
     
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         # Initialize storage for the current trajectory
         current_trajectory = {
-            'ID':temp_ID,
             'lane':lane,
             'time':[],
             'xloc':[],
@@ -334,58 +334,58 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries  
         
         if len(current_data) != 0: # we don't want any empty trajectories 
+            print(f"possible traj time: {current_data['time']} here")
             # print('current') 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
 
             min_x = min(current_data['xloc'].values)
-            min_y = min(current_data['yloc'].values)
-            traj_time = [round(t-min(current_data['time'].values),1) for t in current_data['time']] # adjust the trajectory time frame 
-            print('current time',traj_time)
+            # min_y = min(current_data['yloc'].values)
+            traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
+            print('traj time',traj_time)
+            print('stat time',stat_time_frame)
 
-            for i in range(len(current_data) - 1): # Loop through each segment in current_data
-                x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
-                x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
+            for m in range(num_maneuvers):
+                muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+                check_traj_time = min(traj_time) 
+                print(f'check traj time: {check_traj_time}')
 
-                x1 -= min_x # Adjust the x1 position for the line integral calculation 
-                y1 -= min_y # Adjust the x2 position for the line integral calculation 
-                x2 -= min_x # Adjust the y1 position for the line integral calculation 
-                y2 -= min_y # Adjust the y2 position for the line integral calculation 
+                if check_traj_time in stat_time_frame:
+                    current_data = current_data[(current_data['time'] >= check_traj_time) & (current_data['time'] <= end_time)]
+                    start_idx = list(stat_time_frame).index(check_traj_time)
+                    end_idx = len(stat_time_frame)-1
+                    print(f'start time: {start_time}')
+                    print(f'start idx: {start_idx}')
+                   
+                    mux_store = muX[start_idx:]
+                    muy_store = muY[start_idx:]
+                    sigx_store = sigX[start_idx:]
+                    sigy_store = sigY[start_idx:]
 
-                print(f'first: {(x1,y1)}') # Just for checking 
-                print(f'second: {(x2,y2)}') # Just for checking 
+                    for i in range(0,len(current_data)-1): # Loop through each segment in current_data
+                        x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
+                        x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
+                        # x1 -= min_x # Adjust the x1 position for the line integral calculation 
+                        # y1 -= min_y # Adjust the x2 position for the line integral calculation 
+                        # x2 -= min_x # Adjust the y1 position for the line integral calculation 
+                        # y2 -= min_y # Adjust the y2 position for the line integral calculation 
 
-                for m in range(num_maneuvers): # Loop through each maneuver
-                    # print('check ID',temp_ID)
-                    muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
-                    pred_prob = {
-                        stat_time_frame[i]: {
-                            'muX': muX[i],
-                            'muY': muY[i],
-                            'sigX': sigX[i],
-                            'sigY': sigY[i]
-                        } for i in range(len(stat_time_frame))
-                    }
-
-                    print('time traj',traj_time[i])
-
-                    if traj_time[i] in stat_time_frame: # if the specific trajectory time frame is in the prediction time frame
-                        # x1,x2 = 0, 20 # temp values
-                        # y1,y2 = 0, 20 # temp values
-                        print('stat and time traj',traj_time[i])
-                        temp_time = traj_time[i] # get the time for that time frame 
-                        temp_muX = pred_prob[traj_time[i]]['muX'] # store the muX
-                        temp_muY = pred_prob[traj_time[i]]['muY'] # store the muY
-                        temp_sigX = pred_prob[traj_time[i]]['sigX'] # store the sigX
-                        temp_sigY = pred_prob[traj_time[i]]['sigY'] # store the sigY
+                        # print(f'first: {(x1,y1)}') # Just for checking 
+                        # print(f'second: {(x2,y2)}') # Just for checking 
+    
+                        temp_time = stat_time_frame[i] # get the time for that time frame 
+                        temp_muX = mux_store[i] # store the muX
+                        temp_muY = muy_store[i] # store the muY
+                        temp_sigX = sigx_store[i] # store the sigX
+                        temp_sigY = sigy_store[i] # store the sigY
                         # print('temp muX',temp_muX)
                         # print('temp muY',temp_muY)
                         # print('temp sigX',temp_sigX)
                         # print('temp sigY',temp_sigY)
                     
                         segment_integral = line_integral(x1, y1, x2, y2, temp_muX,temp_muY,temp_sigX,temp_sigY) # Calculate line integral for each segment (return 50 values)
-            
-                        current_trajectory['time'].append(traj_time[i]) # this is the individual time stamps 
+                        
+                        current_trajectory['time'].append(temp_time) # this is the individual time stamps 
                         current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
                         current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
                         current_trajectory['muX'].append(temp_muX) # this is the individual muX
@@ -397,8 +397,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         
                         if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
                             highest_integral_value = segment_integral # assign the highest line integral value
-                             
-                            best_trajectory['time'] = traj_time[i] # assign the time
+                            
+                            best_trajectory['time'] = stat_time_frame[i] # assign the time
                             best_trajectory['xloc'] = (x1,x2) # this is the individual (x1,x2)
                             best_trajectory['yloc'] = (y1,y2) # this is the individual (y1,y2)
                             best_trajectory['muX'] = temp_muX # this is the individual muX
