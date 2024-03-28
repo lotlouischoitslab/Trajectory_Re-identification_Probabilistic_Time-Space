@@ -308,7 +308,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
                             highest_integral_value = segment_integral # assign the highest line integral value
                              
-                            best_trajectory['time'] = traj_time[i]
+                            best_trajectory['time'] = traj_time[i] # assign the time
                             best_trajectory['xloc'] = (x1,x2) # this is the individual (x1,x2)
                             best_trajectory['yloc'] = (y1,y2) # this is the individual (y1,y2)
                             best_trajectory['muX'] = temp_muX # this is the individual muX
