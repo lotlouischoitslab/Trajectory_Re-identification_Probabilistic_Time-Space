@@ -212,18 +212,20 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
     }
 
     highest_integral_value = float('-inf') # assign a really large negative value 
-    tol = 0.1 # set a tolerance value 
-    start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-    start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
+    start_time = possible_trajectories['time'].values[0]
     end_time = start_time + delta # final time for prediction
+    print(f'Analyze from {start_time} -> {end_time} seconds')
     stat_time_frame = np.arange(start_time,end_time, 0.1) # time frame for muX, muY, sigX, sigY
 
-    until_overpass = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
+    until_overpass_data = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
     after_overpass = input_data[input_data['time'] >= end_time] # trajectories after the starting position of overpass
     # print('stat time frame length',len(stat_time_frame))
     ###########################################################################################################################
     fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
-    IDs_to_traverse = [7009]
+    IDs_to_traverse = [0]
+
+    # print(f'until overpass') 
+    # print(until_overpass)
 
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         # Initialize storage for the current trajectory
@@ -242,21 +244,25 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
         }
 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
+        print(f'current overpass') 
+        print(current_data)
+        
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries 
         
-        until_overpass_data = until_overpass[until_overpass['ID'] == temp_ID]
-        until_overpass_data_original = until_overpass_data.copy()
+        until_overpass_data = until_overpass_data[until_overpass_data['ID'] == temp_ID]
+        until_overpass_data_original = until_overpass_data.copy() 
 
-        until_overpass_data['xloc'] -= max(until_overpass_data['xloc'])
-        until_overpass_data['yloc'] -= max(until_overpass_data['yloc'])
+        until_overpass_data.loc[until_overpass_data['ID'] == temp_ID, 'xloc'] -= until_overpass_data_original['xloc'].values[-1]
+        until_overpass_data.loc[until_overpass_data['ID'] == temp_ID, 'yloc'] -= until_overpass_data_original['yloc'].values[-1]
     
-        current_data['xloc'] -= max(until_overpass_data_original['xloc'])
-        current_data['yloc'] -= max(until_overpass_data_original['yloc'])
+        current_data['xloc'] -= until_overpass_data_original['xloc'].values[-1]
+        current_data['yloc'] -= until_overpass_data_original['yloc'].values[-1]
 
         # after_overpass_data = after_overpass[after_overpass['ID'] == temp_ID]
         # after_overpass_data['xloc'] -= min(after_overpass_data['xloc'])
         # after_overpass_data['yloc'] -= min(after_overpass_data['yloc'])
-        
+
+        print(f'length of current data: {len(current_data)}')
 
         if len(current_data) != 0: # we don't want any empty trajectories 
             print(f'ID: {temp_ID}') # print out the ID just for checking
@@ -320,6 +326,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc] # the possible set of trajectories can be pass the overpass location
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs 
+    IDs_to_traverse = [0] # temporary placeholder
     # print(IDs_to_traverse)
 
     ######################### INITIALIZE DATA FOR ALL TRAJECTORIES AND THE BEST TRAJECTORY #################################
@@ -338,15 +345,13 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     }
 
     highest_integral_value = float('-inf') # assign a really large negative value 
-    tol = 0.1 # set a tolerance value 
-    
-    start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-    start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
-    end_time = start_time + delta # we are going to check for 5 seconds from start time
-    stat_time_frame = np.arange(0,delta, 0.1) 
+    start_time = possible_trajectories['time'].values[0] # starting time for prediction
+    end_time = start_time + delta # ending time for prediction 
+    stat_time_frame = np.arange(0,delta, 0.1) # time frame for muX, muY, sigX and sigY 
     print(f'Analyze from {start_time} -> {end_time} seconds')
 
-    until_overpass = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
+    until_overpass_data = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
+    until_overpass_data_original = until_overpass_data.copy()
     ###########################################################################################################################
     
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
@@ -367,17 +372,21 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries  
         
-        until_overpass_data = until_overpass[until_overpass['ID'] == temp_ID]
+        until_overpass_data_original = until_overpass_data_original[until_overpass_data_original['ID'] == temp_ID]
+        print('until overpass data original')
+        print(until_overpass_data_original)
+        
 
-        if len(current_data) != 0: # we don't want any empty trajectories 
+        if len(current_data) != 0 and len(until_overpass_data_original) != 0: # we don't want any empty trajectories 
             print(f"possible traj time: {current_data['time']} here")
             # print('current') 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
-            current_data['xloc'] -= max(until_overpass_data['xloc'])
-            current_data['yloc'] -= max(until_overpass_data['yloc'])
+            current_data['xloc'] -= until_overpass_data_original['xloc'].values[-1]
+            current_data['yloc'] -= until_overpass_data_original['yloc'].values[-1]
+
             traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
-            # print('traj time',traj_time)
+            print('traj time',traj_time)
            
             for m in range(num_maneuvers):
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
@@ -515,8 +524,8 @@ def main(): # Main function
     # filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    file_to_read = 'lane_2_data.csv' # or 'raw_trajectory.csv'
-    temp_lane = 2
+    file_to_read = 'I294_Cleaned.csv' # or 'raw_trajectory.csv'
+    temp_lane = -2
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
 
@@ -527,7 +536,7 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 160, 180 # both in meters 
+    overpass_start_loc,overpass_end_loc = 1730, 1830 # both in meters 
     delta = 5 # time interval that we will be predicting for
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 

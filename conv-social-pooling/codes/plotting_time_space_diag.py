@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-smoothed_file = pd.read_csv('Run_1_final_rounded.csv') # read in the data 
-lanes = sorted(smoothed_file['lane'].unique())[1:-1] # lanes to analyze
+smoothed_file = pd.read_csv('I294_Cleaned.csv') # read in the data 
+lanes = sorted(smoothed_file['lane'].unique()) # lanes to analyze
 
 for lane in lanes:
     lane_data = smoothed_file[smoothed_file['lane']==lane].reset_index(drop=True)
@@ -34,4 +34,4 @@ for lane in lanes:
     ax.grid()
 
     fig.set_size_inches(120,30)
-    fig.savefig(f'Lane_{lane}-x.png')
+    fig.savefig(f'lane_plots/Lane_{lane}-x.png')
