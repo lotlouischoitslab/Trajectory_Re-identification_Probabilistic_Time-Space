@@ -249,8 +249,8 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries 
         until_overpass_data = until_overpass[until_overpass['ID'] == temp_ID]
-        until_overpass_data['xloc'] -= min(until_overpass_data['xloc'])
-        until_overpass_data['yloc'] -= min(until_overpass_data['yloc'])
+        until_overpass_data['xloc'] -= max(until_overpass_data['xloc'])
+        until_overpass_data['yloc'] -= max(until_overpass_data['yloc'])
 
         after_overpass_data = after_overpass[after_overpass['ID'] == temp_ID]
         after_overpass_data['xloc'] -= min(after_overpass_data['xloc'])
@@ -302,7 +302,7 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
             axs[1].legend()
             plt.suptitle('Trajectories X and Y Locations over Time')
             plt.savefig('temp_trajectory.png')
-        break 
+        # break 
     return None, None # return all the trajectories traversed and the best trajectory 
 
 
@@ -335,10 +335,9 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     tol = 0.1 # set a tolerance value 
     
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-     
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
     end_time = start_time + delta # we are going to check for 5 seconds from start time
-    stat_time_frame = np.arange(start_time,end_time, 0.1) 
+    stat_time_frame = np.arange(0,delta, 0.1) 
     print(f'Analyze from {start_time} -> {end_time} seconds')
 
     until_overpass = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
@@ -370,13 +369,12 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
 
-            min_x = min(until_overpass_data['xloc'].values)
-            min_y = min(until_overpass_data['yloc'].values)
+            dx = max(until_overpass_data['xloc'].values)
+            dy = max(until_overpass_data['yloc'].values)
 
             traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
             # print('traj time',traj_time)
            
-
             for m in range(num_maneuvers):
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                 check_traj_time = min(traj_time) 
@@ -399,10 +397,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     for i in range(0,len(current_data)-1): # Loop through each segment in current_data
                         x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                         x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
-                        x1 -= min_x # Adjust the x1 position for the line integral calculation 
-                        y1 -= min_y # Adjust the x2 position for the line integral calculation 
-                        x2 -= min_x # Adjust the y1 position for the line integral calculation 
-                        y2 -= min_y # Adjust the y2 position for the line integral calculation 
+                        x1 -= dx # Adjust the x1 position for the line integral calculation 
+                        y1 -= dy # Adjust the x2 position for the line integral calculation 
+                        x2 -= dx # Adjust the y1 position for the line integral calculation 
+                        y2 -= dy # Adjust the y2 position for the line integral calculation 
 
                         # print(f'first: {(x1,y1)}') # Just for checking 
                         # print(f'second: {(x2,y2)}') # Just for checking 
