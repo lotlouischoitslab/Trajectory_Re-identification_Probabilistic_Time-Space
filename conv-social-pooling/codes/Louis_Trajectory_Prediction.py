@@ -252,7 +252,7 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
         until_overpass_data['xloc'] -= min(until_overpass_data['xloc'])
         until_overpass_data['yloc'] -= min(until_overpass_data['yloc'])
 
-        after_overpass_data = after_overpass_data[after_overpass['ID'] == temp_ID]
+        after_overpass_data = after_overpass[after_overpass['ID'] == temp_ID]
         after_overpass_data['xloc'] -= min(after_overpass_data['xloc'])
         after_overpass_data['yloc'] -= min(after_overpass_data['yloc'])
         
