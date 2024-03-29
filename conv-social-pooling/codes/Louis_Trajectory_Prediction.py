@@ -189,12 +189,13 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
 
-def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
+def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # predict trajectory function 
     # NOTE: For now, I will ignore current_point and overpass_start variables
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
     # print(num_maneuvers)
 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
+    
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc] # the possible set of trajectories can be pass the overpass location
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs 
     # print(IDs_to_traverse)
@@ -218,13 +219,17 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     tol = 0.1 # set a tolerance value 
     
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-    stat_time_frame = np.arange(0,delta, 0.1) # adjust the global time frame for the probabilistic parameters muX, muY, sigX, sigY  
-    
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
-    end_time = start_time + delta # we are going to check for 5 seconds from start time
+    end_time = start_time + delta 
     stat_time_frame = np.arange(start_time,end_time, 0.1) 
+
+    until_overpass = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
+    after_overpass = input_data[input_data['time'] >= end_time] # trajectories after the starting position of overpass
+    # print('stat time frame length',len(stat_time_frame))
     ###########################################################################################################################
     fig, axs = plt.subplots(1, 2, figsize=(20, 6), sharey=True) 
+    IDs_to_traverse = [7009]
+
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         # Initialize storage for the current trajectory
         current_trajectory = {
@@ -243,23 +248,37 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries 
+        until_overpass_data = until_overpass[until_overpass['ID'] == temp_ID]
+        until_overpass_data['xloc'] -= min(until_overpass_data['xloc'])
+        until_overpass_data['yloc'] -= min(until_overpass_data['yloc'])
+
+        after_overpass_data = after_overpass_data[after_overpass['ID'] == temp_ID]
+        after_overpass_data['xloc'] -= min(after_overpass_data['xloc'])
+        after_overpass_data['yloc'] -= min(after_overpass_data['yloc'])
         
+
         if len(current_data) != 0: # we don't want any empty trajectories 
             print(f'ID: {temp_ID}') # print out the ID just for checking
             trajectory_data = current_data # extract the current trajectory
             # print(trajectory_data)
-            # print(trajectory_data['time']) # time 
-            print(trajectory_data['xloc'])
+            print(trajectory_data['time']) # time 
+            # print(trajectory_data['xloc'])
             
             # Plot original trajectory points before prediction
-            axs[0].plot(trajectory_data['time'], trajectory_data['xloc'], label=f'Trajectory ID {temp_ID}')
+            axs[0].plot(until_overpass_data['time'], until_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
+            axs[0].set_title('X Locations over Time')
+            axs[0].set_xlabel('Time')
+            axs[0].set_ylabel('X Location')
+            axs[0].legend()
+
+            axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
             axs[0].set_title('X Locations over Time')
             axs[0].set_xlabel('Time')
             axs[0].set_ylabel('X Location')
             axs[0].legend()
             
             # Plot y locations
-            axs[1].plot(trajectory_data['time'], trajectory_data['yloc'], label=f'Trajectory ID {temp_ID}')
+            axs[1].plot(after_overpass_data['time'], after_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[1].set_title('Y Locations over Time')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
@@ -273,9 +292,11 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                 axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
                 axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
             
+            axs[0].legend()
+            axs[1].legend()
             plt.suptitle('Trajectories X and Y Locations over Time')
             plt.savefig('temp_trajectory.png')
-
+        break 
     return None, None # return all the trajectories traversed and the best trajectory 
 
 
@@ -308,10 +329,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     tol = 0.1 # set a tolerance value 
     
     start_time_data = input_data[(abs(input_data['xloc'] - overpass_start_loc) <=tol) & (input_data['xloc'] >= overpass_start_loc)] # overpass start time 
-    stat_time_frame = np.arange(0,delta, 0.1) # adjust the global time frame for the probabilistic parameters muX, muY, sigX, sigY  
-    
+     
     start_time = min(start_time_data['time']) # go where the overpass starts and get that specific time
     end_time = start_time + delta # we are going to check for 5 seconds from start time
+    stat_time_frame = np.arange(start_time,end_time, 0.1) 
     print(f'Analyze from {start_time} -> {end_time} seconds')
     ###########################################################################################################################
     
@@ -571,7 +592,8 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            # trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = plot_pred_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta)
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane, predicted_traj,i)
