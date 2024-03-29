@@ -270,19 +270,25 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
             axs[0].set_xlabel('Time')
             axs[0].set_ylabel('X Location')
             axs[0].legend()
-
-            axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
-            axs[0].set_title('X Locations over Time')
-            axs[0].set_xlabel('Time')
-            axs[0].set_ylabel('X Location')
-            axs[0].legend()
-            
-            # Plot y locations
-            axs[1].plot(after_overpass_data['time'], after_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
+    
+            axs[1].plot(until_overpass_data['time'], until_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[1].set_title('Y Locations over Time')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
+
+            # axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
+            # axs[0].set_title('X Locations over Time')
+            # axs[0].set_xlabel('Time')
+            # axs[0].set_ylabel('X Location')
+            # axs[0].legend()
+            
+            # # Plot y locations
+            # axs[1].plot(after_overpass_data['time'], after_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
+            # axs[1].set_title('Y Locations over Time')
+            # axs[1].set_xlabel('Time')
+            # axs[1].set_ylabel('Y Location')
+            # axs[1].legend()
 
             # Plot predictive mean locations for each maneuver
             colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  
@@ -334,6 +340,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     end_time = start_time + delta # we are going to check for 5 seconds from start time
     stat_time_frame = np.arange(start_time,end_time, 0.1) 
     print(f'Analyze from {start_time} -> {end_time} seconds')
+
+    until_overpass = input_data[input_data['time'] <= start_time] # trajectories up to the starting position of overpass
     ###########################################################################################################################
     
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
@@ -354,14 +362,17 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         current_data = possible_trajectories[possible_trajectories['ID'] == temp_ID] # extract the current trajectory data
         current_data = current_data[(start_time <= current_data['time']) & (current_data['time'] <= end_time)] # make sure it is given within the boundaries  
         
+        until_overpass_data = until_overpass[until_overpass['ID'] == temp_ID]
+
         if len(current_data) != 0: # we don't want any empty trajectories 
             print(f"possible traj time: {current_data['time']} here")
             # print('current') 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
 
-            min_x = min(current_data['xloc'].values)
-            # min_y = min(current_data['yloc'].values)
+            min_x = min(until_overpass_data['xloc'].values)
+            min_y = min(until_overpass_data['yloc'].values)
+
             traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
             # print('traj time',traj_time)
            
@@ -388,10 +399,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     for i in range(0,len(current_data)-1): # Loop through each segment in current_data
                         x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                         x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
-                        # x1 -= min_x # Adjust the x1 position for the line integral calculation 
-                        # y1 -= min_y # Adjust the x2 position for the line integral calculation 
-                        # x2 -= min_x # Adjust the y1 position for the line integral calculation 
-                        # y2 -= min_y # Adjust the y2 position for the line integral calculation 
+                        x1 -= min_x # Adjust the x1 position for the line integral calculation 
+                        y1 -= min_y # Adjust the x2 position for the line integral calculation 
+                        x2 -= min_x # Adjust the y1 position for the line integral calculation 
+                        y2 -= min_y # Adjust the y2 position for the line integral calculation 
 
                         # print(f'first: {(x1,y1)}') # Just for checking 
                         # print(f'second: {(x2,y2)}') # Just for checking 
@@ -592,7 +603,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            # trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = predict_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             trajectory,predicted_traj = plot_pred_trajectories(original_data, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta)
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
