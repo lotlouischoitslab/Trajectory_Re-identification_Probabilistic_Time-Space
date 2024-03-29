@@ -368,10 +368,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             # print('current') 
             # print(current_data)
             # print('length of traj after overpass',len(current_data))
-
-            dx = max(until_overpass_data['xloc'].values)
-            dy = max(until_overpass_data['yloc'].values)
-
+            current_data['xloc'] -= max(until_overpass_data['xloc'])
+            current_data['yloc'] -= max(until_overpass_data['yloc'])
             traj_time = [round(t-start_time,1) for t in current_data['time']] # adjust the trajectory time frame 
             # print('traj time',traj_time)
            
@@ -397,11 +395,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     for i in range(0,len(current_data)-1): # Loop through each segment in current_data
                         x1, y1 = current_data.iloc[i][['xloc', 'yloc']] # get the (x1,y1) coordinates
                         x2, y2 = current_data.iloc[i + 1][['xloc', 'yloc']] # get the (x2,y2) coordinates
-                        x1 -= dx # Adjust the x1 position for the line integral calculation 
-                        y1 -= dy # Adjust the x2 position for the line integral calculation 
-                        x2 -= dx # Adjust the y1 position for the line integral calculation 
-                        y2 -= dy # Adjust the y2 position for the line integral calculation 
-
+             
                         # print(f'first: {(x1,y1)}') # Just for checking 
                         # print(f'second: {(x2,y2)}') # Just for checking 
     
