@@ -284,7 +284,7 @@ def plot_pred_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
         
-            axs[2].plot(until_overpass_data['xloc'], until_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
+            axs[2].plot(until_overpass_data_original['xloc'], until_overpass_data_original['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[2].plot(current_data['xloc'], current_data['yloc'], label=f'Trajectory ID {temp_ID} integral')
             axs[2].set_xlabel('X Location')
             axs[2].set_ylabel('Y Location')
