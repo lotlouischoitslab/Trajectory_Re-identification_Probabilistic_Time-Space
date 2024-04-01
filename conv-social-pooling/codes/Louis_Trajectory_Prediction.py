@@ -619,6 +619,3 @@ def main(): # Main function
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
-
-
-
