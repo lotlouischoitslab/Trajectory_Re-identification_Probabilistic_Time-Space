@@ -499,14 +499,16 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     for ident in IDs_to_traverse:
         current_data = possible_trajectories[(possible_trajectories['ID'] == ident) & (possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)] # extract the current trajectory data
         if len(current_data) != 0:
-            possible_traj_data['ID'] = ident 
-            possible_traj_data['time'] =  current_data['time']-overpass_start_time
-            possible_traj_data['xloc'] =  current_data['xloc']-overpass_end_loc
-            possible_traj_data['yloc'] =  current_data['yloc']-relative_min_y
-            
-            possible_traj_list.append(possible_traj_data)
-            possible_traj_pd = pd.DataFrame(possible_traj_data)
-            possible_traj_pd.to_csv('louis_traverse/possible_traj'+str(ident)+'.csv')
+            current_data.to_csv('louis_traverse/current'+str(ident)+'.csv')
+            if ident == 0:
+                possible_traj_data['ID'] = ident 
+                possible_traj_data['time'] =  current_data['time']-overpass_start_time
+                possible_traj_data['xloc'] =  current_data['xloc']-overpass_end_loc
+                possible_traj_data['yloc'] =  current_data['yloc']-relative_min_y
+                
+                possible_traj_list.append(possible_traj_data)
+                possible_traj_pd = pd.DataFrame(possible_traj_data)
+                possible_traj_pd.to_csv('louis_traverse/possible_traj'+str(ident)+'.csv')
 
 
     temp_id = [0] # temporary placeholder 
@@ -529,8 +531,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         'line_integral_values': 0
     }
 
-    for ids in temp_id:
-                # Initialize storage for the current trajectory
+    for ids in temp_id: # Initialize storage for the current trajectory
         current_trajectory = {
             'lane':lane,
             'time':[],
@@ -543,10 +544,15 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
             'sigY':[],
             'line_integral_values': []
         }
-        for possible_traj_temp in possible_traj_list:
-            traj_time = possible_traj_temp['time']
-            x_list = possible_traj_temp['xloc']
-            y_list = possible_traj_temp['yloc']
+        print('possible traj list',possible_traj_list ) 
+
+
+        for possible_traj_temp in possible_traj_list: 
+            traj_time = [round(t,1) for t in possible_traj_temp['time']] # adjust the trajectory time frame 
+            x_list = possible_traj_temp['xloc'].values
+            y_list = possible_traj_temp['yloc'].values
+
+            print('traj time',traj_time)
 
             for m in range(num_maneuvers):
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
@@ -561,13 +567,15 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                     end_idx = len(stat_time_frame)-1
                     print(f'start time: {start_time}')
                     print(f'start idx: {start_idx}')
+
+                    original_length = len(x_list)-1
                    
                     mux_store = muX[start_idx:]
                     muy_store = muY[start_idx:]
                     sigx_store = sigX[start_idx:]
                     sigy_store = sigY[start_idx:]
 
-                    for i in range(0,len(x_list)-1): # Loop through each segment in current_data
+                    for i in range(0,len(mux_store)-1): # Loop through each segment in current_data
                         x1 = x_list[i]
                         x2 = x_list[i+1]
                         y1 = y_list[i]
@@ -622,13 +630,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
         best_trajectory_df.to_csv('best_trajectories/batch_'+str(batch_num)+'_best_trajectory.csv', index=False) # then convert to csv
     
     return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
- 
-         
-
-
-
-
-
 
  
 def main(): # Main function 
@@ -685,7 +686,7 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 1730, 1830 # both in meters 
+    overpass_start_loc,overpass_end_loc = 1800, 1830 # both in meters 
     delta = 5 # time interval that we will be predicting for
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
