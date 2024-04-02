@@ -308,10 +308,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     overpass_start_time = underneath_overpass['time'].values[0] # time where the overpass begins
     overpass_end_time = underneath_overpass['time'].values[-1] # time where the overpass ends
     print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Time frame the overpass is
-
-
     relative_min_y = incoming_trajectories['yloc'].values[-1] # get the minimum y coordinate for all the possible trajectories 
-    print('relative min y',relative_min_y)
+    # print('relative min y',relative_min_y)
 
     possible_traj_data = { # possible trajectory data structure 
         'time':[], 
@@ -429,7 +427,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
                         
                         if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
                             highest_integral_value = segment_integral # assign the highest line integral value
-                            
                             best_trajectory['time'] = stat_time_frame[i] # assign the time
                             best_trajectory['xloc'] = (x1,x2) # this is the individual (x1,x2)
                             best_trajectory['yloc'] = (y1,y2) # this is the individual (y1,y2)
