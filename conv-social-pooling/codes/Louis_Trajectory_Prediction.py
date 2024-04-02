@@ -184,8 +184,7 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
     plt.colorbar(combined_contour)
     plt.savefig('plots/combined_maneuver.png')
 
-
-
+ 
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
 
@@ -316,17 +315,20 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     end_time = start_time + delta # ending time for prediction 
     stat_time_frame = np.arange(0,delta, 0.1) # time frame for muX, muY, sigX and sigY 
 
+
+
+    ################################# JUST FOR PLOTTING #######################################################################################################################################################
     incoming_trajectories_copy = incoming_trajectories.copy()
     ground_truth_underneath_overpass_copy = ground_truth_underneath_overpass.copy()
 
     incoming_trajectories_copy['xloc'] -= overpass_end_loc
     incoming_trajectories_copy['yloc'] -= relative_min_y
-
     ground_truth_underneath_overpass_copy['xloc'] -= overpass_end_loc
     ground_truth_underneath_overpass_copy['yloc'] -= relative_min_y
 
     stat_time_frame_copy = np.arange(overpass_start_time,overpass_end_time,0.1)
     plot_pred_trajectories(IDs_to_traverse,incoming_trajectories_copy,ground_truth_underneath_overpass_copy,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time)
+    ###########################################################################################################################################################################################################
 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {
