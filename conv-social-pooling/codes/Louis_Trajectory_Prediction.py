@@ -304,8 +304,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc] # we want to get all the incoming trajectories as well
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc] # the possible set of trajectories can be pass the overpass location
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs  
-
-    underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc) & (input_data['xloc'] <= overpass_end_loc)]
+    underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc) & (input_data['xloc'] <= overpass_end_loc)] # underneath the overpass data
     overpass_start_time = underneath_overpass['time'].values[0] # time where the overpass begins
     overpass_end_time = underneath_overpass['time'].values[-1] # time where the overpass ends
     print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Time frame the overpass is
@@ -314,8 +313,8 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     relative_min_y = incoming_trajectories['yloc'].values[-1] # get the minimum y coordinate for all the possible trajectories 
     print('relative min y',relative_min_y)
 
-    possible_traj_data = {
-        'time':[],
+    possible_traj_data = { # possible trajectory data structure 
+        'time':[], 
         'xloc':[],
         'yloc':[]
     }
