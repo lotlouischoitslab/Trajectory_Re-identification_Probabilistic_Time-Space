@@ -295,10 +295,13 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     possible_traj_list = [] # we will store all the possible trajectories here
 
     for ident in IDs_to_traverse: # for each possible trajectory 
+        
         current_data = possible_trajectories[(possible_trajectories['ID'] == ident) & (possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)] # extract the current trajectory data
+        
         if len(current_data) != 0:
+            print('ident',ident)
             current_data.to_csv('louis_traverse/current'+str(ident)+'.csv')
-
+            print('time before adjustment',current_data['time'])
             possible_traj_data['ID'] = ident # ID number for that trajectory 
             possible_traj_data['time'] =  current_data['time']-overpass_start_time # subtract the overpass start time from the current time
             possible_traj_data['xloc'] =  current_data['xloc']-overpass_end_loc # subtract the current x location from the overpass end location x coordinate
@@ -368,9 +371,10 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
 
             for m in range(num_maneuvers): # for each maneuver
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+                print('traj time',traj_time)
                 check_traj_time = min(traj_time) # get the starting time for the trajectory 
                 print(f'check traj time: {check_traj_time}') 
-                print('stat time',stat_time_frame)
+                # print('stat time',stat_time_frame)
 
                 if check_traj_time in stat_time_frame: # we want to see if the trajectory is in the prediction time frame
                     print(f'check traj time in stat time frame: {check_traj_time}')
