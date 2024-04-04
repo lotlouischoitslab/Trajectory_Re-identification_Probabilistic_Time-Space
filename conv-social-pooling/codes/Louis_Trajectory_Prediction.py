@@ -279,7 +279,7 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     # print('ground_truth_underneath_overpass overpass') 
     # print(ground_truth_underneath_overpass) 
     ############################################################################################################################ 
-    overpass_start_time = ground_truth_underneath_overpass['time'].values[0]# time where the overpass begins
+    overpass_start_time = ground_truth_underneath_overpass['time'].values[0]# time where the overpass begins 
     overpass_end_time = overpass_start_time + delta 
 
     print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Time frame the overpass is
