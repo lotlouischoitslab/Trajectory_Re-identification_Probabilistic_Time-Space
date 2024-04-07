@@ -264,7 +264,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             plt.suptitle('Trajectories X and Y Locations over Time')
             plt.savefig('temp_trajectory.png')
    
- 
+
 
 def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # Predict Trajectories function
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
@@ -314,8 +314,6 @@ def predict_trajectories(input_data, overpass_start_loc,overpass_end_loc, lane, 
     start_time = 0 # starting time for prediction
     end_time = start_time + delta # ending time for prediction 
     stat_time_frame = np.arange(0,delta, 0.1) # time frame for muX, muY, sigX and sigY 
-
-
 
     ################################# JUST FOR PLOTTING #######################################################################################################################################################
     incoming_trajectories_copy = incoming_trajectories.copy()
@@ -575,7 +573,6 @@ def main(): # Main function
         # print('Original Dataframe')
         # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
         # predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
-         
 
 
 if __name__ == '__main__': # run the code
