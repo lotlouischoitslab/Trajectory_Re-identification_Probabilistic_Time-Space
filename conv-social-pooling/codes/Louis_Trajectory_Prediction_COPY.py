@@ -112,9 +112,9 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discu
     Returns:
     - Integral value as a float.
     """
-    a = 1/5e10
-    b = 1/5e10
-    c = 1/1e10 # Adjust this scale factor as necessary
+    a = 10 # Adjust this scale factor as necessary
+    b = 15 # Adjust this scale factor as necessary
+    c = 20 # Adjust this scale factor as necessary
  
     
     # Define the probabilistic function as a Gaussian distribution
@@ -124,7 +124,11 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discu
     
     # Parametrize the line segment
     def line_param(t, x1, y1, x2, y2):
-        return c*x1 + a*(x2 - x1) * t, y1 + b*(y2 - y1) * t
+        delta_x = x2-x1 
+        delta_y = y2-y1
+        print(delta_x,delta_y)
+        print('t',t)
+        return c*x1 + a*delta_x * t, y1 + b*delta_y * t
 
     # Define the integrand function
     def integrand(t):
@@ -136,6 +140,8 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discu
     
     print(f'integral value: {integral}')
     return integral
+
+
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -302,7 +308,11 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     for temp_ID in IDs_to_traverse:
         incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc 
         ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] -= overpass_start_loc 
-        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_end_loc 
+        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc
+
+        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y 
+        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
+        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
 
     ###############################################################################################################################################################
     
