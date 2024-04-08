@@ -23,6 +23,7 @@ for lane in lanes:
     for j in IDs:
         temp_data = lane_data[lane_data['ID']==j]
         ys = temp_data['xloc'].to_numpy()
+        #ys = temp_data['yloc'].to_numpy()
         ts = temp_data.time.to_numpy()
         ax.scatter(ts, ys,s=1)
         ax.text(ts[0], ys[0], str(j))
