@@ -199,7 +199,7 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
 # TBD with Professor Talebpour (to be negotiated) 
 
 def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,negative): # plot trajectory function    
-    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
+    fig, axs = plt.subplots(1, 2, figsize=(20, 5), sharey=True) 
     IDs_to_traverse = [0] 
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         incoming_trajectories_plot = incoming_trajectories[incoming_trajectories['ID'] == temp_ID]
@@ -216,10 +216,10 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
         
-            axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
-            axs[2].set_xlabel('X Location')
-            axs[2].set_ylabel('Y Location')
-            axs[2].legend()
+            # axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
+            # axs[2].set_xlabel('X Location')
+            # axs[2].set_ylabel('Y Location')
+            # axs[2].legend()
 
         if len(current_plot) != 0: # we don't want any empty trajectories 
             print(f'ID: {temp_ID}') # print out the ID just for checking
@@ -240,11 +240,11 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
         
-            axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
-            axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
-            axs[2].set_xlabel('X Location')
-            axs[2].set_ylabel('Y Location')
-            axs[2].legend()
+            # axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+            # axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
+            # axs[2].set_xlabel('X Location')
+            # axs[2].set_ylabel('Y Location')
+            # axs[2].legend()
 
             # axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
             # axs[0].set_title('X Locations over Time')
@@ -264,17 +264,18 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             for m in range(6):
                 muX, muY = fut_pred[m][:, batch_num, 0], fut_pred[m][:, batch_num, 1]
                 if negative:
+                    muY_mod = np.array([-my for my in muY])
                     axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    axs[1].scatter(stat_time_frame, muY[::-1], color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    axs[2].scatter(muX, muY[::-1], color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                    axs[1].scatter(stat_time_frame, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                    #axs[2].scatter(muX, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
                 else:
                     axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
                     axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                    #axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
             
             axs[0].legend()
             axs[1].legend()
-            axs[2].legend()
+            #axs[2].legend()
             plt.suptitle('Trajectories X and Y Locations over Time')
             plt.savefig('temp_trajectory.png')
    
@@ -410,16 +411,18 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                     #print(f'start idx: {start_idx}')
                     if negative: 
                         mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
-                        muy_store = muY[start_idx:][::-1] # we want to extract the muY values from the start_idx -> until 50th index
+                        muy_store_temp = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
+                        muy_store = np.array([-my for my in muy_store_temp])
+                        
                         sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
-                        sigy_store = sigY[start_idx:][::-1] # we want to extract the sigY values from the start_idx -> until 50th index
+                        sigy_store_temp = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
+                        sigy_store = np.array([-sigy for sigy in sigy_store_temp])
                     
                     else: 
                         mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
                         muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
                         sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
                         sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
-
 
 
                     end_idx = len(x_list)-1
