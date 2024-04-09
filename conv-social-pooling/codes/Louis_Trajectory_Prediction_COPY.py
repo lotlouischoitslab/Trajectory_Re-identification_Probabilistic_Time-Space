@@ -100,78 +100,91 @@ Guidelines to understand the prediction function:
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discussed with Yanlin 
-    """
-    Calculate the line integral of a probabilistic function along a straight line.
-    Parameters:
-    - x1, y1: Starting point of the line.
-    - x2, y2: Ending point of the line.
-    - muX, muY: Mean values of the Gaussian distribution in x and y.
-    - sigX, sigY: Standard deviations of the Gaussian distribution in x and y.
+# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discussed with Yanlin 
+#     """
+#     Calculate the line integral of a probabilistic function along a straight line.
+#     Parameters:
+#     - x1, y1: Starting point of the line.
+#     - x2, y2: Ending point of the line.
+#     - muX, muY: Mean values of the Gaussian distribution in x and y.
+#     - sigX, sigY: Standard deviations of the Gaussian distribution in x and y.
     
-    Returns:
-    - Integral value as a float.
-    """
-    a = 10 # Adjust this scale factor as necessary
-    b = 15 # Adjust this scale factor as necessary
-    c = 20 # Adjust this scale factor as necessary
+#     Returns:
+#     - Integral value as a float.
+#     """
+#     a = 10 # Adjust this scale factor as necessary
+#     b = 15 # Adjust this scale factor as necessary
+#     c = 20 # Adjust this scale factor as necessary
  
     
-    # Define the probabilistic function as a Gaussian distribution
-    def prob_function(x, y, muX, muY, sigX, sigY):
-        rv = multivariate_normal([muX, muY], [[sigX**2, 0], [0, sigY**2]])
-        return rv.pdf([x, y])
+#     # Define the probabilistic function as a Gaussian distribution
+#     def prob_function(x, y, muX, muY, sigX, sigY):
+#         rv = multivariate_normal([muX, muY], [[sigX**2, 0], [0, sigY**2]])
+#         return rv.pdf([x, y])
     
-    # Parametrize the line segment
-    def line_param(t, x1, y1, x2, y2):
-        delta_x = x2-x1 
-        delta_y = y2-y1
-        print(delta_x,delta_y)
-        print('t',t)
-        return c*x1 + a*delta_x * t, y1 + b*delta_y * t
+#     # Parametrize the line segment
+#     def line_param(t, x1, y1, x2, y2):
+#         delta_x = x2-x1 
+#         delta_y = y2-y1
+#         print(delta_x,delta_y)
+#         print('t',t)
+#         return c*x1 + a*delta_x * t, y1 + b*delta_y * t
 
-    # Define the integrand function
-    def integrand(t):
-        x, y = line_param(t, x1, y1, x2, y2)
-        return prob_function(x, y, muX, muY, sigX, sigY)
+#     # Define the integrand function
+#     def integrand(t):
+#         x, y = line_param(t, x1, y1, x2, y2)
+#         return prob_function(x, y, muX, muY, sigX, sigY)
     
-    # Perform numerical integration along the line from t=0 to t=1
-    integral, _ = quad(integrand, 0, 1)
+#     # Perform numerical integration along the line from t=0 to t=1
+#     integral, _ = quad(integrand, 0, 1)
     
-    print(f'integral value: {integral}')
-    return integral
+#     print(f'integral value: {integral}')
+#     return integral
 
-def cost_calculator(x1, y1, x2, y2, obj): #obj = [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...]
+
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
     cost = 0
-    for i in range(len(obj)):
-        a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2*obj[i][2]))
-        b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + \
-            (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) * (1 / (2*obj[i][2]))
-        c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) * (1 / (2*obj[i][2]))
+    sig = (sigX - sigY) ** 2
 
-        cost = cost + (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) *  \
-            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2*math.sqrt(a))) - math.erf(b / (2*math.sqrt(a)))) * \
+    # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+    a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
+    b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+        (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+    c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
+
+    cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    
+    # print(f'integral value: {cost}')
     return cost
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
 # Now let's plot the trajectories using x and y trajectories. Then bring into the starting point
 
-def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
+def generate_normal_distribution(fut_pred, lane,batch_num):
     num_maneuvers = len(fut_pred)
-    x = np.linspace(-100,100,100)  
-    y = np.linspace(0,100,100)  
+    # x = np.linspace(-100,100,100)  
+    # y = np.linspace(0,100,100)  
+    
+    x = np.linspace(0,100,100)  
+    y = np.linspace(-100,100,100)  
     Xc, Yc = np.meshgrid(x, y)
     combined_Z = np.zeros(Xc.shape)
     plt.figure(figsize=(18, 12)) 
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
-        muX = fut_pred[m][:, batch_num, 0]
-        muY = fut_pred[m][:, batch_num, 1]
-        sigX = fut_pred[m][:, batch_num, 2]
-        sigY = fut_pred[m][:, batch_num, 3]
+        # muX = fut_pred[m][:, batch_num, 0]
+        # muY = fut_pred[m][:, batch_num, 1]
+        # sigX = fut_pred[m][:, batch_num, 2]
+        # sigY = fut_pred[m][:, batch_num, 3]
+    
+        muY = fut_pred[m][:,batch_num,0]
+        muX = fut_pred[m][:,batch_num,1]
+        sigY = fut_pred[m][:,batch_num,2]
+        sigX = fut_pred[m][:,batch_num,3]
       
         X, Y = np.meshgrid(x, y)
         Z = np.zeros(X.shape) # Initialize a zero matrix for the PDF values
@@ -210,27 +223,27 @@ def generate_normal_distribution(fut_pred, lane, predicted_traj,batch_num):
 # TBD with Professor Talebpour (to be negotiated) 
 
 def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,negative): # plot trajectory function    
-    fig, axs = plt.subplots(1, 2, figsize=(20, 5), sharey=True) 
+    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
     IDs_to_traverse = [0] 
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         incoming_trajectories_plot = incoming_trajectories[incoming_trajectories['ID'] == temp_ID]
         current_plot = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]
         for poss in possible_traj_list:
             stat_time_frame_poss = np.linspace(overpass_start_time,overpass_end_time, len(poss['xloc']))
-            axs[0].plot(stat_time_frame_poss, poss['xloc'], label=f'poss ID {temp_ID}')
+            axs[0].plot(stat_time_frame_poss, poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
             axs[0].set_xlabel('Time')
             axs[0].set_ylabel('X Location')
             axs[0].legend()
     
-            axs[1].plot(stat_time_frame_poss, poss['yloc'], label=f'poss ID {temp_ID}')
+            axs[1].plot(stat_time_frame_poss, poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
         
-            # axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
-            # axs[2].set_xlabel('X Location')
-            # axs[2].set_ylabel('Y Location')
-            # axs[2].legend()
+            axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
+            axs[2].set_xlabel('X Location')
+            axs[2].set_ylabel('Y Location')
+            axs[2].legend()
 
         if len(current_plot) != 0: # we don't want any empty trajectories 
             print(f'ID: {temp_ID}') # print out the ID just for checking
@@ -238,24 +251,24 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
          
             # Plot original trajectory points before prediction
             axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Trajectory ID {temp_ID}')
-            axs[0].plot(current_plot['time'], current_plot['xloc'], label=f'Trajectory ID {temp_ID} integral')
+            axs[0].plot(current_plot['time'], current_plot['xloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
             axs[0].set_title('X Locations over Time')
             axs[0].set_xlabel('Time')
             axs[0].set_ylabel('X Location')
             axs[0].legend()
     
-            axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
-            axs[1].plot(current_plot['time'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
+            #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+            axs[1].plot(current_plot['time'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
             axs[1].set_title('Y Locations over Time')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
         
             # axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
-            # axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
-            # axs[2].set_xlabel('X Location')
-            # axs[2].set_ylabel('Y Location')
-            # axs[2].legend()
+            axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
+            axs[2].set_xlabel('X Location')
+            axs[2].set_ylabel('Y Location')
+            axs[2].legend()
 
             # axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
             # axs[0].set_title('X Locations over Time')
@@ -263,7 +276,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             # axs[0].set_ylabel('X Location')
             # axs[0].legend()
             
-            # # Plot y locations
+            # Plot y locations
             # axs[1].plot(after_overpass_data['time'], after_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
             # axs[1].set_title('Y Locations over Time')
             # axs[1].set_xlabel('Time')
@@ -273,24 +286,27 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             
             colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
             for m in range(6):
-                muX, muY = fut_pred[m][:, batch_num, 0], fut_pred[m][:, batch_num, 1]
-                if negative:
-                    muY_mod = np.array([-my for my in muY])
-                    axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    axs[1].scatter(stat_time_frame, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    #axs[2].scatter(muX, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                else:
-                    axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                    #axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                muY = fut_pred[m][:,batch_num,0]
+                muX= fut_pred[m][:,batch_num,1]
+                sigY = fut_pred[m][:,batch_num,2]
+                sigX = fut_pred[m][:,batch_num,3]
+                # if negative:
+                #     muY_mod = np.array([-my for my in muY])
+                #     axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                #     axs[1].scatter(stat_time_frame, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                #     axs[2].scatter(muX, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                # else:
+                axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
             
             axs[0].legend()
             axs[1].legend()
-            #axs[2].legend()
+            axs[2].legend()
             plt.suptitle('Trajectories X and Y Locations over Time')
             plt.savefig('temp_trajectory.png')
    
- 
+
 
 def predict_trajectories(input_data, overpass_start_time_input,overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # Predict Trajectories function
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
@@ -413,27 +429,28 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
             check_traj_time_rounded = round(check_traj_time, 1) 
             
             for m in range(num_maneuvers): # for each maneuver
-                muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+                # muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
+                muY, muX, sigY, sigX = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                 if check_traj_time_rounded in stat_time_frame_rounded: # we want to see if the trajectory is in the prediction time frame
                     # print(f'check traj time in stat time frame: {check_traj_time_rounded}')
                     
                     start_idx = list(stat_time_frame_rounded).index(check_traj_time_rounded) # we want to retrieve the index of that check traj time in the prediction time frame
                      
                     #print(f'start idx: {start_idx}')
-                    if negative: 
-                        mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
-                        muy_store_temp = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
-                        muy_store = np.array([-my for my in muy_store_temp])
+                    # if negative: 
+                    #     mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
+                    #     muy_store_temp = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
+                    #     muy_store = np.array([-my for my in muy_store_temp])
                         
-                        sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
-                        sigy_store_temp = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
-                        sigy_store = np.array([-sigy for sigy in sigy_store_temp])
+                    #     sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
+                    #     sigy_store_temp = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
+                    #     sigy_store = np.array([-sigy for sigy in sigy_store_temp])
                     
-                    else: 
-                        mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
-                        muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
-                        sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
-                        sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
+                    # else: 
+                    mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
+                    muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
+                    sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
+                    sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
 
 
                     end_idx = len(x_list)-1
@@ -551,6 +568,7 @@ def main(): # Main function
     overpass_start_loc,overpass_end_loc = 1770, 1800 # both in meters 
     overpass_start_time = 190.7 # time where the overpass begins 
     delta = 5 # time interval that we will be predicting for
+
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     full_path = os.path.join(directory, model_directory) # create a full path 
@@ -616,10 +634,10 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
             trajectory,predicted_traj = predict_trajectories(original_data,overpass_start_time, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
-            
+            generate_normal_distribution(fut_pred_np, lane,i)
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
-                generate_normal_distribution(fut_pred_np, lane, predicted_traj,i)
+                generate_normal_distribution(fut_pred_np, lane,i)
                 break
 
         # print('Predicted')
