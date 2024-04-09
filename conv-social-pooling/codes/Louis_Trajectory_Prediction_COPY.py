@@ -141,7 +141,18 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discu
     print(f'integral value: {integral}')
     return integral
 
+def cost_calculator(x1, y1, x2, y2, obj): #obj = [[mu_x, mu_y, sigma_square], [mu_x, mu_y, sigma_square], ...]
+    cost = 0
+    for i in range(len(obj)):
+        a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2*obj[i][2]))
+        b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * obj[i][0] - 2 * x2 * obj[i][0]) + \
+            (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * obj[i][1] - 2 * y2 * obj[i][1])) * (1 / (2*obj[i][2]))
+        c = (math.pow(x1 - obj[i][0], 2) + math.pow(y1 - obj[i][1], 2)) * (1 / (2*obj[i][2]))
 
+        cost = cost + (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * obj[i][2])) * (1 / math.sqrt(a)) *  \
+            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2*math.sqrt(a))) - math.erf(b / (2*math.sqrt(a)))) * \
+            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    return cost
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
