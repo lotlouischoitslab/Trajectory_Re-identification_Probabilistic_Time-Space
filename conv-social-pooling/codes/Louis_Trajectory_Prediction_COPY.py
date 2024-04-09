@@ -257,14 +257,16 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[0].set_ylabel('X Location')
             axs[0].legend()
     
-            #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+            # Plot the line integral trajectory 
+            axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[1].plot(current_plot['time'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
             axs[1].set_title('Y Locations over Time')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
-        
-            # axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+
+            # Plot xloc vs yloc graph
+            axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
             axs[2].set_xlabel('X Location')
             axs[2].set_ylabel('Y Location')
