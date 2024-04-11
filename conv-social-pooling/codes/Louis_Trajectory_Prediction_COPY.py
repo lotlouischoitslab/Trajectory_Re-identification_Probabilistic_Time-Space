@@ -186,7 +186,7 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
     def integrand(t):
         x, y = line_param(t)
         pdf_value = multivariate_normal([0, 0], [[1, 0], [0, 1]]).pdf([x, y])
-        print(f'x: {x}, y: {y}, PDF: {pdf_value}')  # For debugging
+        # print(f'x: {x}, y: {y}, PDF: {pdf_value}')  # For debugging
         return pdf_value
 
     # Perform the line integral
@@ -259,15 +259,14 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
     print('PLOTTING TRAJECTORIES')
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
         incoming_trajectories_plot = incoming_trajectories[incoming_trajectories['ID'] == temp_ID]
-        current_plot = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]
-        for poss in possible_traj_list:
-            stat_time_frame_poss = np.linspace(overpass_start_time,overpass_end_time, len(poss['xloc']))
-            axs[0].plot(stat_time_frame_poss, poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
+        ground_truth_plot = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]
+        for poss in possible_traj_list: 
+            axs[0].plot(poss['before_time'], poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
             axs[0].set_xlabel('Time')
             axs[0].set_ylabel('X Location')
-            axs[0].legend()
-    
-            axs[1].plot(stat_time_frame_poss, poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
+            axs[0].legend() 
+
+            axs[1].plot(poss['before_time'], poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
             axs[1].set_xlabel('Time')
             axs[1].set_ylabel('Y Location')
             axs[1].legend()
@@ -277,63 +276,47 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[2].set_ylabel('Y Location')
             axs[2].legend()
 
-        if len(current_plot) != 0: # we don't want any empty trajectories 
-            print(f'ID: {temp_ID}') # print out the ID just for checking
-            trajectory_data = current_plot # extract the current trajectory  
-         
-            # Plot original trajectory points before prediction
-            axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Trajectory ID {temp_ID}')
-            axs[0].plot(current_plot['time'], current_plot['xloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
-            axs[0].set_title('X Locations over Time')
-            axs[0].set_xlabel('Time')
-            axs[0].set_ylabel('X Location')
-            axs[0].legend()
+        
+        # Plot original trajectory points before prediction
+        axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Incoming ID {temp_ID}')
+        axs[0].plot(ground_truth_plot['time'], ground_truth_plot['xloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
+        axs[0].set_title('X Locations over Time')
+        axs[0].set_xlabel('Time')
+        axs[0].set_ylabel('X Location')
+        axs[0].legend()
+
+        
+        axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
+        axs[1].plot(ground_truth_plot['time'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
+        axs[1].set_title('Y Locations over Time')
+        axs[1].set_xlabel('Time')
+        axs[1].set_ylabel('Y Location')
+        axs[1].legend()
+
+        # Plot xloc vs yloc graph
+        axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
+        axs[2].plot(ground_truth_plot['xloc'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth')
+        axs[2].set_xlabel('X Location')
+        axs[2].set_ylabel('Y Location')
+        axs[2].legend()
+
     
-            # Plot the line integral trajectory 
-            axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
-            axs[1].plot(current_plot['time'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
-            axs[1].set_title('Y Locations over Time')
-            axs[1].set_xlabel('Time')
-            axs[1].set_ylabel('Y Location')
-            axs[1].legend()
-
-            # Plot xloc vs yloc graph
-            axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
-            axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
-            axs[2].set_xlabel('X Location')
-            axs[2].set_ylabel('Y Location')
-            axs[2].legend()
-
-            # axs[0].plot(after_overpass_data['time'], after_overpass_data['xloc'], label=f'Trajectory ID {temp_ID}')
-            # axs[0].set_title('X Locations over Time')
-            # axs[0].set_xlabel('Time')
-            # axs[0].set_ylabel('X Location')
-            # axs[0].legend()
+        colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
+        for m in range(6):
+            muY = fut_pred[m][:,batch_num,0]
+            muX= fut_pred[m][:,batch_num,1]
+            sigY = fut_pred[m][:,batch_num,2]
+            sigX = fut_pred[m][:,batch_num,3]
             
-            # Plot y locations
-            # axs[1].plot(after_overpass_data['time'], after_overpass_data['yloc'], label=f'Trajectory ID {temp_ID}')
-            # axs[1].set_title('Y Locations over Time')
-            # axs[1].set_xlabel('Time')
-            # axs[1].set_ylabel('Y Location')
-            # axs[1].legend()
-
+            axs[0].scatter(stat_time_frame, muX, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
+            axs[1].scatter(stat_time_frame, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
+            axs[2].scatter(muX, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
             
-            colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
-            for m in range(6):
-                muY = fut_pred[m][:,batch_num,0]
-                muX= fut_pred[m][:,batch_num,1]
-                sigY = fut_pred[m][:,batch_num,2]
-                sigX = fut_pred[m][:,batch_num,3]
-               
-                axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-            
-            axs[0].legend()
-            axs[1].legend()
-            axs[2].legend()
-            plt.suptitle('Trajectories X and Y Locations over Time')
-            plt.savefig('temp_trajectory_plot.png')
+        axs[0].legend()
+        axs[1].legend()
+        axs[2].legend()
+        plt.suptitle('Trajectories X and Y Locations over Time')
+        plt.savefig('temp_trajectory_plot.png')
    
 
 
@@ -368,12 +351,14 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     incoming_trajectories.to_csv('before/00incoming.csv')
     ground_truth_underneath_overpass.to_csv('before/01ground_truth_underneath_overpass.csv')
     possible_trajectories.to_csv('before/02possible.csv')
-
     possible_traj_list = [] # we will store all the possible trajectories here
+    stat_time_frame = np.arange(0,delta, 0.1) # time frame for muX, muY, sigX and sigY 
+    stat_time_frame = np.round(stat_time_frame, 1)  # Round stat_time_frame to 1 decimal place
 
     for ident in IDs_to_traverse: # for each possible trajectory 
         current_data = possible_trajectories[(possible_trajectories['ID'] == ident) & (possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)] # extract the current trajectory data
         possible_traj_data = { # possible trajectory data structure 
+            'before_time':[],
             'time':[], 
             'xloc':[],
             'yloc':[]
@@ -382,19 +367,23 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
         if len(current_data) != 0:
             # print('ident',ident)
             current_data.to_csv('louis_traverse/current'+str(ident)+'.csv')
-            # print('time before adjustment',current_data['time'])
-            possible_traj_data['ID'] = ident # ID number for that trajectory 
-            possible_traj_data['time'] =  current_data['time']-overpass_start_time # subtract the overpass start time from the current time
-            possible_traj_data['xloc'] =  current_data['xloc'] # subtract the current x location from the overpass end location x coordinate
-            possible_traj_data['yloc'] =  current_data['yloc'] # do the same for the y location as well
-            
-            possible_traj_list.append(possible_traj_data) # append each possible trajectory data into a list 
-            possible_traj_pd = pd.DataFrame(possible_traj_data)
-            possible_traj_pd.to_csv('louis_traverse/possible_traj'+str(ident)+'.csv')
+            raw_time_stamps = current_data['time']-overpass_start_time
+            time_stamps = [round(t, 1) for t in raw_time_stamps]
+            check_traj_time = min(time_stamps) # get the starting time for the trajectory 
+            print(f'check traj time: {check_traj_time}') 
 
+            if check_traj_time in stat_time_frame:
+                print(f'check traj time: {check_traj_time} in stat time frame') 
+                possible_traj_data['ID'] = ident # ID number for that trajectory 
+                possible_traj_data['before_time'] =  current_data['time'] 
+                possible_traj_data['time'] =  time_stamps # subtract the overpass start time from the current time
+                possible_traj_data['xloc'] =  current_data['xloc'] # subtract the current x location from the overpass end location x coordinate
+                possible_traj_data['yloc'] =  current_data['yloc'] # do the same for the y location as well
+                
+                possible_traj_list.append(possible_traj_data) # append each possible trajectory data into a list 
+                possible_traj_pd = pd.DataFrame(possible_traj_data)
+                possible_traj_pd.to_csv('louis_traverse/possible_traj'+str(ident)+'.csv')
 
-    highest_integral_value = float('-inf') # assign a really large negative value 
-    stat_time_frame = np.arange(0,delta, 0.1) # time frame for muX, muY, sigX and sigY 
 
 
     ################################# JUST FOR PLOTTING #######################################################################################################################################################
@@ -416,6 +405,8 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
         'line_integral_values': 0
     }
 
+    highest_integral_value = float('-inf') # assign a really large negative value 
+
     temp_id = [0] # temporary placeholder because we will be analyzing one trajectory 
     for ids in temp_id: # For each incoming trajectory
         current_trajectory = {
@@ -435,77 +426,73 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
 
         for possible_traj_temp in possible_traj_list: # for each possible trajectory 
             # print('poss temp',possible_traj_temp)
-            traj_time = possible_traj_temp['time'] # adjust the trajectory time frame 
+            traj_time = possible_traj_temp['time'] # get the time frame for this possible trajectory
             x_list = possible_traj_temp['xloc'].values # get all the x-coordinates of the trajectory
             y_list = possible_traj_temp['yloc'].values # get all the y-coordinates of the trajectory
-            # print('traj time',traj_time)
-            check_traj_time = round(min(traj_time),1) # get the starting time for the trajectory 
-            # print(f'check traj time: {check_traj_time}') 
-            # print('stat time',stat_time_frame)
-
-            stat_time_frame_rounded = np.round(stat_time_frame, 1)  # Round stat_time_frame to 1 decimal place
-            check_traj_time_rounded = round(check_traj_time, 1) 
+            
             
             for m in range(num_maneuvers): # for each maneuver
                 muY, muX, sigY, sigX = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
-                if check_traj_time_rounded in stat_time_frame_rounded: # we want to see if the trajectory is in the prediction time frame
-                    # print(f'check traj time in stat time frame: {check_traj_time_rounded}')
+                start_idx = list(stat_time_frame).index(traj_time[0]) # we want to retrieve the index of that check traj time in the prediction time frame
+                end_idx = len(traj_time)-1
+                
+                mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
+                muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
+                sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
+                sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
+                
+                
+                print(f'index:{start_idx} -> {end_idx}')
+                print(f'traverse traj time: {traj_time}')
+                print(f'muX to analyze:{mux_store}')
+                print(f'muY to analyze:{muy_store}')
+                print(f'sigX to analyze:{sigx_store}')
+                print(f'sigY to analyze:{sigy_store}')
+
+                for i in range(0,end_idx): # Loop through each segment in current_data
+                    x1 = x_list[i]
+                    x2 = x_list[i+1]
+                    y1 = y_list[i]
+                    y2 = y_list[i+1]
+            
+                    # print(f'first: {(x1,y1)}') # Just for checking 
+                    # print(f'second: {(x2,y2)}') # Just for checking 
+
+                    temp_time = stat_time_frame[i] # get the time for that time frame 
+                    temp_muX = mux_store[i] # store the muX
+                    temp_muY = muy_store[i] # store the muY
+                    temp_sigX = sigx_store[i] # store the sigX
+                    temp_sigY = sigy_store[i] # store the sigY
+                    # print('temp muX',temp_muX)
+                    # print('temp muY',temp_muY)
+                    # print('temp sigX',temp_sigX)
+                    # print('temp sigY',temp_sigY)
+                
+                    segment_integral = line_integral(x1, y1, x2, y2, temp_muX,temp_muY,temp_sigX,temp_sigY) # Calculate line integral for each segment (return 50 values)
                     
-                    start_idx = list(stat_time_frame_rounded).index(check_traj_time_rounded) # we want to retrieve the index of that check traj time in the prediction time frame
-                     
-                    #print(f'start idx: {start_idx}')
-                    mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
-                    muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
-                    sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
-                    sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
-
-                    end_idx = len(x_list)-1
-                    #print(f'end idx: {end_idx}')
-
-                    for i in range(0,end_idx): # Loop through each segment in current_data
-                        x1 = x_list[i]
-                        x2 = x_list[i+1]
-                        y1 = y_list[i]
-                        y2 = y_list[i+1]
-             
-                        # print(f'first: {(x1,y1)}') # Just for checking 
-                        # print(f'second: {(x2,y2)}') # Just for checking 
-    
-                        temp_time = stat_time_frame[i] # get the time for that time frame 
-                        temp_muX = mux_store[i] # store the muX
-                        temp_muY = muy_store[i] # store the muY
-                        temp_sigX = sigx_store[i] # store the sigX
-                        temp_sigY = sigy_store[i] # store the sigY
-                        # print('temp muX',temp_muX)
-                        # print('temp muY',temp_muY)
-                        # print('temp sigX',temp_sigX)
-                        # print('temp sigY',temp_sigY)
+                    current_trajectory['time'].append(temp_time) # this is the individual time stamps 
+                    current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
+                    current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
+                    current_trajectory['muX'].append(temp_muX) # this is the individual muX
+                    current_trajectory['muY'].append(temp_muY) # this is the individual muY
+                    current_trajectory['sigX'].append(temp_sigX) # this is the individual sigX
+                    current_trajectory['sigY'].append(temp_sigY) # this is the individual sigY 
+                    current_trajectory['line_integral_values'].append(segment_integral) # append the line integral
+                    current_trajectory['maneuver'].append(m+1) # append the maneuver
                     
-                        segment_integral = line_integral(x1, y1, x2, y2, temp_muX,temp_muY,temp_sigX,temp_sigY) # Calculate line integral for each segment (return 50 values)
-                        
-                        current_trajectory['time'].append(temp_time) # this is the individual time stamps 
-                        current_trajectory['xloc'].append((x1,x2)) # this is the individual (x1,x2)
-                        current_trajectory['yloc'].append((y1,y2)) # this is the individual (y1,y2)
-                        current_trajectory['muX'].append(temp_muX) # this is the individual muX
-                        current_trajectory['muY'].append(temp_muY) # this is the individual muY
-                        current_trajectory['sigX'].append(temp_sigX) # this is the individual sigX
-                        current_trajectory['sigY'].append(temp_sigY) # this is the individual sigY 
-                        current_trajectory['line_integral_values'].append(segment_integral) # append the line integral
-                        current_trajectory['maneuver'].append(m+1) # append the maneuver
-                        
-                        if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
-                            highest_integral_value = segment_integral # assign the highest line integral value
-                            best_trajectory['time'] = stat_time_frame[i] # assign the time
-                            best_trajectory['xloc'] = (x1,x2) # this is the individual (x1,x2)
-                            best_trajectory['yloc'] = (y1,y2) # this is the individual (y1,y2)
-                            best_trajectory['muX'] = temp_muX # this is the individual muX
-                            best_trajectory['muY'] = temp_muY # this is the individual muY
-                            best_trajectory['sigX'] = temp_sigX # this is the individual sigX
-                            best_trajectory['sigY'] = temp_sigY # this is the individual sigY 
-                            best_trajectory['line_integral_values'] = segment_integral # append the line integral
-                            best_trajectory['maneuver']= m+1 # assign the maneuver
+                    if segment_integral > highest_integral_value: # check if the selected line integral value is greater than or not
+                        highest_integral_value = segment_integral # assign the highest line integral value
+                        best_trajectory['time'] = stat_time_frame[i] # assign the time
+                        best_trajectory['xloc'] = (x1,x2) # this is the individual (x1,x2)
+                        best_trajectory['yloc'] = (y1,y2) # this is the individual (y1,y2)
+                        best_trajectory['muX'] = temp_muX # this is the individual muX
+                        best_trajectory['muY'] = temp_muY # this is the individual muY
+                        best_trajectory['sigX'] = temp_sigX # this is the individual sigX
+                        best_trajectory['sigY'] = temp_sigY # this is the individual sigY 
+                        best_trajectory['line_integral_values'] = segment_integral # append the line integral
+                        best_trajectory['maneuver']= m+1 # assign the maneuver
 
-                        trajectories.append(current_trajectory) # Store the current trajectory
+                    trajectories.append(current_trajectory) # Store the current trajectory
     
     for key,temp in enumerate(trajectories): # for each stored dataframe
         trajectories_df = pd.DataFrame(temp) # convert to DataFrame
