@@ -29,6 +29,10 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
+xloc: Longitudinal N/S  movement 
+yloc: Lateral E/S Movement
+
+
 2/18/2024 
 Possible solution for the trajectory prediction part:
 1. First we will calculate the line integral 
@@ -142,22 +146,54 @@ Guidelines to understand the prediction function:
 #     return integral
 
 
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    cost = 0
-    sig = (sigX - sigY) ** 2
+# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
+#     cost = 0
+#     sig = (sigX - sigY) ** 2
 
-    # Adjusted calculations to use muX, muY, sigX, and sigY directly.
-    a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
-    b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
-        (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
-    c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
+#     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+#     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
+#     b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+#         (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+#     c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
 
-    cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
-            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
-            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+#     cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
+#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
     
-    # print(f'integral value: {cost}')
-    return cost
+#     # print(f'integral value: {cost}')
+#     return cost
+
+
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
+    # Normalize and scale the coordinates relative to the Gaussian distribution parameters
+    # print(f'x1->x2: {x1} -> {x2}')
+    # print(f'y1->y2: {y1} -> {y2}')
+    # print(f'mux: {muX}')
+    # print(f'muy: {muY}')
+    # print(f'sigx: {sigX}')
+    # print(f'sigy: {sigY}')
+
+    def normalize_scale(x, mu, sigma):
+        return (x - mu) / sigma
+
+    # Parametrize the line segment with normalized and scaled coordinates
+    def line_param(t):
+        x = normalize_scale(x1, muX, sigX) + (normalize_scale(x2, muX, sigX) - normalize_scale(x1, muX, sigX)) * t
+        y = normalize_scale(y1, muY, sigY) + (normalize_scale(y2, muY, sigY) - normalize_scale(y1, muY, sigY)) * t
+        return x, y
+
+    # Integrand function using the standardized coordinates
+    def integrand(t):
+        x, y = line_param(t)
+        pdf_value = multivariate_normal([0, 0], [[1, 0], [0, 1]]).pdf([x, y])
+        print(f'x: {x}, y: {y}, PDF: {pdf_value}')  # For debugging
+        return pdf_value
+
+    # Perform the line integral
+    integral_value, _ = quad(integrand, 0, 1)
+    return integral_value
+
+
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -176,11 +212,6 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
 
     for m in range(num_maneuvers):
         print(f"Processing maneuver {m+1}/{num_maneuvers}")
-        # muX = fut_pred[m][:, batch_num, 0]
-        # muY = fut_pred[m][:, batch_num, 1]
-        # sigX = fut_pred[m][:, batch_num, 2]
-        # sigY = fut_pred[m][:, batch_num, 3]
-    
         muY = fut_pred[m][:,batch_num,0]
         muX = fut_pred[m][:,batch_num,1]
         sigY = fut_pred[m][:,batch_num,2]
@@ -288,25 +319,15 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             
             colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
             for m in range(6):
-                # muX = fut_pred[m][:,batch_num,0]
-                # muY= fut_pred[m][:,batch_num,1]
-                # sigX = fut_pred[m][:,batch_num,2]
-                # sigY = fut_pred[m][:,batch_num,3]
-                            
                 muY = fut_pred[m][:,batch_num,0]
                 muX= fut_pred[m][:,batch_num,1]
                 sigY = fut_pred[m][:,batch_num,2]
                 sigX = fut_pred[m][:,batch_num,3]
 
-                # if negative:
-                #     muY_mod = np.array([-my for my in muY])
-                #     axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                #     axs[1].scatter(stat_time_frame, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                #     axs[2].scatter(muX, muY_mod, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                # else:
+               
                 axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
                 axs[1].scatter(stat_time_frame, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
-                axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
+                #axs[2].scatter(muX, muY, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
             
             axs[0].legend()
             axs[1].legend()
@@ -316,21 +337,20 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
    
 
 
-def predict_trajectories(input_data, overpass_start_time_input,overpass_start_loc,overpass_end_loc, lane, fut_pred, batch_num,delta): # Predict Trajectories function
+def predict_trajectories(input_data, overpass_start_time_input,overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y, lane, fut_pred, batch_num,delta): # Predict Trajectories function
     num_maneuvers = len(fut_pred) # We have 6 different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
     
-    incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc] # we want to get all the incoming trajectories as well
-    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc] # the possible set of trajectories can be pass the overpass location
+    incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # we want to get all the incoming trajectories as well
+    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # the possible set of trajectories can be pass the overpass location
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs  
 
     overpass_start_time =  overpass_start_time_input
-    overpass_end_time = overpass_start_time + delta # time we are assuming where the overpass ends 
-    overpass_start_loc_y = incoming_trajectories[incoming_trajectories['ID']==IDs_to_traverse[0]]['yloc'].values[0]
-    overpass_end_loc_y = possible_trajectories[possible_trajectories['ID']==IDs_to_traverse[0]]['yloc'].values[-1]
+    overpass_end_time = overpass_start_time + delta # time we are assuming where the overpass ends  
 
-    print(f'overpass xloc: {overpass_start_loc} -> {overpass_end_loc} meters')
-    print(f'overpass yloc: {overpass_start_loc_y} -> {overpass_end_loc_y} meters')
+    print(f'overpass xloc: {overpass_start_loc_x} -> {overpass_end_loc_x} meters') # Overpass Longitudinal (North/South) coordinates
+    print(f'overpass yloc: {overpass_start_loc_y} -> {overpass_end_loc_y} meters') # Overpass Latitudinal (East/West) coordinates
+    print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Overpass time frame
 
     if lane < 0:
         negative = True 
@@ -342,9 +362,9 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     ground_truth_underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc) & (input_data['xloc'] <= overpass_end_loc)] # underneath the overpass data
     
     for temp_ID in IDs_to_traverse:
-        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc 
-        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] -= overpass_start_loc 
-        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc
+        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
+        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
+        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x
 
         incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y 
         ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
@@ -356,7 +376,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     ground_truth_underneath_overpass.to_csv('before/01ground_truth_underneath_overpass.csv')
     possible_trajectories.to_csv('before/02possible.csv')
   
-    print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Time frame the overpass is
+
 
     possible_traj_list = [] # we will store all the possible trajectories here
 
@@ -573,7 +593,8 @@ def main(): # Main function
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc,overpass_end_loc = 1770, 1800 # both in meters 
+    overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
+    overpass_start_loc_y,overpass_end_loc_y = 161.8, 162.4 # both in meters 
     overpass_start_time = 190.7 # time where the overpass begins 
     delta = 5 # time interval that we will be predicting for
 
@@ -641,7 +662,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            trajectory,predicted_traj = predict_trajectories(original_data,overpass_start_time, overpass_start_loc,overpass_end_loc,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,i)
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
