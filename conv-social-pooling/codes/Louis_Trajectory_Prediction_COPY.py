@@ -253,7 +253,7 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
 
-def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,negative): # plot trajectory function    
+def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time): # plot trajectory function    
     fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
     IDs_to_traverse = [0] 
     for temp_ID in IDs_to_traverse: # for each trajectory ID 
@@ -342,6 +342,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True) # we want to pick for that lane given (this has ALL the trajectories)
     
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # we want to get all the incoming trajectories as well
+    ground_truth_underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc_x) & (input_data['xloc'] <= overpass_start_loc_x)] # underneath the overpass data
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # the possible set of trajectories can be pass the overpass location
     IDs_to_traverse = possible_trajectories['ID'].unique() # get all the unique IDs  
 
@@ -352,15 +353,8 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     print(f'overpass yloc: {overpass_start_loc_y} -> {overpass_end_loc_y} meters') # Overpass Latitudinal (East/West) coordinates
     print(f'overpass time: {overpass_start_time} -> {overpass_end_time}') # Overpass time frame
 
-    if lane < 0:
-        negative = True 
-    else:
-        negative = False 
-  
     
     ################################## ADJUST DATA POINTS RELATIVE TO OVERPASS START LOCATION ############################################
-    ground_truth_underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc) & (input_data['xloc'] <= overpass_end_loc)] # underneath the overpass data
-    
     for temp_ID in IDs_to_traverse:
         incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
         ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
@@ -369,14 +363,11 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
         incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y 
         ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
         possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
-
     ###############################################################################################################################################################
     
     incoming_trajectories.to_csv('before/00incoming.csv')
     ground_truth_underneath_overpass.to_csv('before/01ground_truth_underneath_overpass.csv')
     possible_trajectories.to_csv('before/02possible.csv')
-  
-
 
     possible_traj_list = [] # we will store all the possible trajectories here
 
@@ -409,7 +400,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
 
     ################################# JUST FOR PLOTTING #######################################################################################################################################################
     stat_time_frame_copy = np.arange(overpass_start_time,overpass_end_time,0.1)
-    plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time,negative)
+    plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time)
     ###########################################################################################################################################################################################################
 
     trajectories = [] # final set of trajectories that we would have traversed 
@@ -457,7 +448,6 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
             check_traj_time_rounded = round(check_traj_time, 1) 
             
             for m in range(num_maneuvers): # for each maneuver
-                # muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                 muY, muX, sigY, sigX = fut_pred[m][:, batch_num, :4].T # Extract maneuver-specific predictive parameters
                 if check_traj_time_rounded in stat_time_frame_rounded: # we want to see if the trajectory is in the prediction time frame
                     # print(f'check traj time in stat time frame: {check_traj_time_rounded}')
@@ -465,21 +455,10 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                     start_idx = list(stat_time_frame_rounded).index(check_traj_time_rounded) # we want to retrieve the index of that check traj time in the prediction time frame
                      
                     #print(f'start idx: {start_idx}')
-                    # if negative: 
-                    #     mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
-                    #     muy_store_temp = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
-                    #     muy_store = np.array([-my for my in muy_store_temp])
-                        
-                    #     sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
-                    #     sigy_store_temp = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
-                    #     sigy_store = np.array([-sigy for sigy in sigy_store_temp])
-                    
-                    # else: 
                     mux_store = muX[start_idx:] # we want to extract the muX values from the start_idx -> until 50th index
                     muy_store = muY[start_idx:] # we want to extract the muY values from the start_idx -> until 50th index
                     sigx_store = sigX[start_idx:] # we want to extract the sigX values from the start_idx -> until 50th index
                     sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
-
 
                     end_idx = len(x_list)-1
                     #print(f'end idx: {end_idx}')
