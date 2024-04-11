@@ -250,7 +250,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             trajectory_data = current_plot # extract the current trajectory  
          
             # Plot original trajectory points before prediction
-            # axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Trajectory ID {temp_ID}')
+            axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Trajectory ID {temp_ID}')
             axs[0].plot(current_plot['time'], current_plot['xloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
             axs[0].set_title('X Locations over Time')
             axs[0].set_xlabel('Time')
@@ -258,7 +258,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[0].legend()
     
             # Plot the line integral trajectory 
-            #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+            axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[1].plot(current_plot['time'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral',linewidth=2.0)
             axs[1].set_title('Y Locations over Time')
             axs[1].set_xlabel('Time')
@@ -266,7 +266,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             axs[1].legend()
 
             # Plot xloc vs yloc graph
-            #axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
+            axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Trajectory ID {temp_ID}')
             axs[2].plot(current_plot['xloc'], current_plot['yloc'], label=f'Trajectory ID {temp_ID} integral')
             axs[2].set_xlabel('X Location')
             axs[2].set_ylabel('Y Location')
@@ -288,10 +288,16 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             
             colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
             for m in range(6):
+                # muX = fut_pred[m][:,batch_num,0]
+                # muY= fut_pred[m][:,batch_num,1]
+                # sigX = fut_pred[m][:,batch_num,2]
+                # sigY = fut_pred[m][:,batch_num,3]
+                            
                 muY = fut_pred[m][:,batch_num,0]
                 muX= fut_pred[m][:,batch_num,1]
                 sigY = fut_pred[m][:,batch_num,2]
                 sigX = fut_pred[m][:,batch_num,3]
+
                 # if negative:
                 #     muY_mod = np.array([-my for my in muY])
                 #     axs[0].scatter(stat_time_frame, muX, color=colors[m],label=f'Maneuver {m+1}', zorder=5)
