@@ -104,95 +104,22 @@ Guidelines to understand the prediction function:
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
-# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Correct version discussed with Yanlin 
-#     """
-#     Calculate the line integral of a probabilistic function along a straight line.
-#     Parameters:
-#     - x1, y1: Starting point of the line.
-#     - x2, y2: Ending point of the line.
-#     - muX, muY: Mean values of the Gaussian distribution in x and y.
-#     - sigX, sigY: Standard deviations of the Gaussian distribution in x and y.
-    
-#     Returns:
-#     - Integral value as a float.
-#     """
-#     a = 10 # Adjust this scale factor as necessary
-#     b = 15 # Adjust this scale factor as necessary
-#     c = 20 # Adjust this scale factor as necessary
- 
-    
-#     # Define the probabilistic function as a Gaussian distribution
-#     def prob_function(x, y, muX, muY, sigX, sigY):
-#         rv = multivariate_normal([muX, muY], [[sigX**2, 0], [0, sigY**2]])
-#         return rv.pdf([x, y])
-    
-#     # Parametrize the line segment
-#     def line_param(t, x1, y1, x2, y2):
-#         delta_x = x2-x1 
-#         delta_y = y2-y1
-#         print(delta_x,delta_y)
-#         print('t',t)
-#         return c*x1 + a*delta_x * t, y1 + b*delta_y * t
-
-#     # Define the integrand function
-#     def integrand(t):
-#         x, y = line_param(t, x1, y1, x2, y2)
-#         return prob_function(x, y, muX, muY, sigX, sigY)
-    
-#     # Perform numerical integration along the line from t=0 to t=1
-#     integral, _ = quad(integrand, 0, 1)
-    
-#     print(f'integral value: {integral}')
-#     return integral
-
-
-# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-#     cost = 0
-#     sig = (sigX - sigY) ** 2
-
-#     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
-#     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
-#     b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
-#         (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
-#     c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
-
-#     cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
-#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
-#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
-    
-#     # print(f'integral value: {cost}')
-#     return cost
-
-
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    # Normalize and scale the coordinates relative to the Gaussian distribution parameters
-    # print(f'x1->x2: {x1} -> {x2}')
-    # print(f'y1->y2: {y1} -> {y2}')
-    # print(f'mux: {muX}')
-    # print(f'muy: {muY}')
-    # print(f'sigx: {sigX}')
-    # print(f'sigy: {sigY}')
+    cost = 0
+    sig = np.sqrt((sigX - sigY)**2)/2
 
-    def normalize_scale(x, mu, sigma):
-        return (x - mu) / sigma
+    # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+    a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
+    b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+        (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+    c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
 
-    # Parametrize the line segment with normalized and scaled coordinates
-    def line_param(t):
-        x = normalize_scale(x1, muX, sigX) + (normalize_scale(x2, muX, sigX) - normalize_scale(x1, muX, sigX)) * t
-        y = normalize_scale(y1, muY, sigY) + (normalize_scale(y2, muY, sigY) - normalize_scale(y1, muY, sigY)) * t
-        return x, y
-
-    # Integrand function using the standardized coordinates
-    def integrand(t):
-        x, y = line_param(t)
-        pdf_value = multivariate_normal([0, 0], [[1, 0], [0, 1]]).pdf([x, y])
-        # print(f'x: {x}, y: {y}, PDF: {pdf_value}')  # For debugging
-        return pdf_value
-
-    # Perform the line integral
-    integral_value, _ = quad(integrand, 0, 1)
-    return integral_value
-
+    cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
+            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    
+    # print(f'integral value: {cost}')
+    return cost
 
 
 # The heatmap values on the right show the value of the normal distribution
@@ -249,9 +176,7 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
     plt.colorbar(combined_contour)
     plt.savefig('plots/combined_maneuver.png')
 
- 
-# NOTE: I need to figure out an optimization algorithm to put here
-# TBD with Professor Talebpour (to be negotiated) 
+
 
 def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,num_maneuvers): # plot trajectory function    
     fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
@@ -261,15 +186,15 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
         incoming_trajectories_plot = incoming_trajectories[incoming_trajectories['ID'] == temp_ID]
         ground_truth_plot = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]
         for poss in possible_traj_list: 
-            axs[0].plot(poss['before_time'], poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
-            axs[0].set_xlabel('Time')
-            axs[0].set_ylabel('X Location')
-            axs[0].legend() 
+            # axs[0].plot(poss['before_time'], poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
+            # axs[0].set_xlabel('Time')
+            # axs[0].set_ylabel('X Location')
+            # axs[0].legend() 
 
-            axs[1].plot(poss['before_time'], poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
-            axs[1].set_xlabel('Time')
-            axs[1].set_ylabel('Y Location')
-            axs[1].legend()
+            # axs[1].plot(poss['before_time'], poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
+            # axs[1].set_xlabel('Time')
+            # axs[1].set_ylabel('Y Location')
+            # axs[1].legend()
         
             axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
             axs[2].set_xlabel('X Location')
@@ -279,19 +204,19 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
         
         # Plot original trajectory points before prediction
         #axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Incoming ID {temp_ID}')
-        axs[0].plot(ground_truth_plot['time'], ground_truth_plot['xloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
-        axs[0].set_title('X Locations over Time')
-        axs[0].set_xlabel('Time')
-        axs[0].set_ylabel('X Location')
-        axs[0].legend()
+        # axs[0].plot(ground_truth_plot['time'], ground_truth_plot['xloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
+        # axs[0].set_title('X Locations over Time')
+        # axs[0].set_xlabel('Time')
+        # axs[0].set_ylabel('X Location')
+        # axs[0].legend()
 
         
-        #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
-        axs[1].plot(ground_truth_plot['time'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
-        axs[1].set_title('Y Locations over Time')
-        axs[1].set_xlabel('Time')
-        axs[1].set_ylabel('Y Location')
-        axs[1].legend()
+        # #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
+        # axs[1].plot(ground_truth_plot['time'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
+        # axs[1].set_title('Y Locations over Time')
+        # axs[1].set_xlabel('Time')
+        # axs[1].set_ylabel('Y Location')
+        # axs[1].legend()
 
         # Plot xloc vs yloc graph
         #axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
@@ -308,12 +233,12 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
             sigY = fut_pred[m][:,batch_num,2]
             sigX = fut_pred[m][:,batch_num,3]
             
-            axs[0].scatter(stat_time_frame, muX, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
-            axs[1].scatter(stat_time_frame, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
+            # axs[0].scatter(stat_time_frame, muX, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
+            # axs[1].scatter(stat_time_frame, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
             axs[2].scatter(muX, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
             
-        axs[0].legend()
-        axs[1].legend()
+        # axs[0].legend()
+        # axs[1].legend()
         axs[2].legend()
         plt.suptitle('Trajectories X and Y Locations over Time')
         plt.savefig('temp_trajectory_plot.png')
