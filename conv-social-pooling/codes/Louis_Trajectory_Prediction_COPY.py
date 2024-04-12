@@ -253,7 +253,7 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
 # NOTE: I need to figure out an optimization algorithm to put here
 # TBD with Professor Talebpour (to be negotiated) 
 
-def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time): # plot trajectory function    
+def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,num_maneuvers): # plot trajectory function    
     fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
     IDs_to_traverse = [0] 
     print('PLOTTING TRAJECTORIES')
@@ -278,7 +278,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
 
         
         # Plot original trajectory points before prediction
-        axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Incoming ID {temp_ID}')
+        #axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Incoming ID {temp_ID}')
         axs[0].plot(ground_truth_plot['time'], ground_truth_plot['xloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
         axs[0].set_title('X Locations over Time')
         axs[0].set_xlabel('Time')
@@ -286,7 +286,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
         axs[0].legend()
 
         
-        axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
+        #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
         axs[1].plot(ground_truth_plot['time'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
         axs[1].set_title('Y Locations over Time')
         axs[1].set_xlabel('Time')
@@ -294,7 +294,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
         axs[1].legend()
 
         # Plot xloc vs yloc graph
-        axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
+        #axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
         axs[2].plot(ground_truth_plot['xloc'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth')
         axs[2].set_xlabel('X Location')
         axs[2].set_ylabel('Y Location')
@@ -302,7 +302,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
 
     
         colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
-        for m in range(6):
+        for m in range(num_maneuvers):
             muY = fut_pred[m][:,batch_num,0]
             muX= fut_pred[m][:,batch_num,1]
             sigY = fut_pred[m][:,batch_num,2]
@@ -388,7 +388,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
 
     ################################# JUST FOR PLOTTING #######################################################################################################################################################
     stat_time_frame_copy = np.arange(overpass_start_time,overpass_end_time,0.1)
-    plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time)
+    plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time,num_maneuvers)
     ###########################################################################################################################################################################################################
 
     trajectories = [] # final set of trajectories that we would have traversed 
@@ -560,7 +560,7 @@ def main(): # Main function
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
     overpass_start_loc_y,overpass_end_loc_y = 161.8, 162.4 # both in meters 
-    overpass_start_time = 190.7 # time where the overpass begins 
+    overpass_start_time = 190.7 # time where the overpass begins in seconds
     delta = 5 # time interval that we will be predicting for
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
