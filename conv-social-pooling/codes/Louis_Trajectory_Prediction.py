@@ -268,7 +268,6 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                 possible_traj_pd.to_csv('louis_traverse/possible_traj'+str(ident)+'.csv')
 
 
-
     ################################# JUST FOR PLOTTING #######################################################################################################################################################
     stat_time_frame_copy = np.arange(overpass_start_time,overpass_end_time,0.1)
     plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame_copy,batch_num,overpass_start_time,overpass_end_time,num_maneuvers)
@@ -304,6 +303,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
             'sigY':[],
             'line_integral_values': []
         }
+
         # print('possible traj list',possible_traj_list ) # we have a list of possible trajectories
         # print('length of possible traj list',len(possible_traj_list)) # should be 9
 
