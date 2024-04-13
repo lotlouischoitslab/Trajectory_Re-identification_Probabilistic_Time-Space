@@ -33,57 +33,18 @@ xloc: Longitudinal N/S  movement
 yloc: Lateral E/S Movement
 
 
-2/18/2024 
-Possible solution for the trajectory prediction part:
-1. First we will calculate the line integral 
-2. Create a function to detect overlaps using muX, muY, sigX and sigY
-3. Taking into account of line integral cost and overlap probability, create cost matrix
-4. For trajectories that have a high risk of overlapping, assign a high cost to discourage 
-their simultaneous selection. Conversely, trajectories with high line integral costs and low 
-overlap risks should have a lower match cost to encourage their selection.
-
-
-OPTIMIZATION PART:
-Objective: Minimize the total match cost across all trajectory pairs, selecting a set of trajectories that maximizes overall 
-quality while minimizing collision risk.
-
-Decision Variables: Define binary decision variables indicating whether a trajectory is selected for a vehicle.
-
-Constraints: Each vehicle is assigned exactly one trajectory.
-Trajectories with high overlap risks are not assigned simultaneously to different vehicles.
-
-
-12/4/2023
-TO-DO:
-1. Start writing the paper. Write down what I want to include (detailed outline) 
-Introduction, Methodology (sub-section allowed), Data (Description I-294), Results, Discussions, Conclusion
-What we want to include for Introduction: 
-Limitations, What this study does, Shortcomings from previous studies but what I want to address now
-One paragraph with what people like to see (main contributions)
-Finish one paragraph as how it is follows.
-
-MUST-DO: Rest of the chapter, write a detailed outline. Think about what to include
-Try learning Overleaf (LaTeX). Submit to TRR (Journal of TRB) or ASCE. ASCE is better option. 
-Download the ASCE template journal for transportation. 
-
-11/20/2023 
-Take one trajectory, cut it to two pieces (from the point you cut it 5 seconds before), (then go forward and take 10 seconds)
-call it left piece and right piece 
-Use the right piece
-plot the integral value 
-
 Get the final data, cut out a piece of it
-What we can do is I pick this section of the road (160 ft) and cut take about 20 ft
+What we can do is I pick this section of the road and cut take about 20 ft
 Simulate an overpass 
 Have one trajectory for 160 ft, between 160 to 180 ft cut it to two pieces, you have before and after trajectory 
 Run the code
 Look at the middle of the data and revolve 20 ft from the point
 
-Missing part is 160->180 ft part 
-Go back 5 seconds from 160 ft. (Feed in to the prediction model)
-Integral: Get the trajectories from 180 ft forward 5 seconds (This is the future) assuming there is an overpass 
+Missing part is 1770->1800 ft part 
+Go back 5 seconds. (Feed in to the prediction model)
+Integral: Get the trajectories from 1800 ft forward 5 seconds (This is the future) assuming there is an overpass 
 Connect the trajectories  
-Replace the 160->180ft part with the trajectory with 180 ft and 5 sec forward
+Replace the 1770->1800 ft part with the trajectory with 180 ft and 5 sec forward
 
 Format of the output:
 - 6 movements, each movement has probability distribution
@@ -128,9 +89,6 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
 
 def generate_normal_distribution(fut_pred, lane,batch_num):
     num_maneuvers = len(fut_pred)
-    # x = np.linspace(-100,100,100)  
-    # y = np.linspace(0,100,100)  
-    
     x = np.linspace(0,100,100)  
     y = np.linspace(-100,100,100)  
     Xc, Yc = np.meshgrid(x, y)
@@ -295,10 +253,10 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
             raw_time_stamps = current_data['time']-overpass_start_time
             time_stamps = [round(t, 1) for t in raw_time_stamps]
             check_traj_time = min(time_stamps) # get the starting time for the trajectory 
-            print(f'check traj time: {check_traj_time}') 
+            # print(f'check traj time: {check_traj_time}') 
 
             if check_traj_time in stat_time_frame:
-                print(f'check traj time: {check_traj_time} in stat time frame') 
+                # print(f'check traj time: {check_traj_time} in stat time frame') 
                 possible_traj_data['ID'] = ident # ID number for that trajectory 
                 possible_traj_data['before_time'] =  current_data['time'] 
                 possible_traj_data['time'] =  time_stamps # subtract the overpass start time from the current time
@@ -367,14 +325,14 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                 sigy_store = sigY[start_idx:] # we want to extract the sigY values from the start_idx -> until 50th index
                 
                 
-                print(f'index:{start_idx} -> {end_idx}')
-                print(f'traverse traj time: {traj_time}')
-                print(f'muX to analyze:{mux_store}')
-                print(f'muY to analyze:{muy_store}')
-                print(f'sigX to analyze:{sigx_store}')
-                print(f'sigY to analyze:{sigy_store}')
+                # print(f'index:{start_idx} -> {end_idx}')
+                # print(f'traverse traj time: {traj_time}')
+                # print(f'muX to analyze:{mux_store}')
+                # print(f'muY to analyze:{muy_store}')
+                # print(f'sigX to analyze:{sigx_store}')
+                # print(f'sigY to analyze:{sigy_store}')
 
-                for i in range(0,end_idx): # Loop through each segment in current_data
+                for i in range(end_idx): # Loop through each segment in current_data
                     x1 = x_list[i]
                     x2 = x_list[i+1]
                     y1 = y_list[i]
@@ -388,6 +346,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                     temp_muY = muy_store[i] # store the muY
                     temp_sigX = sigx_store[i] # store the sigX
                     temp_sigY = sigy_store[i] # store the sigY
+
                     # print('temp muX',temp_muX)
                     # print('temp muY',temp_muY)
                     # print('temp sigX',temp_sigX)
