@@ -1,6 +1,7 @@
 from __future__ import print_function
 import torch
-from model import highwayNet_six_maneuver
+# from model import highwayNet_six_maneuver
+from model_six_maneuvers import highwayNet_six_maneuver
 from utils_works_with_cnn_rnn_and_six_maneuvers import ngsimDataset,maskedNLL,maskedMSE,maskedNLLTest
 from torch.utils.data import DataLoader
 import time
@@ -54,7 +55,7 @@ def main():
     # trSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
     # valSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
     trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
-
+    # trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
 
     trSet = ngsimDataset(trajectories_directory+'/train', t_h=30, t_f=100, d_s=2)
     valSet = ngsimDataset(trajectories_directory+'/valid', t_h=30, t_f=100, d_s=2)

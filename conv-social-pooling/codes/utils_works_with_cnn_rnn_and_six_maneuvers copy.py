@@ -3,10 +3,12 @@ from torch.utils.data import Dataset, DataLoader
 import scipy.io as scp
 import numpy as np
 import torch
+
 import pickle
 
 ### Dataset class for the NGSIM dataset
 class ngsimDataset(Dataset):
+
 
     def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
         with open(file_name+'_trajectory.data', 'rb') as filehandle:
