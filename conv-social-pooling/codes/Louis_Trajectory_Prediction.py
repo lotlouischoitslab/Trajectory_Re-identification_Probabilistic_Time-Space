@@ -1,6 +1,6 @@
 from __future__ import print_function
 import torch
-from model_six_maneuvers import highwayNet_six_maneuver
+from Louis_model_six_maneuvers import highwayNet_six_maneuver
 from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers import ngsimDataset,maskedNLL,maskedMSE,maskedNLLTest, maskedMSETest
 from torch.utils.data import DataLoader
 import time
@@ -67,7 +67,7 @@ Guidelines to understand the prediction function:
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
     cost = 0
-    sig = np.sqrt((sigX - sigY)**2)/2
+    sig = abs(sigX - sigY)/2 
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
