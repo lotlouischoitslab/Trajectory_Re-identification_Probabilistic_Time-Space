@@ -29,9 +29,8 @@ warnings.simplefilter('ignore', np.RankWarning)
 ##############################################################################
 
 '''
-xloc: Longitudinal N/S  movement 
+xloc: Longitudinal N/S movement 
 yloc: Lateral E/S Movement
-
 
 Get the final data, cut out a piece of it
 What we can do is I pick this section of the road and cut take about 20 ft
