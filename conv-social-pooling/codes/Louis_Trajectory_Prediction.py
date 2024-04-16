@@ -20,7 +20,7 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # FOR MULTI-GPU system using a single gpu
-os.environ["CUDA_VISIBLE_DEVICES"]="1" # The GPU id to use, usually either "0" or "1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # The GPU id to use, usually either "0" or "1" This should be 0
 
 ########## Use this temporary but we need to fix the OpenBLAS error #########
 import warnings
