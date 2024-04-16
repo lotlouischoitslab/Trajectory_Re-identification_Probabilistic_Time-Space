@@ -66,7 +66,7 @@ Guidelines to understand the prediction function:
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
     cost = 0
-    sig = abs(sigX - sigY)/2 
+    sig = np.sqrt((sigX**2 + sigY**2)/2)
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
