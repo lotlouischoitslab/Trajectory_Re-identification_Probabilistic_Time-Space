@@ -47,7 +47,7 @@ def main():
     trainEpochs = 3
 
     optimizer = torch.optim.Adam(net.parameters())
-    batch_size = 128
+    batch_size = 128 # change batch size
     crossEnt = torch.nn.BCELoss()
 
 
