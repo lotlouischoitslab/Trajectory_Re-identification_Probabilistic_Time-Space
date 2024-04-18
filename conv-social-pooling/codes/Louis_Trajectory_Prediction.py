@@ -20,7 +20,7 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # FOR MULTI-GPU system using a single gpu
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # The GPU id to use, usually either "0" or "1" This should be 0
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # The GPU id to use, usually either "0" or "1" # this should be 0
 
 ########## Use this temporary but we need to fix the OpenBLAS error #########
 import warnings
@@ -390,7 +390,9 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
  
 def main(): # Main function 
     args = {} # Network Arguments
+    print(torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+     
     if device == 'cuda':
         args['use_cuda'] = True 
     else:
@@ -413,19 +415,19 @@ def main(): # Main function
     args['train_flag'] = False
 
     ######################################## TRAJECTORY DIRECTORIES ######################################################################################
-    trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
-    # trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
+    # trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
+    trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
 
     ####################################### MODEL DIRECTORIES ############################################################################################
-    directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
-    # directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
+    # directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
+    directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
 
     model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
     saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
     
     ######################################### PRED SET DIRECTORY #########################################################################################
-    filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
-    # filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
+    # filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
+    filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
     file_to_read = 'I294_Cleaned.csv' # or 'raw_trajectory.csv'
@@ -453,12 +455,13 @@ def main(): # Main function
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
     if args['use_cuda']: 
-        net = net.cuda()
+        net = net.to(device)
+
     #########################################################################################################################
 
     ################################# INITIALIZE DATA LOADERS ################################################################
     predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
-    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=3,collate_fn=predSet.collate_fn)
+    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
 
@@ -500,6 +503,9 @@ def main(): # Main function
                 fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
             l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+            l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
+            c = c.to(device)
+
             lossVals += l.detach() # increment the loss value 
             counts += c.detach() # increment the count value 
             points_np = points.numpy() # convert to numpy arrays 

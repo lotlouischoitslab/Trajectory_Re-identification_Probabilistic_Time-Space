@@ -61,8 +61,8 @@ def main():
     trSet = ngsimDataset(trajectories_directory+'/train', t_h=30, t_f=100, d_s=2)
     valSet = ngsimDataset(trajectories_directory+'/valid', t_h=30, t_f=100, d_s=2)
 
-    trDataloader = DataLoader(trSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=trSet.collate_fn)
-    valDataloader = DataLoader(valSet,batch_size=batch_size,shuffle=True,num_workers=8,collate_fn=valSet.collate_fn)
+    trDataloader = DataLoader(trSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=trSet.collate_fn)
+    valDataloader = DataLoader(valSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=valSet.collate_fn)
 
     ################################# TRAINING PART ##################################################################################
     ## Variables holding train and validation loss values:
