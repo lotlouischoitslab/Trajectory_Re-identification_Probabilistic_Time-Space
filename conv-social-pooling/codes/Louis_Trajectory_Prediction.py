@@ -21,7 +21,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # FOR MULTI-GPU system using a single gpu
 os.environ["CUDA_VISIBLE_DEVICES"]="0" # The GPU id to use, usually either "0" or "1" # this should be 0
-
+os.environ["CUDA_LAUNCH_BLOCKING"]="1"
 ########## Use this temporary but we need to fix the OpenBLAS error #########
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
@@ -390,7 +390,9 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
  
 def main(): # Main function 
     args = {} # Network Arguments
-    print(torch.cuda.is_available())
+    print('cuda available',torch.cuda.is_available())
+    print('torch version',torch.__version__)
+    print('cuda version', torch.version.cuda)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
      
     if device == 'cuda':
