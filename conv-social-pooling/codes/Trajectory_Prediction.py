@@ -1,7 +1,7 @@
 from __future__ import print_function
 import torch
-from Louis_model_six_maneuvers import highwayNet_six_maneuver
-from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers import ngsimDataset,maskedNLL,maskedMSE,maskedNLLTest, maskedMSETest
+from model_six_maneuvers import highwayNet_six_maneuver
+from TGSIM_utils import tgsimDataset,maskedNLL,maskedMSE,maskedNLLTest
 from torch.utils.data import DataLoader
 import time
 import math
@@ -31,36 +31,6 @@ warnings.simplefilter('ignore', np.RankWarning)
 '''
 xloc: Longitudinal N/S movement 
 yloc: Lateral E/S Movement
-
-Get the final data, cut out a piece of it
-What we can do is I pick this section of the road and cut take about 20 ft
-Simulate an overpass 
-Have one trajectory for 160 ft, between 160 to 180 ft cut it to two pieces, you have before and after trajectory 
-Run the code
-Look at the middle of the data and revolve 20 ft from the point
-
-Missing part is 1770->1800 ft part 
-Go back 5 seconds. (Feed in to the prediction model)
-Integral: Get the trajectories from 1800 ft forward 5 seconds (This is the future) assuming there is an overpass 
-Connect the trajectories  
-Replace the 1770->1800 ft part with the trajectory with 180 ft and 5 sec forward
-
-Format of the output:
-- 6 movements, each movement has probability distribution
-- Actions are Straight, Accel, straight, decel, right, decel, left, decl 
-- This is a possible sequence: Straight, Accel, Straight, Decel, Right, Decel, Left, Decl
-- Every point one second during that 10 second horizon, we are getting normal distribution 2D where that car is probabilistically. For 10 seconds, we have 100 points, for every one of those 100 points, we have mean (x,y) and std (vx,vy). These are my outputs. Now, what we want to do is to get highest probability from one of the six movements. 
- 
-Guidelines to understand the prediction function: 
-- There are 6 different maneuvers the car can pick 
-- Each maneuver has 50 points
-- Each point has probability distribution
-- Take each maneuver ALL the 50 points. the corresponding point
-- Take the line integral of that particular distrubtuion
-- Do this for all 50 points 
-- Sum everything up 
-- Then do this for all trajectories 
-- Pick the manuever and the trajectory with the highest total value of the line integral
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
@@ -416,23 +386,13 @@ def main(): # Main function
     args['use_maneuvers'] = True
     args['train_flag'] = False
 
-    ######################################## TRAJECTORY DIRECTORIES ######################################################################################
-    # trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
-    trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # HAL GPU Cluster
-
-    ####################################### MODEL DIRECTORIES ############################################################################################
-    # directory = '/Users/louis/cee497projects/trajectory-prediction/codes/predicted_environment/' # Local Machine
-    directory = 'cee497projects/trajectory-prediction/codes/predicted_environment/'  # HAL GPU Cluster
-
-    model_directory = 'models/trained_models_10_sec/cslstm_m.tar'
-    saving_directory = 'predicted_data/highwaynet-10-sec-101-80-speed-maneuver-for-GT-six-maneuvers/'
-    
+ 
     ######################################### PRED SET DIRECTORY #########################################################################################
     # filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # HAL GPU Cluster
     
     ######################################################################################################################################################
-    file_to_read = 'I294_Cleaned.csv' # or 'raw_trajectory.csv'
+    file_to_read = 'I294_Cleaned.csv'  
     
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
@@ -452,8 +412,8 @@ def main(): # Main function
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    full_path = os.path.join(directory, model_directory) # create a full path 
-    net.load_state_dict(torch.load(full_path, map_location=torch.device(device))) # load the model onto the local machine 
+    model_path = 'trained_model_TGSIM/cslstm_m.tar'
+    net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
     if args['use_cuda']: 
@@ -462,7 +422,7 @@ def main(): # Main function
     #########################################################################################################################
 
     ################################# INITIALIZE DATA LOADERS ################################################################
-    predSet = ngsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
+    predSet = tgsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
     predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=predSet.collate_fn)
     lossVals = torch.zeros(50).to(device) # Louis code
     counts = torch.zeros(50).to(device) # Louis code
@@ -504,13 +464,13 @@ def main(): # Main function
                 indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
                 fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
-            l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-            l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
-            c = c.to(device)
+            # l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+            # l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
+            # c = c.to(device)
 
-            lossVals += l.detach() # increment the loss value 
-            counts += c.detach() # increment the count value 
-            points_np = points.numpy() # convert to numpy arrays 
+            # lossVals += l.detach() # increment the loss value 
+            # counts += c.detach() # increment the count value 
+            #points_np = points.numpy() # convert to numpy arrays 
             fut_pred_np = [] # store the future pred points 
 
             for k in range(6): #manuevers mean the 

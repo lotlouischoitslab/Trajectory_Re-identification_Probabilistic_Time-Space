@@ -1,11 +1,13 @@
 from __future__ import print_function
 import torch
 # from model import highwayNet_six_maneuver
-from Louis_model_six_maneuvers import highwayNet_six_maneuver
-from utils_works_with_cnn_rnn_and_six_maneuvers import ngsimDataset,maskedNLL,maskedMSE,maskedNLLTest
+from model_six_maneuvers import highwayNet_six_maneuver
+from TGSIM_utils import tgsimDataset,maskedNLL,maskedMSE,maskedNLLTest
 from torch.utils.data import DataLoader
 import time
 import math
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
 ###FOR MULTI-GPU system using a single gpu:
@@ -57,13 +59,24 @@ crossEnt = torch.nn.BCELoss()
 
 # trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
 print('Loading Data')
-train_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/train/train' # HAL GPU Cluster
-valid_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/valid/valid' # HAL GPU Cluster
+# train_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/train/train' # HAL GPU Cluster
+# valid_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/valid/valid' # HAL GPU Cluster
+data = pd.read_csv('I294_Cleaned.csv')
+train_val_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+train_data, val_data = train_test_split(train_val_data, test_size=0.25, random_state=42)
 
-trSet = ngsimDataset(train_trajectories_directory, t_h=30, t_f=100, d_s=2)
-valSet = ngsimDataset(valid_trajectories_directory, t_h=30, t_f=100, d_s=2)
+train_data.to_csv('train/train_data.csv', index=False)
+val_data.to_csv('valid/val_data.csv', index=False)
+test_data.to_csv('test/test_data.csv', index=False)
 
-print('NGSIM Data Loaded!')
+train_trajectories_directory = 'train/train_data.csv'
+valid_trajectories_directory = 'valid/val_data.csv'
+
+trSet = tgsimDataset(train_trajectories_directory, t_h=30, t_f=100, d_s=2)
+valSet = tgsimDataset(valid_trajectories_directory, t_h=30, t_f=100, d_s=2)
+
+
+print('TGSIM Data Loaded!')
 
 trDataloader = DataLoader(trSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=trSet.collate_fn)
 valDataloader = DataLoader(valSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=valSet.collate_fn)
@@ -226,7 +239,7 @@ for epoch_num in range(pretrainEpochs+trainEpochs):
     prev_val_loss = avg_val_loss/val_batch_count
 
 
-torch.save(net.state_dict(), 'trained_models_10_sec/cslstm_m.tar')
+torch.save(net.state_dict(), 'trained_model_TGSIM/cslstm_m.tar')
 
 
  
