@@ -36,34 +36,73 @@ class tgsimDataset(Dataset):
 
 
 
-    def __getitem__(self, idx):
+    # def __getitem__(self, idx):
 
-        dsId = self.D[idx, 0].astype(int)
-        vehId = self.D[idx, 1].astype(int)
-        t = self.D[idx, 2]
-        grid = self.D[idx,8:-2]
+    #     dsId = self.D[idx, 0].astype(int)
+    #     vehId = self.D[idx, 1].astype(int)
+    #     t = self.D[idx, 2]
+    #     grid = self.D[idx,8:-2]
+    #     neighbors = []
+
+    #     # Get track history 'hist' = ndarray, and future track 'fut' = ndarray
+    #     hist = self.getHistory(vehId,t,vehId,dsId)
+    #     fut = self.getFuture(vehId,t,dsId)
+
+    #     # Get track histories of all neighbours 'neighbors' = [ndarray,[],ndarray,ndarray]
+    #     for i in grid:
+    #         neighbors.append(self.getHistory(i.astype(int), t,vehId,dsId))
+
+    #     # Maneuvers 'lon_enc' = one-hot vector, 'lat_enc = one-hot vector
+    #     # Manuevers 'maneuver_enc' = one-hot vehtor size six
+    #     lon_m = int(self.D[idx, 7] - 1)
+    #     lat_m = int(self.D[idx, 6] - 1)
+    #     maenuver_enc = np.zeros([6])
+    #     maenuver_enc[lon_m*3+lat_m] = 1
+    #     lon_enc = np.zeros([2])
+    #     lon_enc[int(self.D[idx, 7] - 1)] = 1
+    #     lat_enc = np.zeros([3])
+    #     lat_enc[int(self.D[idx, 6] - 1)] = 1
+
+    #     return hist,fut,neighbors,lat_enc,lon_enc,maenuver_enc
+
+    def __getitem__(self, idx):
+        # Get the data for the current index
+        current_data = self.D.iloc[idx]
+
+        # Extract data for maneuvers
+        lon_enc = np.zeros([2])
+        lat_enc = np.zeros([3])
+        maneuver_enc = np.zeros([6])
+
+        # Extract maneuvers information from the current data row
+        lon_m = int(current_data['lane'])  # This should match your data's column name for maneuvers
+        lat_m = int(current_data['lane'])  # Same here, adjust accordingly
+        maneuver_enc[lon_m * 3 + lat_m] = 1
+        lon_enc[lon_m] = 1
+        lat_enc[lat_m] = 1
+
+        # Now let's extract the vehicle's past (history) and future (target) data points
+        veh_id = int(current_data['ID'])
+        veh_data = self.T[veh_id]
+        
+        # Determine the start and end points for history and future data
+        hist_start_idx = max(0, idx - self.t_h * self.d_s)
+        hist_end_idx = idx
+        fut_end_idx = min(len(veh_data), idx + self.t_f * self.d_s)
+
+        # Extract history and future data points
+        hist = veh_data[hist_start_idx:hist_end_idx:self.d_s]
+        fut = veh_data[idx:fut_end_idx:self.d_s]
+
+        # Convert to tensor
+        hist = torch.from_numpy(hist).float()
+        fut = torch.from_numpy(fut).float()
+
+        # Dummy values for neighbors (update as needed for your implementation)
         neighbors = []
 
-        # Get track history 'hist' = ndarray, and future track 'fut' = ndarray
-        hist = self.getHistory(vehId,t,vehId,dsId)
-        fut = self.getFuture(vehId,t,dsId)
-
-        # Get track histories of all neighbours 'neighbors' = [ndarray,[],ndarray,ndarray]
-        for i in grid:
-            neighbors.append(self.getHistory(i.astype(int), t,vehId,dsId))
-
-        # Maneuvers 'lon_enc' = one-hot vector, 'lat_enc = one-hot vector
-        # Manuevers 'maneuver_enc' = one-hot vehtor size six
-        lon_m = int(self.D[idx, 7] - 1)
-        lat_m = int(self.D[idx, 6] - 1)
-        maenuver_enc = np.zeros([6])
-        maenuver_enc[lon_m*3+lat_m] = 1
-        lon_enc = np.zeros([2])
-        lon_enc[int(self.D[idx, 7] - 1)] = 1
-        lat_enc = np.zeros([3])
-        lat_enc[int(self.D[idx, 6] - 1)] = 1
-
-        return hist,fut,neighbors,lat_enc,lon_enc,maenuver_enc
+        # Return the compiled sample
+        return hist, fut, neighbors, torch.from_numpy(lat_enc), torch.from_numpy(lon_enc), torch.from_numpy(maneuver_enc)
 
 
 
