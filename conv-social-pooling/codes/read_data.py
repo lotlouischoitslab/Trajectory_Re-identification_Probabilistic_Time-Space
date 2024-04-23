@@ -19,12 +19,3 @@ with open('temp_write/data.csv', 'w', newline='') as file:
     # Write the data to the csv file
     writer.writerows(data)
 
- 
-
-# loaded_datax = load_from_pickle(filenamex)
-# print(loaded_datax.shape)
-# print(len(loaded_datax[0]))
-
-# loaded_datay = load_from_pickle(filenamey)
-# print(loaded_datay.shape)
-# print(len(loaded_datay[0]))
