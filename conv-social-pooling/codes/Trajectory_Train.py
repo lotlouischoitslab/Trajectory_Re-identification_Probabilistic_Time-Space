@@ -54,21 +54,13 @@ def main():
     # trSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
     # valSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
 
-    # trajectories_directory = '/Users/louis/cee497projects/data/101-80-speed-maneuver-for-GT/train/10_seconds/' # Local Machine
+    
+    
     print('Loading Data')
-    # train_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/train/train' # HAL GPU Cluster
-    # valid_trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/valid/valid' # HAL GPU Cluster
-    data = pd.read_csv('I294_Cleaned.csv')
-    train_val_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
-    train_data, val_data = train_test_split(train_val_data, test_size=0.25, random_state=42)
-
-    train_data.to_csv('train/train_data.csv', index=False)
-    val_data.to_csv('valid/val_data.csv', index=False)
-    test_data.to_csv('test/test_data.csv', index=False)
-
-    train_trajectories_directory = 'train/train_data.csv'
-    valid_trajectories_directory = 'valid/val_data.csv'
-
+    train_trajectories_directory = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/train' # HAL GPU Cluster
+    valid_trajectories_directory = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/valid' # HAL GPU Cluster
+  
+   
     trSet = tgsimDataset(train_trajectories_directory, t_h=30, t_f=100, d_s=2)
     valSet = tgsimDataset(valid_trajectories_directory, t_h=30, t_f=100, d_s=2)
 
