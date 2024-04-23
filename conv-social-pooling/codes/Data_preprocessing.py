@@ -1,21 +1,21 @@
-__author__ = "Mohammadreza Khajeh-Hosseini"
 import numpy as np
+import pandas as pd 
 import pickle
 import copy
 
 class DataPoint():
 	def __init__(self, data_array, reference_time, dataset_id, attention_distance = 90, grid_size = 15):
-		data_point = data_array.split()
-		self.dataset_id = dataset_id
-		self.id = np.int(data_point[0])
-		self.frame_number = np.int(data_point[1])
-		self.time = np.round(np.int(data_point[3])/1000.0 - reference_time, 1)
-		self.x_loc = np.float(data_point[4])
-		self.y_loc = np.float(data_point[5])
-		self.lane = np.int(data_point[13])
-		self.speed = np.float(data_point[11]) #feet/second
-		self.acceleration = np.float(data_point[12]) #feet/second square
-
+        
+		data_point = data_array
+		self.dataset_id = dataset_id 
+		self.id = int(data_point[0]) 
+		self.time = np.round(int(data_point[1])/1000.0 - reference_time, 1)
+		self.x_loc = float(data_point[2])
+		self.y_loc = float(data_point[3])
+		self.lane = int(data_point[4])
+		self.speed = float(data_point[5]) #feet/second
+		self.acceleration = float(data_point[6]) #feet/second square
+ 
 		# Map of the surrounding vehicles in the grid form based on the attention_distance and grid_size
 		self.attention_distance = attention_distance
 		self.grid_size = grid_size
@@ -49,9 +49,13 @@ class Ngsim:
 		self.process_points()
 
 	def process_points(self):
-		print("processing points ...")
-		data_arrays = open(self.file ,'r').read().splitlines()
+		print("Processing all the points")
+		df = pd.read_csv(self.file)  
+		selected_columns = df.keys()[:7] 
+		data_arrays = df[selected_columns].to_numpy() 
 		self.data_points = [DataPoint(i, self.t_reference, self.dataset_id) for i in data_arrays]
+
+ 
 		print("total number of data points: ", len(self.data_points))
 		self.data_points.sort(key = lambda x:x.id)
 		self.max_id = self.data_points[-1].id
@@ -90,10 +94,7 @@ class Ngsim:
 
 			if global_grid[t_ind][lane_ind][location_ind] == 0:
 				global_grid[t_ind][lane_ind][location_ind] = p.id
-			else:
-				# print("ERROR: at time ", round(self.t_reference+t_ind*time_resolution,1), ", the vehicles ",
-				# 	  global_grid[t_ind][lane_ind][location_ind], " and ", p.id,
-				# 	  " are at the grid location at the same time!")
+			else: 
 				errors += 1
 		print("WARNING - total errors:", errors)
 		print("global grid is constructed")
@@ -153,9 +154,7 @@ class Ngsim:
 		for trajectory in self.trajectories:
 			for i in range(len(trajectory.points)):
 				p = trajectory.points[i]
-				# Lateral movement: considers lane changing
-				#s_index = max(0, i-lateral_m_t*t_multiplier)
-				#e_index = min(len(trajectory.points) - 1, i + lateral_m_t * t_multiplier)
+				# Lateral movement: considers lane changing 
 				s_index = i
 				e_index = min(len(trajectory.points) - 1, i + lateral_m_t_modified * t_multiplier)
 				if trajectory.points[e_index].lane > p.lane or trajectory.points[s_index].lane < p.lane:
@@ -221,15 +220,10 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 
 	for traj in total_data.trajectories:
 		if len(traj.points) < 32: # 30 for history, 1 for current point, 1 for future point
-			continue
-		# if len(traj.points) < 51: # 30 for history, 1 for current point, 20 for future flow and density
-		# 	continue
-		else:
-			# for i in range(30, len(traj.points) - 1): #keep at least one point for prediction
+			continue 
+		else: 
 			for i in range(30, len(traj.points) - 1): #keep at least one point for prediction
-				p = traj.points[i]
-				# if p.frame_number >= frames_list[-200]: #make sure there is 20 seconds of flow and density
-				# 	continue
+				p = traj.points[i] 
 				point = [p.dataset_id, p.id, p.frame_number, p.x_loc, p.y_loc, p.lane, p.lateral_maneuver,
 						 p.longitudinal_maneuver]
 				for n in range(len(p.neighbors_left_lane)):
@@ -239,12 +233,6 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				for n in range(len(p.neighbors_right_lane)):
 					point.append(p.neighbors_right_lane[n])
 
-				# #Add normalized flow and density
-				# t_step = int(round(traj.points[i].time/time_resolution))
-				# p_flow_normalized = (flow_list[t_step] - mean_flow)/std_flow #normalized flow
-				# p_density_normalized = (density_list[t_step] - mean_density)/std_density #normalized density
-				# point.append(p_flow_normalized )
-				# point.append(p_density_normalized)
 
 				#Add flow and density
 				t_step = int(round(traj.points[i].time/time_resolution))
@@ -282,8 +270,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 			po.append(t_p.acceleration)
 			points.append(po)
 		points = np.array(points)
-		dataset_trajectories[trajectory.id - 1] = points
-		# dataset_trajectories[trajectory.id - 1] = points.transpose()
+		dataset_trajectories[trajectory.id - 1] = points 
 
 	# These two sets of trajectory contain grids with x and y locations instead of vehicle id
 	dataset_trajectories_x_grid = [[] for i in range(max_id + 1)]
@@ -300,8 +287,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
+				else: 
 					neighbor_traj = dataset_trajectories[neighbor_id - 1]
 					#print("LEFT-neighbor trajectoy: ", neighbor_traj)
 					# print("t_p.frame_number: ", t_p.frame_number)
@@ -317,8 +303,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
+				else: 
 					neighbor_traj = dataset_trajectories[neighbor_id - 1]
 					#print("SAME-neighbor trajectoy: ", neighbor_traj)
 					# print("t_p.frame_number: ", t_p.frame_number)
@@ -334,8 +319,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
+				else: 
 					neighbor_traj = dataset_trajectories[neighbor_id - 1]
 					#print("RIGHT-neighbor trajectoy: ", neighbor_traj)
 					# print("t_p.frame_number: ", t_p.frame_number)
@@ -352,14 +336,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 		points_y = np.array(points_y)
 		dataset_trajectories_x_grid[trajectory.id - 1] = points_x
 		dataset_trajectories_y_grid[trajectory.id - 1] = points_y
-
-	# #Create flow density normalized
-	# flow_list_normalized = [(f-mean_flow)/std_flow for f in flow_list]
-	# density_list_normalized = [(d-mean_density)/std_density for d in density_list]
-	# flow_density_frame = []
-	# for i in range(len(flow_list_normalized)):
-	# 	flow_density_frame.append([flow_list_normalized[i], density_list_normalized[i], frames_list[i]])
-	# flow_density_frame = np.array(flow_density_frame)
+ 
 
 	#Create flow density non-normalized
 	flow_density_frame = []
@@ -447,13 +424,12 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 
 
 #_______________________________________________________________________________________________________________________
-file_directory = '/data/reza/projects/trajectory-prediction/useful-resources/NGSIM-resources/trajectories/'
-file_dict = {1: "101-trajectories-0750am-0805am.txt", 2: "101-trajectories-0805am-0820am.txt",
-			 3: "101-trajectories-0820am-0835am.txt", 4: "80-trajectories-0400-0415.txt",
-			 5: "80-trajectories-0500-0515.txt", 6: "80-trajectories-0515-0530.txt"}
-output_directory = "/data/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/"
-ref_time_dict = {1: 1118846979.7, 2: 1118847843.0, 3: 1118848757.5, 4: 1113433135.3, 5: 1113436767.5, 6: 1113437565.6}
-reference_time = 0
+file_directory = ""
+file_name = "I294_Cleaned.csv"
+output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/"
+
+
+reference_time = 6
 dataset_id = 1
 input_history = 3
 output_history = 10
@@ -466,7 +442,8 @@ std_flow = 417.05
 mean_density = 68.53
 std_density = 24.67
 
-num_lanes = 8
+data = pd.read_csv(file_name) 
+num_lanes = len(data['lane'].unique())
 #_______________________________________________________________________________________________________________________
 
 total_train_set = []
@@ -480,9 +457,8 @@ total_flow_density_frame = []
 for i in range(6):
 	print("___________________")
 	print("Working on datased id: ", i+1)
-	file_name = file_dict[(i+1)]
+	 
 	file = file_directory + file_name
-	reference_time = ref_time_dict[(i+1)]
 	training_set, validation_set, testing_set, dataset_trajectories, dataset_trajectories_x_grid, \
 	dataset_trajectories_y_grid, flow_density_frame = process_data_flow_density(file, i+1, reference_time,
 																				input_history, output_history,
