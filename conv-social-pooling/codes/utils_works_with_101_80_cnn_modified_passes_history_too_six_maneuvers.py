@@ -17,7 +17,6 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 ### Dataset class for the NGSIM dataset
 class ngsimDataset(Dataset):
     def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
-        print(file_name+'_trajectory.data','louis check')
         with open(file_name+'_trajectory.data', 'rb') as filehandle:
             trajectories = pickle.load(filehandle)
         with open(file_name+'.data', 'rb') as filehandle:
