@@ -374,7 +374,6 @@ def main(): # Main function
     args['encoder_size'] = 64
     args['decoder_size'] = 128
     args['in_length'] = 16
-    #args['out_length'] = 25
     args['out_length'] = 50
     args['grid_size'] = (13,3)
     args['soc_conv_depth'] = 64

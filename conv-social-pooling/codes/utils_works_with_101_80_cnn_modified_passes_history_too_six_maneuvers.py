@@ -17,6 +17,7 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 ### Dataset class for the NGSIM dataset
 class ngsimDataset(Dataset):
     def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
+        print(file_name+'_trajectory.data','louis check')
         with open(file_name+'_trajectory.data', 'rb') as filehandle:
             trajectories = pickle.load(filehandle)
         with open(file_name+'.data', 'rb') as filehandle:
@@ -35,9 +36,11 @@ class ngsimDataset(Dataset):
 
 
     def __getitem__(self, idx):
+
         dsId = self.D[idx, 0].astype(int)
         vehId = self.D[idx, 1].astype(int)
         t = self.D[idx, 2]
+        # grid = self.D[idx, 8:-2]
         grid = self.D[idx,8:8+self.grid_size[0]*self.grid_size[1]]
         neighbors = []
 
@@ -59,6 +62,8 @@ class ngsimDataset(Dataset):
         lon_enc[int(self.D[idx, 7] - 1)] = 1
         lat_enc = np.zeros([3])
         lat_enc[int(self.D[idx, 6] - 1)] = 1
+
+
         point = np.array(self.D[idx]).astype(float)
 
         return hist,fut,neighbors,lat_enc,lon_enc, point, maenuver_enc

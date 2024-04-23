@@ -3,74 +3,67 @@ from torch.utils.data import Dataset, DataLoader
 import scipy.io as scp
 import numpy as np
 import torch
-import pandas as pd 
-
+import pandas as pd
 import pickle
 
-### Dataset class for the NGSIM dataset
+### Dataset class for the TGSIM dataset
 class tgsimDataset(Dataset):
-    def __init__(self, data, t_h=50, t_f=100, d_s=2):
-        self.data = pd.read_csv(data)
-        self.ids = self.data['ID'].astype(int).values 
-        self.times = self.data['time'].astype(int).values 
-        self.t_h = t_h
-        self.t_f = t_f
-        self.d_s = d_s
-    
-        self.T = {}
+    def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
+        self.df = pd.read_csv(file_name)
+        self.D = self.create_data(self.df)
+        self.T = self.create_trajectories(self.df)
+        self.t_h = t_h  # length of track history
+        self.t_f = t_f  # length of predicted trajectory
+        self.d_s = d_s  # down sampling rate of all sequences
+        self.enc_size = enc_size # size of encoder LSTM
+        self.grid_size = grid_size # size of social context grid
 
-        # Process each vehicle's data
-        for veh_id in self.data['ID'].unique():
-            veh_data = self.data[self.data['ID'] == veh_id].sort_values('time')
-            self.T[veh_id] = veh_data[['time','xloc', 'yloc']].to_numpy()
+    def create_trajectories(self,df):
+        trajectories = {}
+        for veh_id in df['ID'].unique():
+            trajectories[veh_id] = df[df['ID']==veh_id][['time','xloc','yloc']].values
+        return trajectories
+
+    def create_data(self,df):
+        matrix = np.array([df['xloc'].values, df['yloc'].values])
+        print(matrix.shape)
+        return matrix
+
+
 
     def __len__(self):
-        return self.data['ID'].nunique()  # Assuming each ID has at least one record
+        return len(self.df)
+
+
 
     def __getitem__(self, idx):
-        dsId = self.ids[idx]
-        veh_id = self.ids[idx]
-        t = self.times[idx]
-        # Filter the DataFrame for entries with this vehicle ID
-        veh_data = self.data[self.data['ID'] == veh_id]
 
-        # Sort by time to ensure chronological order
-        veh_data = veh_data.sort_values('time')
-
-        # Extract history and future data based on t_h and t_f
-        # print(len(veh_data))
-        # if len(veh_data) < self.t_h + self.t_f:
-        #     raise ValueError(f"Not enough data points for vehicle ID {veh_id}")
-
-        # We can only construct a history and future if we have enough data points
-        hist = veh_data.iloc[:self.t_h:self.d_s].copy()
-        fut = veh_data.iloc[self.t_h:self.t_h + self.t_f:self.d_s].copy()
-
-        # Now, convert these to PyTorch tensors
-        hist_tensor = torch.tensor(hist[['xloc', 'yloc']].values, dtype=torch.float)
-        fut_tensor = torch.tensor(fut[['xloc', 'yloc']].values, dtype=torch.float)
-
-        grid = self.data.iloc[idx,8:-2].values # get the value at (row,col)
+        dsId = self.D[idx, 0].astype(int)
+        vehId = self.D[idx, 1].astype(int)
+        t = self.D[idx, 2]
+        grid = self.D[idx,8:-2]
         neighbors = []
 
+        # Get track history 'hist' = ndarray, and future track 'fut' = ndarray
+        hist = self.getHistory(vehId,t,vehId,dsId)
+        fut = self.getFuture(vehId,t,dsId)
+
+        # Get track histories of all neighbours 'neighbors' = [ndarray,[],ndarray,ndarray]
         for i in grid:
-            neighbors.append(self.getHistory(i.astype(int), t,veh_id,dsId))
+            neighbors.append(self.getHistory(i.astype(int), t,vehId,dsId))
 
-        # Process maneuvers if they exist (this part might need to be adjusted based on your needs)
-        # lon_m = int(veh_data.iloc[0]['lane']) - 1
-        # lat_m = int(veh_data.iloc[0]['type-most']) - 1  # This is just a placeholder, adjust it to your needs
+        # Maneuvers 'lon_enc' = one-hot vector, 'lat_enc = one-hot vector
+        # Manuevers 'maneuver_enc' = one-hot vehtor size six
+        lon_m = int(self.D[idx, 7] - 1)
+        lat_m = int(self.D[idx, 6] - 1)
+        maenuver_enc = np.zeros([6])
+        maenuver_enc[lon_m*3+lat_m] = 1
+        lon_enc = np.zeros([2])
+        lon_enc[int(self.D[idx, 7] - 1)] = 1
+        lat_enc = np.zeros([3])
+        lat_enc[int(self.D[idx, 6] - 1)] = 1
 
-        # maneuver_enc = np.zeros(6)
-        # maneuver_enc[lon_m * 3 + lat_m] = 1
-
-        # lon_enc = np.zeros([2])
-        # lon_enc[int(self.D[idx, 7] - 1)] = 1
-        # lat_enc = np.zeros([3])
-        # lat_enc[int(self.D[idx, 6] - 1)] = 1
- 
-
-        #return hist,fut,neighbors,lat_enc,lon_enc,maenuver_enc
-        return hist_tensor,fut_tensor,neighbors,None,None,None
+        return hist,fut,neighbors,lat_enc,lon_enc,maenuver_enc
 
 
 
@@ -80,7 +73,6 @@ class tgsimDataset(Dataset):
             return np.empty([0,2])
         else:
             if len(self.T[dsId-1]) <= vehId - 1:
-            #if self.T.shape[1]<=vehId-1:
                 return np.empty([0,2])
             refTrack = self.T[dsId-1][refVehId-1]
             vehTrack = self.T[dsId-1][vehId-1]
@@ -160,9 +152,6 @@ class tgsimDataset(Dataset):
                     count+=1
 
         return hist_batch, nbrs_batch, mask_batch, lat_enc_batch, lon_enc_batch, fut_batch, op_mask_batch, maneuver_enc_batch
-
-
-
 
 #________________________________________________________________________________________________________________________________________
 
