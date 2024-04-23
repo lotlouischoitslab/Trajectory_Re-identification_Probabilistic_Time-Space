@@ -35,11 +35,9 @@ class ngsimDataset(Dataset):
 
 
     def __getitem__(self, idx):
-
         dsId = self.D[idx, 0].astype(int)
         vehId = self.D[idx, 1].astype(int)
         t = self.D[idx, 2]
-        # grid = self.D[idx, 8:-2]
         grid = self.D[idx,8:8+self.grid_size[0]*self.grid_size[1]]
         neighbors = []
 
@@ -61,8 +59,6 @@ class ngsimDataset(Dataset):
         lon_enc[int(self.D[idx, 7] - 1)] = 1
         lat_enc = np.zeros([3])
         lat_enc[int(self.D[idx, 6] - 1)] = 1
-
-
         point = np.array(self.D[idx]).astype(float)
 
         return hist,fut,neighbors,lat_enc,lon_enc, point, maenuver_enc

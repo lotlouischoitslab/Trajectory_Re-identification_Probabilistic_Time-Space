@@ -29,14 +29,21 @@ file_name = trajectories_directory + 'train'
 # with open(file_name+'.data', 'rb') as filehandle:
 #     data_points = np.array(pickle.load(filehandle))
 
-with open(file_name+'_trajectory.data', 'rb') as filehandle:
-    data_points = np.array(pickle.load(filehandle))
+# with open(file_name+'_trajectory.data', 'rb') as filehandle:
+#     data_points = np.array(pickle.load(filehandle))
 
-# print('trajectories') 
-# print(trajectories)
+# # print('trajectories') 
+# # print(trajectories)
 
-print('data points') 
-print(data_points)
+# print('data points') 
+# print(data_points)
 
-data = pd.DataFrame(data_points)
-data.to_csv('temp_write/data.csv')
+# data = pd.DataFrame(data_points)
+# data.to_csv('temp_write/data.csv')
+
+filename = 'I294_Cleaned.csv'
+
+data = pd.read_csv(filename) 
+
+matrix = np.array([data['xloc'].values,data['yloc'].values]).T
+print(matrix.shape)
