@@ -5,7 +5,6 @@ import copy
 
 class DataPoint():
 	def __init__(self, data_array, reference_time, dataset_id, attention_distance = 90, grid_size = 15):
-        
 		data_point = data_array
 		self.dataset_id = dataset_id 
 		self.id = int(data_point[0])  
