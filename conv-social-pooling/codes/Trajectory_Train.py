@@ -7,8 +7,6 @@ from torch.utils.data import DataLoader
 import time
 import math
 import pandas as pd
-from sklearn.model_selection import train_test_split
-
 
 ###FOR MULTI-GPU system using a single gpu:
 import os

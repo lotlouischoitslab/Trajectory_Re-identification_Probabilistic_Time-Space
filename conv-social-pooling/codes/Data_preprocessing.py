@@ -49,7 +49,6 @@ class Ngsim:
 		self.num_lanes = num_lanes
 		lanes = pd.read_csv(self.file)['lane'].unique()
 		self.lane_dict = {l:i for i in range(len(lanes)) for l in lanes} 
-		print(self.lane_dict)
 		self.process_points()
 
 	def process_points(self):
@@ -93,10 +92,7 @@ class Ngsim:
 		for p in self.data_points: 
 			t_ind = int(round(p.time/time_resolution, 0))  
 			lane_ind = self.lane_dict[p.lane]
-			location_ind = int(p.y_loc/grid_size) 
-			 
-			# print(len(global_grid[t_ind][lane_ind]))
-			# print('global index',t_ind,lane_ind,location_ind)
+			location_ind = int(p.y_loc/grid_size)  
 
 			if location_ind >= len(global_grid[t_ind][lane_ind]):
 				errors+=1
@@ -230,14 +226,10 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 	for traj in total_data.trajectories:
 		if len(traj.points) < 32: # 30 for history, 1 for current point, 1 for future point
 			continue
-		# if len(traj.points) < 51: # 30 for history, 1 for current point, 20 for future flow and density
-		# 	continue
 		else:
 			# for i in range(30, len(traj.points) - 1): #keep at least one point for prediction
 			for i in range(30, len(traj.points) - 1): #keep at least one point for prediction
-				p = traj.points[i]
-				# if p.frame_number >= frames_list[-200]: #make sure there is 20 seconds of flow and density
-				# 	continue
+				p = traj.points[i] 
 				point = [p.dataset_id, p.id, p.frame_number, p.x_loc, p.y_loc, p.lane, p.lateral_maneuver,
 						 p.longitudinal_maneuver]
 				for n in range(len(p.neighbors_left_lane)):
@@ -247,13 +239,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				for n in range(len(p.neighbors_right_lane)):
 					point.append(p.neighbors_right_lane[n])
 
-				# #Add normalized flow and density
-				# t_step = int(round(traj.points[i].time/time_resolution))
-				# p_flow_normalized = (flow_list[t_step] - mean_flow)/std_flow #normalized flow
-				# p_density_normalized = (density_list[t_step] - mean_density)/std_density #normalized density
-				# point.append(p_flow_normalized )
-				# point.append(p_density_normalized)
-
+		  
 				#Add flow and density
 				t_step = int(round(traj.points[i].time/time_resolution))
 				point.append(flow_list[t_step])
@@ -290,8 +276,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 			po.append(t_p.acceleration)
 			points.append(po)
 		points = np.array(points)
-		dataset_trajectories[trajectory.id - 1] = points
-		# dataset_trajectories[trajectory.id - 1] = points.transpose()
+		dataset_trajectories[trajectory.id - 1] = points 
 
 	# These two sets of trajectory contain grids with x and y locations instead of vehicle id
 	dataset_trajectories_x_grid = [[] for i in range(max_id + 1)]
@@ -308,14 +293,8 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
-					neighbor_traj = dataset_trajectories[neighbor_id - 1]
-					#print("LEFT-neighbor trajectoy: ", neighbor_traj)
-					# print("t_p.frame_number: ", t_p.frame_number)
-					# print("neighbor_traj: ", neighbor_traj)
-					# print("neighbor id: ", neighbor_id, ", len neighbor traj: ", len(neighbor_traj))
-					# print("where matches frame number", neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)])
+				else: 
+					neighbor_traj = dataset_trajectories[neighbor_id - 1] 
 					neighbor_pos = neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)][0, 1:3]
 					po_x.append(neighbor_pos[0])
 					po_y.append(neighbor_pos[1])
@@ -325,14 +304,8 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
-					neighbor_traj = dataset_trajectories[neighbor_id - 1]
-					#print("SAME-neighbor trajectoy: ", neighbor_traj)
-					# print("t_p.frame_number: ", t_p.frame_number)
-					# print("neighbor_traj: ", neighbor_traj)
-					# print("neighbor id: ", neighbor_id, ", len neighbor traj: ", len(neighbor_traj))
-					# print("where matches frame number", neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)])
+				else: 
+					neighbor_traj = dataset_trajectories[neighbor_id - 1] 
 					neighbor_pos = neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)][0, 1:3]
 					po_x.append(neighbor_pos[0])
 					po_y.append(neighbor_pos[1])
@@ -342,14 +315,8 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 				if neighbor_id == 0:
 					po_x.append(0)
 					po_y.append(0)
-				else:
-					# neighbor_traj = dataset_trajectories[neighbor_id - 1].transpose()
-					neighbor_traj = dataset_trajectories[neighbor_id - 1]
-					#print("RIGHT-neighbor trajectoy: ", neighbor_traj)
-					# print("t_p.frame_number: ", t_p.frame_number)
-					# print("neighbor_traj: ", neighbor_traj)
-					# print("neighbor id: ", neighbor_id, ", len neighbor traj: ", len(neighbor_traj))
-					# print("matches frame number: ", neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)])
+				else: 
+					neighbor_traj = dataset_trajectories[neighbor_id - 1] 
 					neighbor_pos = neighbor_traj[np.where(neighbor_traj[:, 0] == t_p.frame_number)][0, 1:3]
 					po_x.append(neighbor_pos[0])
 					po_y.append(neighbor_pos[1])
@@ -370,18 +337,14 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 	total_data.data_points.sort(key=lambda x: x.y_loc)
 	min_y_loc = total_data.data_points[0].y_loc
 	max_y_loc = total_data.data_points[-1].y_loc
-	segment_length = round(max_y_loc - min_y_loc, 1)
-	print("segment length: ", segment_length)
- 
+	segment_length = round(max_y_loc - min_y_loc, 1) 
 
 	total_data.data_points.sort(key=lambda x: x.time)
 	min_time = total_data.data_points[0].time
-	max_time = total_data.data_points[-1].time
-	print("min time: ", min_time, ", max time: ", max_time)
+	max_time = total_data.data_points[-1].time 
 	total_data.data_points.sort(key=lambda x: x.id)
 
-	total_time_steps = int(round((max_time - min_time) / time_resolution)) + 1
-	print("total time steps: ", total_time_steps)
+	total_time_steps = int(round((max_time - min_time) / time_resolution)) + 1 
 	li_list = [0 for i in range(total_time_steps)]
 	ti_list = [0 for i in range(total_time_steps)]
 
@@ -427,83 +390,101 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 
 	flow_list[0] = flow_list[1]
 	density_list[0] = density_list[1]
-
-	print("flow and density length: ", len(flow_list), len(density_list))
-
 	return flow_list, density_list
 
 
-#_______________________________________________________________________________________________________________________
-file_directory = ""
-file_name = "I294_Cleaned.csv"
-output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/"
-
-
-reference_time = 6
-dataset_id = 1
-input_history = 3
-output_history = 10
-speed_ratio_braking = 0.8
-lateral_m_t = 5
-time_resolution = 0.1
- 
-mean_flow = 1133.49
-std_flow = 417.05
-mean_density = 68.53
-std_density = 24.67
-
-data = pd.read_csv(file_name) 
-num_lanes = len(data['lane'].unique())
-#_______________________________________________________________________________________________________________________
-
-total_train_set = []
-total_validation_set = []
-total_test_set = []
-total_trajectories = []
-total_trajectories_x = []
-total_trajectories_y = [] 
-
-
-for i in range(6):
-	print("___________________")
-	print("Working on datased id: ", i+1)
-	 
-	file = file_directory + file_name
-	training_set, validation_set, testing_set, dataset_trajectories, dataset_trajectories_x_grid, \
-	dataset_trajectories_y_grid = process_data_flow_density(file, i+1, reference_time,
-																				input_history, output_history,
-																				speed_ratio_braking, lateral_m_t,
-																				time_resolution, num_lanes)
+################################################### MAIN FUNCTION ################################################################################################
+def main():
+	file_directory = ""
+	file_name = "I294_Cleaned.csv"
+	output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/"
+	reference_time = 6
+	dataset_id = 1
+	input_history = 3
+	output_history = 10
+	speed_ratio_braking = 0.8
+	lateral_m_t = 5
+	time_resolution = 0.1
 	
-	for p in training_set:
-		total_train_set.append(p)
-	for p in validation_set:
-		total_validation_set.append(p)
-	for p in testing_set:
-		total_test_set.append(p)
-	total_trajectories.append(dataset_trajectories) 
-	total_trajectories_x.append(dataset_trajectories_x_grid)
-	total_trajectories_y.append(dataset_trajectories_y_grid)
-	print("___________________")
+	mean_flow = 1133.49
+	std_flow = 417.05
+	mean_density = 68.53
+	std_density = 24.67
 
-print("Saving files...")
-with open(output_directory+"train.data", 'wb') as filehandle:
-	pickle.dump(total_train_set, filehandle)
+	data = pd.read_csv(file_name) 
+	num_lanes = len(data['lane'].unique()) 
 
-with open(output_directory+"valid.data", 'wb') as filehandle:
-	pickle.dump(total_validation_set, filehandle)
+	total_train_set = []
+	total_validation_set = []
+	total_test_set = []
+	total_trajectories = []
+	total_trajectories_x = []
+	total_trajectories_y = [] 
 
-with open(output_directory+"test.data", 'wb') as filehandle:
-	pickle.dump(total_test_set, filehandle)
 
-with open(output_directory+"train_trajectory.data", 'wb') as filehandle:
- 	pickle.dump(np.array(total_trajectories), filehandle)
+	for i in range(6): 
+		print(f'Working on Dataset id: {i+1}')
+		
+		file = file_directory + file_name
+		training_set, validation_set, testing_set, dataset_trajectories, dataset_trajectories_x_grid, \
+		dataset_trajectories_y_grid = process_data_flow_density(file, i+1, reference_time,
+																					input_history, output_history,
+																					speed_ratio_braking, lateral_m_t,
+																					time_resolution, num_lanes)
+		
+		for p in training_set:
+			total_train_set.append(p)
+		for p in validation_set:
+			total_validation_set.append(p)
+		for p in testing_set:
+			total_test_set.append(p)
+		total_trajectories.append(dataset_trajectories) 
+		total_trajectories_x.append(dataset_trajectories_x_grid)
+		total_trajectories_y.append(dataset_trajectories_y_grid)
+		 
+		
+		
+	print("Saving files...")
+	with open(output_directory+"train.data", 'wb') as filehandle:
+		pickle.dump(total_train_set, filehandle)
 
-with open(output_directory+"train_trajectory_x.data", 'wb') as filehandle:
- 	pickle.dump(np.array(total_trajectories_x), filehandle)
+	with open(output_directory+"valid.data", 'wb') as filehandle:
+		pickle.dump(total_validation_set, filehandle)
 
-with open(output_directory+"train_trajectory_y.data", 'wb') as filehandle:
- 	pickle.dump(np.array(total_trajectories_y), filehandle)
- 
+	with open(output_directory+"test.data", 'wb') as filehandle:
+		pickle.dump(total_test_set, filehandle)
 
-print("All files are saved!")
+	with open(output_directory+"train_trajectory.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories, filehandle)
+
+	with open(output_directory+"train_trajectory_x.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_x, filehandle)
+
+	with open(output_directory+"train_trajectory_y.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_y, filehandle)
+	
+
+	with open(output_directory+"valid_trajectory.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories, filehandle)
+
+	with open(output_directory+"valid_trajectory_x.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_x, filehandle)
+
+	with open(output_directory+"valid_trajectory_y.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_y, filehandle)
+	
+	with open(output_directory+"test_trajectory.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories, filehandle)
+
+	with open(output_directory+"test_trajectory_x.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_x, filehandle)
+
+	with open(output_directory+"test_trajectory_y.data", 'wb') as filehandle:
+		pickle.dump(total_trajectories_y, filehandle)
+	
+
+	print("All files are saved!")
+
+
+if __name__ == "__main__":
+	main()

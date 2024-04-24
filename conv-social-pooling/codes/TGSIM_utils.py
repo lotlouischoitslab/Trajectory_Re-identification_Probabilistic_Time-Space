@@ -60,38 +60,71 @@ class tgsimDataset(Dataset):
 
 
     ## Helper function to get track history
-    def getHistory(self,vehId,t,refVehId,dsId):
+    def getHistory(self, vehId, t, refVehId, dsId):
         if vehId == 0:
-            return np.empty([0,2])
-        else:
-            if len(self.T[dsId-1]) <= vehId - 1:
-            #if self.T.shape[1]<=vehId-1:
-                return np.empty([0,2])
-            refTrack = self.T[dsId-1][refVehId-1]
-            vehTrack = self.T[dsId-1][vehId-1]
-            refPos = refTrack[np.where(refTrack[:,0]==t)][0,1:3]
+            return np.empty([0, 2])
 
-            if vehTrack.size==0 or np.argwhere(vehTrack[:, 0] == t).size==0:
-                 return np.empty([0,2])
-            else:
-                stpt = np.maximum(0, np.argwhere(vehTrack[:, 0] == t).item() - self.t_h)
-                enpt = np.argwhere(vehTrack[:, 0] == t).item() + 1
-                hist = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
+        if len(self.T[dsId-1]) <= vehId - 1:
+            return np.empty([0, 2])
 
-            if len(hist) < self.t_h//self.d_s + 1:
-                return np.empty([0,2])
-            return hist
+        refTrack = self.T[dsId-1][refVehId-1]
+        vehTrack = self.T[dsId-1][vehId-1]
 
+        # Check if the vehicle track or reference track is empty
+        if refTrack.size == 0 or vehTrack.size == 0:
+            return np.empty([0, 2])
 
+        # Find the index where time t is present in refTrack
+        ref_idx = np.where(refTrack[:, 0] == t)
+        if ref_idx[0].size == 0:
+            return np.empty([0, 2])
+        refPos = refTrack[ref_idx[0][0], 1:3]
+
+        # Check for the presence of time t in vehTrack
+        t_indices = np.where(vehTrack[:, 0] == t)
+        if t_indices[0].size == 0:
+            return np.empty([0, 2])
+
+        # Calculate the range for history
+        idx = t_indices[0][0]
+        stpt = np.maximum(0, idx - self.t_h)
+        enpt = idx + 1
+        hist = vehTrack[stpt:enpt:self.d_s, 1:3] - refPos
+
+        # Ensure the history has the required number of points
+        if len(hist) < self.t_h // self.d_s + 1:
+            return np.empty([0, 2])
+
+        return hist
+ 
 
     ## Helper function to get track future
-    def getFuture(self, vehId, t,dsId):
+    def getFuture(self, vehId, t, dsId):
+        # Check if the dataset or vehicle ID is invalid
+        if dsId - 1 >= len(self.T) or vehId - 1 >= len(self.T[dsId-1]):
+            return np.empty([0, 2])
+
         vehTrack = self.T[dsId-1][vehId-1]
-        refPos = vehTrack[np.where(vehTrack[:, 0] == t)][0, 1:3]
-        stpt = np.argwhere(vehTrack[:, 0] == t).item() + self.d_s
-        enpt = np.minimum(len(vehTrack), np.argwhere(vehTrack[:, 0] == t).item() + self.t_f + 1)
-        fut = vehTrack[stpt:enpt:self.d_s,1:3]-refPos
+
+        # Check if the vehicle track is empty
+        if vehTrack.size == 0:
+            return np.empty([0, 2])
+
+        # Find indices where time t is present in vehTrack
+        t_indices = np.where(vehTrack[:, 0] == t)
+        if t_indices[0].size == 0:
+            return np.empty([0, 2])  # Return empty if time t is not found
+
+        idx = t_indices[0][0]
+        refPos = vehTrack[idx, 1:3]
+
+        # Calculate the range for future data points
+        stpt = idx + self.d_s
+        enpt = np.minimum(len(vehTrack), idx + self.t_f + 1)
+        fut = vehTrack[stpt:enpt:self.d_s, 1:3] - refPos
+
         return fut
+
 
 
 
