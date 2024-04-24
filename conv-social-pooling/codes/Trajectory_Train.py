@@ -40,14 +40,16 @@ def main():
     if args['use_cuda']:
         net = net.to(device)
     ## Initialize optimizer
-    pretrainEpochs = 5
-    trainEpochs = 5
+    pretrainEpochs = 7
+    trainEpochs = 3
 
   
 
     optimizer = torch.optim.Adam(net.parameters())
     batch_size = 128
-    crossEnt = torch.nn.BCELoss() 
+    # crossEnt = torch.nn.BCELoss() 
+
+    crossEnt = torch.nn.MSELoss() 
 
 
     ## Initialize data loaders
