@@ -59,11 +59,7 @@ class Ngsim:
 		self.data_points = [DataPoint(i, self.t_reference, self.dataset_id) for i in data_arrays] 
 		self.data_points.sort(key = lambda x:x.id)
 		self.max_id = self.data_points[-1].id
-		self.min_id = self.data_points[0].id
-		print("total number of points: ", len(self.data_points))
-		print("maximum id: ", self.max_id)
-		print("minimum id: ", self.min_id)
-
+		self.min_id = self.data_points[0].id 
 		self.find_location_grid(self.time_resolution, self.num_lanes)
 		self.trajectories = [Trajectory(i) for i in range(self.max_id+1)]
 		for p in self.data_points:
@@ -74,8 +70,89 @@ class Ngsim:
 
 
 
+	# def find_location_grid(self, time_resolution, num_lanes):
+	# 	print("finding the location grid for each point ...")
+	# 	errors = 0
+	# 	times = [p.time for p in self.data_points]
+	# 	locations = [p.y_loc for p in self.data_points]
+	# 	min_time = min(times)
+	# 	max_time = max(times)
+	# 	min_location = min(locations)
+	# 	max_location = max(locations)
+	# 	grid_size = self.data_points[0].grid_size
+	# 	grid_shape = (num_lanes, int((max_location-min_location)/grid_size)+1)
+	# 	print("min_location: ", min_location)
+	# 	print("max_location: ", max_location) 
+	# 	t_steps = int((max_time - min_time) / time_resolution) + 1
+	# 	global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps)]
+
+	# 	print(f'Total time steps: {t_steps}')
+	# 	print(f'Global grid size: {len(global_grid)}')
+ 
+ 
+	# 	for p in self.data_points: 
+	# 		t_ind = int(round(p.time/time_resolution, 0))  
+	# 		lane_ind = self.lane_dict[p.lane]
+	# 		location_ind = int(p.y_loc/grid_size)  
+			 
+	# 		# print(f't_ind: {t_ind}| global_grid: {len(global_grid)}')
+	# 		# print(f'location_ind: {location_ind}| global_grid[{t_ind}]: {len(global_grid[t_ind])}')
+			 
+
+	# 		if t_ind >= len(global_grid):
+	# 			errors += 1
+	# 		elif location_ind >= len(global_grid[t_ind][lane_ind]):
+	# 			errors+=1
+	# 		elif global_grid[t_ind][lane_ind][location_ind] == 0:
+	# 			global_grid[t_ind][lane_ind][location_ind] = p.id
+	# 		else: 
+	# 			errors += 1
+
+	# 	print("WARNING - total errors:", errors)
+	# 	print("Global Grid is constructed")
+
+		
+	# 	for p in self.data_points:
+	# 		t_ind = int(round(p.time/time_resolution, 0))
+	# 		lane_ind = self.lane_dict[p.lane]
+	# 		# print(self.lane_dict)
+	# 		location_ind = int(p.y_loc/grid_size)
+
+	# 		for i in range(1,p.grids_on_each_side+1):
+	# 			# the location of the vehicle on its grid is at p.grids_on_each_side,
+	# 			# example: p.grids_on_each_side=6, [0,1,2,3,4,5,vehicle,7,8,9,10,11,12]
+
+	# 			# infront of the vehicle:
+	# 			if location_ind+i in range(grid_shape[1]):
+	# 				#for the same lane:
+	# 				# print(f'index: {p.grids_on_each_side+i} | lane id {lane_ind} | global grid:  {len(global_grid[t_ind])} | {len(global_grid[t_ind][lane_ind])}')
+	# 				p.neighbors_same_lane[p.grids_on_each_side+i] = global_grid[t_ind][lane_ind][location_ind+i]
+	# 				#for the lane on the left:
+	# 				if lane_ind-1 in range(grid_shape[0]):
+	# 					p.neighbors_left_lane[p.grids_on_each_side+i] = \
+	# 						global_grid[t_ind][lane_ind-1][location_ind+i]
+	# 				#for the lane on the right:
+	# 				if lane_ind+1 in range(grid_shape[0]):
+	# 					p.neighbors_right_lane[p.grids_on_each_side + i] = \
+	# 						global_grid[t_ind][lane_ind+1][location_ind+i]
+
+	# 			# behind the vehicle:
+	# 			if location_ind-i in range(grid_shape[1]):
+	# 				#for the same lane:
+	# 				p.neighbors_same_lane[p.grids_on_each_side-i] = global_grid[t_ind][lane_ind][location_ind-i]
+	# 				#for the lane on the left:
+	# 				if lane_ind-1 in range(grid_shape[0]):
+	# 					p.neighbors_left_lane[p.grids_on_each_side-i] = \
+	# 						global_grid[t_ind][lane_ind-1][location_ind-i]
+	# 				#for the lane on the right:
+	# 				if lane_ind+1 in range(grid_shape[0]):
+	# 					p.neighbors_right_lane[p.grids_on_each_side-i] = \
+	# 						global_grid[t_ind][lane_ind+1][location_ind-i]
+
+	# 	print("location grids: complete!")
+
 	def find_location_grid(self, time_resolution, num_lanes):
-		print("finding the location grid for each point ...")
+		print("Finding the location grid for each point ...")
 		errors = 0
 		times = [p.time for p in self.data_points]
 		locations = [p.y_loc for p in self.data_points]
@@ -84,76 +161,78 @@ class Ngsim:
 		min_location = min(locations)
 		max_location = max(locations)
 		grid_size = self.data_points[0].grid_size
-		grid_shape = (num_lanes, int((max_location-min_location)/grid_size)+1)
-		print("min_location: ", min_location)
-		print("max_location: ", max_location) 
+		grid_shape = (num_lanes, int((max_location - min_location) / grid_size) + 1)
+
+
+		# print("min_location: ", min_location)
+		# print("max_location: ", max_location)
+		# print("Grid dimensions (num_lanes x grid_cells):", grid_shape)
+
+
 		t_steps = int((max_time - min_time) / time_resolution) + 1
 		global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps)]
 
-		print(f'Total time steps: {t_steps}')
-		print(f'Global grid size: {len(global_grid)}')
- 
- 
-		for p in self.data_points: 
-			t_ind = int(round(p.time/time_resolution, 0))  
-			lane_ind = self.lane_dict[p.lane]
-			location_ind = int(p.y_loc/grid_size)  
-			 
-			# print(f't_ind: {t_ind}| global_grid: {len(global_grid)}')
-			# print(f'location_ind: {location_ind}| global_grid[{t_ind}]: {len(global_grid[t_ind])}')
-			 
 
-			if t_ind >= len(global_grid):
-				errors += 1
-			elif location_ind >= len(global_grid[t_ind][lane_ind]):
-				errors+=1
-			elif global_grid[t_ind][lane_ind][location_ind] == 0:
-				global_grid[t_ind][lane_ind][location_ind] = p.id
-			else: 
-				errors += 1
+		# print(f'Total time steps: {t_steps}')
+		# print(f'Global grid size: {len(global_grid)}')
 
-		print("WARNING - total errors:", errors)
-		print("Global Grid is constructed")
 
-		
 		for p in self.data_points:
-			t_ind = int(round(p.time/time_resolution, 0))
+			t_ind = int((p.time - min_time) / time_resolution)
 			lane_ind = self.lane_dict[p.lane]
-			# print(self.lane_dict)
-			location_ind = int(p.y_loc/grid_size)
+			location_ind = int((p.y_loc - min_location) / grid_size)
 
-			for i in range(1,p.grids_on_each_side+1):
-				# the location of the vehicle on its grid is at p.grids_on_each_side,
-				# example: p.grids_on_each_side=6, [0,1,2,3,4,5,vehicle,7,8,9,10,11,12]
 
-				# infront of the vehicle:
-				if location_ind+i in range(grid_shape[1]):
-					#for the same lane:
-					# print(f'index: {p.grids_on_each_side+i} | lane id {lane_ind} | global grid:  {len(global_grid[t_ind])} | {len(global_grid[t_ind][lane_ind])}')
-					p.neighbors_same_lane[p.grids_on_each_side+i] = global_grid[t_ind][lane_ind][location_ind+i]
-					#for the lane on the left:
-					if lane_ind-1 in range(grid_shape[0]):
-						p.neighbors_left_lane[p.grids_on_each_side+i] = \
-							global_grid[t_ind][lane_ind-1][location_ind+i]
-					#for the lane on the right:
-					if lane_ind+1 in range(grid_shape[0]):
-						p.neighbors_right_lane[p.grids_on_each_side + i] = \
-							global_grid[t_ind][lane_ind+1][location_ind+i]
+			# Check if indices are within the valid range before inserting
+			if t_ind < 0 or t_ind >= len(global_grid) or \
+			lane_ind < 0 or lane_ind >= num_lanes or \
+			location_ind < 0 or location_ind >= grid_shape[1]:
+				errors += 1
+				continue
 
-				# behind the vehicle:
-				if location_ind-i in range(grid_shape[1]):
-					#for the same lane:
-					p.neighbors_same_lane[p.grids_on_each_side-i] = global_grid[t_ind][lane_ind][location_ind-i]
-					#for the lane on the left:
-					if lane_ind-1 in range(grid_shape[0]):
-						p.neighbors_left_lane[p.grids_on_each_side-i] = \
-							global_grid[t_ind][lane_ind-1][location_ind-i]
-					#for the lane on the right:
-					if lane_ind+1 in range(grid_shape[0]):
-						p.neighbors_right_lane[p.grids_on_each_side-i] = \
-							global_grid[t_ind][lane_ind+1][location_ind-i]
 
-		print("location grids: complete!")
+			# Place vehicle ID in grid cell if it's empty
+			if global_grid[t_ind][lane_ind][location_ind] == 0:
+				global_grid[t_ind][lane_ind][location_ind] = p.id
+			else:
+				# Collision: another vehicle ID already occupies this grid cell
+				errors += 1
+
+
+		print("WARNING - Total errors:", errors)
+		print("Global Grid is constructed successfully!")
+	
+
+		for p in self.data_points:
+			t_ind = int((p.time - min_time) / time_resolution)
+			lane_ind = self.lane_dict[p.lane]
+			location_ind = int((p.y_loc - min_location) / grid_size)
+
+			if not (0 <= t_ind < len(global_grid)):
+				continue  # Skip if t_ind is out of valid range
+
+			for i in range(1, p.grids_on_each_side + 1):
+				# Check indices are within bounds before access
+				if 0 <= location_ind + i < grid_shape[1]:
+					p.neighbors_same_lane[p.grids_on_each_side + i] = global_grid[t_ind][lane_ind][location_ind + i]
+					if lane_ind - 1 >= 0:
+						p.neighbors_left_lane[p.grids_on_each_side + i] = global_grid[t_ind][lane_ind - 1][location_ind + i]
+					if lane_ind + 1 < num_lanes:
+						p.neighbors_right_lane[p.grids_on_each_side + i] = global_grid[t_ind][lane_ind + 1][location_ind + i]
+
+				if 0 <= location_ind - i < grid_shape[1]:
+					p.neighbors_same_lane[p.grids_on_each_side - i] = global_grid[t_ind][lane_ind][location_ind - i]
+					if lane_ind - 1 >= 0:
+						p.neighbors_left_lane[p.grids_on_each_side - i] = global_grid[t_ind][lane_ind - 1][location_ind - i]
+					if lane_ind + 1 < num_lanes:
+						p.neighbors_right_lane[p.grids_on_each_side - i] = global_grid[t_ind][lane_ind + 1][location_ind - i]
+
+		print("Location grids updated with neighbor data.")
+
+
+
+
+
 
 	def find_maneuver(self, input_history, output_history, speed_ratio_braking, lateral_m_t_modified, time_resolution):
 		print("output_history: ",  output_history)
@@ -255,8 +334,9 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 		  
 				#Add flow and density
 				t_step = int(round(traj.points[i].time/time_resolution))
-				point.append(flow_list[t_step])
-				point.append(density_list[t_step])
+				if t_step < len(flow_list):
+					point.append(flow_list[t_step])
+					point.append(density_list[t_step])
 
 				if counter <= num_training:
 					training_set.append(point)
@@ -380,8 +460,13 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 				delta_y = trajectory.points[i].y_loc - trajectory.points[i - 1].y_loc
 				delta_t = total_data.time_resolution
 			t_step = int(round(trajectory.points[i].time / total_data.time_resolution))
-			li_list[t_step] += delta_y
-			ti_list[t_step] += delta_t
+			# print(t_step,len(li_list))
+
+			if t_step >= len(li_list):
+				continue
+			else:
+				li_list[t_step] += delta_y
+				ti_list[t_step] += delta_t
 
 	li_list = np.array(li_list) / num_lanes
 	ti_list = np.array(ti_list) / num_lanes
@@ -413,8 +498,8 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 ################################################### MAIN FUNCTION ################################################################################################
 def main():
 	file_directory = ""
-	# original_file_name = "I294_L1_final.csv"
-	original_file_name = "I294_Cleaned.csv"
+	original_file_name = "I294_L1_final.csv"
+	# original_file_name = "I294_Cleaned.csv"
 
 	file_name = original_file_name
 	output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/"
