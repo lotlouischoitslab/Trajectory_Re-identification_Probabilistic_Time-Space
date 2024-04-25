@@ -46,11 +46,9 @@ def main():
   
 
     optimizer = torch.optim.Adam(net.parameters())
-    batch_size = 512
-    # crossEnt = torch.nn.BCELoss() 
-
-    crossEnt = torch.nn.MSELoss() 
-
+    batch_size = 128
+    crossEnt = torch.nn.BCELoss() 
+  
 
     ## Initialize data loaders
     # trSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)

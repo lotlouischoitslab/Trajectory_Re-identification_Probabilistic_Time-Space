@@ -8,8 +8,6 @@ import pickle
 
 ### Dataset class for the TGSIM dataset
 class tgsimDataset(Dataset):
-
-
     def __init__(self, file_name, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
         with open(file_name+'_trajectory.data', 'rb') as filehandle:
             trajectories = pickle.load(filehandle)
@@ -63,7 +61,7 @@ class tgsimDataset(Dataset):
         if vehId == 0:
             return np.empty([0, 2])
 
-        if len(self.T[dsId-1]) <= vehId - 1:
+        if dsId - 1 >= len(self.T) or len(self.T[dsId-1]) <= vehId - 1:
             return np.empty([0, 2])
 
         refTrack = self.T[dsId-1][refVehId-1]

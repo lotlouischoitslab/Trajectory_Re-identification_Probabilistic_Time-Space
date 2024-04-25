@@ -2,7 +2,7 @@ from __future__ import division
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
-from utils_works_with_101_80_cnn_modified_passes_history_too_six_maneuvers import outputActivation
+from TGSIM_utils import outputActivation
 
 class highwayNet_six_maneuver(nn.Module):
 

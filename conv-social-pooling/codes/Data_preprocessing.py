@@ -48,7 +48,7 @@ class Ngsim:
 		self.time_resolution = time_resolution
 		self.num_lanes = num_lanes
 		lanes = pd.read_csv(self.file)['lane'].unique()
-		self.lane_dict = {l:i for i in range(len(lanes)) for l in lanes} 
+		self.lane_dict = {l:i for i,l in enumerate(lanes)} 
 		self.process_points()
 
 	def process_points(self):
@@ -72,6 +72,8 @@ class Ngsim:
 						   self.lateral_m_t, self.time_resolution)
 		print("All the points are processed and thre trajectories are constructed!")
 
+
+
 	def find_location_grid(self, time_resolution, num_lanes):
 		print("finding the location grid for each point ...")
 		errors = 0
@@ -84,9 +86,8 @@ class Ngsim:
 		grid_size = self.data_points[0].grid_size
 		grid_shape = (num_lanes, int((max_location-min_location)/grid_size)+1)
 		print("min_location: ", min_location)
-		print("max_location: ", max_location)
-		# t_steps = int(round((max_time-min_time)/time_resolution,0))
-		t_steps = int((max_time - min_time) / time_resolution) +1
+		print("max_location: ", max_location) 
+		t_steps = int((max_time - min_time) / time_resolution) + 1
 		global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps)]
 
 		print(f'Total time steps: {t_steps}')
@@ -97,12 +98,13 @@ class Ngsim:
 			t_ind = int(round(p.time/time_resolution, 0))  
 			lane_ind = self.lane_dict[p.lane]
 			location_ind = int(p.y_loc/grid_size)  
-			# print(lane_ind,'lane_ind')
-			# print(t_ind,'t ind')
-			# print(len(global_grid),'globa')
+			 
+			# print(f't_ind: {t_ind}| global_grid: {len(global_grid)}')
+			# print(f'location_ind: {location_ind}| global_grid[{t_ind}]: {len(global_grid[t_ind])}')
+			 
 
 			if t_ind >= len(global_grid):
-				errors +=1 
+				errors += 1
 			elif location_ind >= len(global_grid[t_ind][lane_ind]):
 				errors+=1
 			elif global_grid[t_ind][lane_ind][location_ind] == 0:
@@ -117,6 +119,7 @@ class Ngsim:
 		for p in self.data_points:
 			t_ind = int(round(p.time/time_resolution, 0))
 			lane_ind = self.lane_dict[p.lane]
+			# print(self.lane_dict)
 			location_ind = int(p.y_loc/grid_size)
 
 			for i in range(1,p.grids_on_each_side+1):
@@ -126,6 +129,7 @@ class Ngsim:
 				# infront of the vehicle:
 				if location_ind+i in range(grid_shape[1]):
 					#for the same lane:
+					# print(f'index: {p.grids_on_each_side+i} | lane id {lane_ind} | global grid:  {len(global_grid[t_ind])} | {len(global_grid[t_ind][lane_ind])}')
 					p.neighbors_same_lane[p.grids_on_each_side+i] = global_grid[t_ind][lane_ind][location_ind+i]
 					#for the lane on the left:
 					if lane_ind-1 in range(grid_shape[0]):
@@ -402,11 +406,17 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 	return flow_list, density_list
 
 
+ 
+
+
+
 ################################################### MAIN FUNCTION ################################################################################################
 def main():
 	file_directory = ""
-	file_name = "I294_L1_final.csv"
-	#file_name = "I294_Cleaned.csv"
+	# original_file_name = "I294_L1_final.csv"
+	original_file_name = "I294_Cleaned.csv"
+
+	file_name = original_file_name
 	output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/"
 	reference_time = 6
 	dataset_id = 1
@@ -455,9 +465,9 @@ def main():
 		total_trajectories.append(dataset_trajectories) 
 		total_trajectories_x.append(dataset_trajectories_x_grid)
 		total_trajectories_y.append(dataset_trajectories_y_grid)
-		break
 		 
-	
+		 
+	 
 	random.shuffle(total_trajectories)
 	random.shuffle(total_trajectories_x)
 	random.shuffle(total_trajectories_y)
@@ -477,6 +487,8 @@ def main():
 	test_trajectories = total_trajectories[num_train+num_val:]
 	test_trajectories_x = total_trajectories_x[num_train+num_val:]
 	test_trajectories_y = total_trajectories_y[num_train+num_val:]
+
+
 		
 	print("Saving files...")
 	with open(output_directory+"train.data", 'wb') as filehandle:
@@ -488,6 +500,7 @@ def main():
 	with open(output_directory+"test.data", 'wb') as filehandle:
 		pickle.dump(total_test_set, filehandle)
 
+ 
 	with open(output_directory+"train_trajectory.data", 'wb') as filehandle:
 		pickle.dump(training_trajectories, filehandle)
 
