@@ -7,7 +7,7 @@
 
 ## HAL Cluster Notes:
 
-                  File Name: Louis_Trajectory_Prediction.py
+                  File Name: Trajectory_Prediction.py
 
 ## NOTES For Louis Sungwoo Cho NCAS HAL Cluster:
 **[Reference Video Link](https://www.youtube.com/watch?v=l1dV25xwo0o&list=PLO8UWE9gZTlCtkZbWtEcKgxYVVLIvN2IS&index=1)**
