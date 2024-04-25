@@ -46,7 +46,7 @@ def main():
   
 
     optimizer = torch.optim.Adam(net.parameters())
-    batch_size = 128
+    batch_size = 512
     # crossEnt = torch.nn.BCELoss() 
 
     crossEnt = torch.nn.MSELoss() 
