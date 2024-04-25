@@ -295,7 +295,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 		data_col_loc = "ngsim-101"
 	elif dataset_id in [4, 5, 6]:
 		data_col_loc = "ngsim-80"
-	flow_list, density_list = flow_density_NGSIM_data(total_data, time_resolution, data_col_loc, fd_time_size=20)
+	flow_list, density_list = flow_density_NGSIM_data(total_data, time_resolution, data_col_loc, num_lanes,fd_time_size=20)
 
 	# Count the number of data points for which there is 3 second data history and at least one future point:
 	num_useful_points = 0
@@ -333,18 +333,21 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 
 		  
 				#Add flow and density
-				t_step = int(round(traj.points[i].time/time_resolution))
+				t_step = int(round(traj.points[i].time/time_resolution))  
+
 				if t_step < len(flow_list):
 					point.append(flow_list[t_step])
 					point.append(density_list[t_step])
 
-				if counter <= num_training:
-					training_set.append(point)
-				elif counter <= num_training + num_validation:
-					validation_set.append(point)
-				else:
-					testing_set.append(point)
-				counter += 1
+					if counter <= num_training:
+						training_set.append(point)
+					elif counter <= num_training + num_validation:
+						validation_set.append(point)
+					else:
+						testing_set.append(point)
+					counter += 1
+				
+				print(f'counter: {counter}')
 
 	max_id = max([p.id for p in total_data.trajectories])
 	min_id = min([p.id for p in total_data.trajectories])
@@ -378,6 +381,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 	for trajectory in total_data.trajectories:
 		points_x = []
 		points_y = []
+		print(f'trajectory processing')
 		for t_p in trajectory.points:
 			po_x = [t_p.frame_number, t_p.x_loc, t_p.y_loc]
 			po_y = [t_p.frame_number, t_p.x_loc, t_p.y_loc]
@@ -425,7 +429,7 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 	return(training_set, validation_set, testing_set, dataset_trajectories, dataset_trajectories_x_grid, dataset_trajectories_y_grid)
 
 
-def flow_density_NGSIM_data(total_data, time_resolution, data_collection_location, fd_time_size = 20):
+def flow_density_NGSIM_data(total_data, time_resolution, data_collection_location, num_lanes,fd_time_size = 20):
 	#data_location can be "ngsim-101" or "ngsim-80"
 	total_data.data_points.sort(key=lambda x: x.y_loc)
 	min_y_loc = total_data.data_points[0].y_loc
@@ -437,22 +441,12 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 	max_time = total_data.data_points[-1].time 
 	total_data.data_points.sort(key=lambda x: x.id)
 
-	total_time_steps = int(round((max_time - min_time) / time_resolution)) + 1 
+	total_time_steps = int(round((max_time - min_time) / time_resolution)) 
 	li_list = [0 for i in range(total_time_steps)]
 	ti_list = [0 for i in range(total_time_steps)]
 
 	for trajectory in total_data.trajectories:
 		for i in range(len(trajectory.points)):
-			if data_collection_location == "ngsim-101":
-				if trajectory.points[i].lane > 5:
-					continue
-				else:
-					num_lanes = 5
-			elif data_collection_location == "ngsim-80":
-				if trajectory.points[i].lane > 7:
-					continue
-				else:
-					num_lanes = 6
 			if i == 0:
 				delta_y = 0
 				delta_t = 0
@@ -462,9 +456,7 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 			t_step = int(round(trajectory.points[i].time / total_data.time_resolution))
 			# print(t_step,len(li_list))
 
-			if t_step >= len(li_list):
-				continue
-			else:
+			if t_step < len(li_list): 
 				li_list[t_step] += delta_y
 				ti_list[t_step] += delta_t
 
@@ -509,13 +501,9 @@ def main():
 	output_history = 10
 	speed_ratio_braking = 0.8
 	lateral_m_t = 5
-	time_resolution = 0.1
-	
-	mean_flow = 1133.49
-	std_flow = 417.05
-	mean_density = 68.53
-	std_density = 24.67
-
+	time_resolution = 0.1 
+	 
+	   
 	data = pd.read_csv(file_name) 
 	num_lanes = len(data['lane'].unique()) 
 
@@ -550,6 +538,7 @@ def main():
 		total_trajectories.append(dataset_trajectories) 
 		total_trajectories_x.append(dataset_trajectories_x_grid)
 		total_trajectories_y.append(dataset_trajectories_y_grid)
+		 
 		 
 		 
 	 
