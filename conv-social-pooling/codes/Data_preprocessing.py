@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 import pickle
 import copy
+import random
 
 class DataPoint():
 	def __init__(self, data_array, reference_time, dataset_id, attention_distance = 90, grid_size = 15):
@@ -84,16 +85,25 @@ class Ngsim:
 		grid_shape = (num_lanes, int((max_location-min_location)/grid_size)+1)
 		print("min_location: ", min_location)
 		print("max_location: ", max_location)
-		t_steps = int(round((max_time-min_time)/time_resolution,0))
-		global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps+1)]
+		# t_steps = int(round((max_time-min_time)/time_resolution,0))
+		t_steps = int((max_time - min_time) / time_resolution) +1
+		global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps)]
+
+		print(f'Total time steps: {t_steps}')
+		print(f'Global grid size: {len(global_grid)}')
  
  
 		for p in self.data_points: 
 			t_ind = int(round(p.time/time_resolution, 0))  
 			lane_ind = self.lane_dict[p.lane]
 			location_ind = int(p.y_loc/grid_size)  
+			# print(lane_ind,'lane_ind')
+			# print(t_ind,'t ind')
+			# print(len(global_grid),'globa')
 
-			if location_ind >= len(global_grid[t_ind][lane_ind]):
+			if t_ind >= len(global_grid):
+				errors +=1 
+			elif location_ind >= len(global_grid[t_ind][lane_ind]):
 				errors+=1
 			elif global_grid[t_ind][lane_ind][location_ind] == 0:
 				global_grid[t_ind][lane_ind][location_ind] = p.id
@@ -188,7 +198,7 @@ class Ngsim:
 						#no braking
 						p.longitudinal_maneuver = 1
 
-		print("finding the maneuvers is complete!")
+		print("Finding the maneuvers is complete!")
 
 def process_data_flow_density(file, dataset_id, reference_time = 0, input_history = 3, output_history = 5, speed_ratio_braking = 0.8, lateral_m_t = 4, time_resolution = 0.1, num_lanes = 8):
 	print("output_history: ", output_history)
@@ -395,7 +405,8 @@ def flow_density_NGSIM_data(total_data, time_resolution, data_collection_locatio
 ################################################### MAIN FUNCTION ################################################################################################
 def main():
 	file_directory = ""
-	file_name = "I294_Cleaned.csv"
+	file_name = "I294_L1_final.csv"
+	#file_name = "I294_Cleaned.csv"
 	output_directory = "cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/"
 	reference_time = 6
 	dataset_id = 1
@@ -416,6 +427,8 @@ def main():
 	total_train_set = []
 	total_validation_set = []
 	total_test_set = []
+
+
 	total_trajectories = []
 	total_trajectories_x = []
 	total_trajectories_y = [] 
@@ -437,11 +450,33 @@ def main():
 			total_validation_set.append(p)
 		for p in testing_set:
 			total_test_set.append(p)
+
+
 		total_trajectories.append(dataset_trajectories) 
 		total_trajectories_x.append(dataset_trajectories_x_grid)
 		total_trajectories_y.append(dataset_trajectories_y_grid)
+		break
 		 
-		
+	
+	random.shuffle(total_trajectories)
+	random.shuffle(total_trajectories_x)
+	random.shuffle(total_trajectories_y)
+
+	num_train = int(len(total_trajectories)*0.8 )
+	num_val = int(len(total_trajectories)*0.1) 
+	 
+
+	training_trajectories = total_trajectories[:num_train]
+	training_trajectories_x = total_trajectories_x[:num_train]
+	training_trajectories_y = total_trajectories_y[:num_train]
+
+	validation_trajectories = total_trajectories[num_train:num_train+num_val]
+	validation_trajectories_x = total_trajectories_x[num_train:num_train+num_val]
+	validation_trajectories_y = total_trajectories_y[num_train:num_train+num_val]
+
+	test_trajectories = total_trajectories[num_train+num_val:]
+	test_trajectories_x = total_trajectories_x[num_train+num_val:]
+	test_trajectories_y = total_trajectories_y[num_train+num_val:]
 		
 	print("Saving files...")
 	with open(output_directory+"train.data", 'wb') as filehandle:
@@ -454,32 +489,32 @@ def main():
 		pickle.dump(total_test_set, filehandle)
 
 	with open(output_directory+"train_trajectory.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories, filehandle)
+		pickle.dump(training_trajectories, filehandle)
 
 	with open(output_directory+"train_trajectory_x.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_x, filehandle)
+		pickle.dump(training_trajectories_x, filehandle)
 
 	with open(output_directory+"train_trajectory_y.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_y, filehandle)
+		pickle.dump(training_trajectories_y, filehandle)
 	
 
 	with open(output_directory+"valid_trajectory.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories, filehandle)
+		pickle.dump(validation_trajectories, filehandle)
 
 	with open(output_directory+"valid_trajectory_x.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_x, filehandle)
+		pickle.dump(validation_trajectories_x, filehandle)
 
 	with open(output_directory+"valid_trajectory_y.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_y, filehandle)
+		pickle.dump(validation_trajectories_y, filehandle)
 	
 	with open(output_directory+"test_trajectory.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories, filehandle)
+		pickle.dump(test_trajectories, filehandle)
 
 	with open(output_directory+"test_trajectory_x.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_x, filehandle)
+		pickle.dump(test_trajectories_x, filehandle)
 
 	with open(output_directory+"test_trajectory_y.data", 'wb') as filehandle:
-		pickle.dump(total_trajectories_y, filehandle)
+		pickle.dump(test_trajectories_y, filehandle)
 	
 
 	print("All files are saved!")
