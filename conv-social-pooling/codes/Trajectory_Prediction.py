@@ -218,7 +218,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
 
         if len(current_data) != 0:
             # print('ident',ident)
-            current_data.to_csv('louis_traverse/current'+str(ident)+'.csv')
+            # current_data.to_csv('louis_traverse/current'+str(ident)+'.csv')
             raw_time_stamps = current_data['time']-overpass_start_time
             time_stamps = [round(t, 1) for t in raw_time_stamps]
             check_traj_time = min(time_stamps) # get the starting time for the trajectory 
