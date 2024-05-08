@@ -1,0 +1,3 @@
+,ID,time,xloc,yloc,lane,speed,acceleration,length-smoothed,width-smoothed,type-most-common,ACC,run-index
+1024279,1761,174.9,4205.7963,176.03,3,32.339,0.22,6.0,2.67,small-vehicle,No,21
+1024280,1761,175.0,4209.0302,175.88,3,32.3605,0.43,6.0,2.67,small-vehicle,No,21
