@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 smoothed_file = pd.read_csv('I294_Cleaned.csv') # read in the data 
+smoothed_file = pd.read_csv('lane_changes_extracted.csv') # read in the data 
 lanes = sorted(smoothed_file['lane'].unique()) # lanes to analyze
 
 for lane in lanes:

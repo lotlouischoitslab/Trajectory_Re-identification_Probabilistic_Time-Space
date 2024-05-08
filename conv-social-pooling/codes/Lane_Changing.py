@@ -2,6 +2,9 @@ import pandas as pd
 
 # Load the data
 data = pd.read_csv('I294_L1_final.csv')
+
+# Seconds to go back
+delta = 10 # seconds 
   
 # Prepare to capture segments of data around lane changes
 lane_change_data = []
@@ -21,8 +24,8 @@ for key,ID in enumerate(data['ID'].unique()):
             change_index = vehicle_data.index.get_loc(index)
 
             # Calculate the range to extract around the lane change
-            start_time = row['time'] - 10  # 10 seconds before
-            end_time = row['time'] + 10   # 10 seconds after
+            start_time = row['time'] - delta  # 10 seconds before
+            end_time = row['time'] + delta   # 10 seconds after
 
             # Extract data from 10 seconds before to 10 seconds after the lane change
             mask = (vehicle_data['time'] >= start_time) & (vehicle_data['time'] <= end_time)
