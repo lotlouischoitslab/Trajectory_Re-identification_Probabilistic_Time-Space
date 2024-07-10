@@ -245,7 +245,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'time': temp_time, 'xloc': x_list.tolist(), 'yloc': y_list.tolist(), 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
+                        best_trajectory.update({'time': temp_time, 'xloc': [x1,x2], 'yloc': [y1,y2], 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
                     
                     current_trajectory['time'].append(temp_time)
                     current_trajectory['xloc'].append((x1, x2))
