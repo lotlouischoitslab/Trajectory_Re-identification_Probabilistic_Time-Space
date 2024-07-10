@@ -192,6 +192,8 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
         ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
         possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
 
+        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'time'] -= overpass_start_time
+
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta, 0.1)
     stat_time_frame = np.round(stat_time_frame, 1)
@@ -209,9 +211,9 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 possible_traj_data['time'] = time_stamps
                 possible_traj_list.append(possible_traj_data)
 
-    trajectories = []
+    trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'muX': None, 'muY': None, 'sigX': None, 'sigY': None, 'line_integral_values': None}
-    highest_integral_value = float('-inf')
+    highest_integral_value = float('-inf') 
 
     for ids in IDs_to_traverse:
         current_trajectory = {'lane': lane, 'time': [], 'xloc': [], 'yloc': [], 'maneuver': [], 'muX': [], 'muY': [], 'sigX': [], 'sigY': [], 'line_integral_values': []}
@@ -243,7 +245,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'time': temp_time, 'xloc': (x1, x2), 'yloc': (y1, y2), 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
+                        best_trajectory.update({'time': temp_time, 'xloc': x_list.tolist(), 'yloc': y_list.tolist(), 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
                     
                     current_trajectory['time'].append(temp_time)
                     current_trajectory['xloc'].append((x1, x2))
@@ -257,28 +259,41 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
         trajectories.append(current_trajectory)
 
-    for key, temp in enumerate(trajectories):
-        trajectories_df = pd.DataFrame(temp)
-        trajectories_df.to_csv(f'all_combinations_trajectories/batch_{batch_num}_trajectory_combo.csv', index=False)
-
     if best_trajectory['ID'] is not None:
         best_trajectory_df = pd.DataFrame([best_trajectory])
         best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
 
-    return trajectories, best_trajectory, ground_truth_underneath_overpass
+    ground_truth_dict = {}
+    for temp_ID in IDs_to_traverse:
+        ground_truth_dict[temp_ID] = {
+            'xloc': ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]['xloc'].values.tolist(),
+            'yloc': ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]['yloc'].values.tolist()
+        }
+
+    return best_trajectory, ground_truth_dict 
 
 def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory):
-    return 1 if predicted_trajectory['ID'] == ground_truth_trajectory['ID'] else 0
+    # if predicted_trajectory['ID'] != ground_truth_trajectory['ID']:
+    #     return 0
 
-def calculate_accuracy(all_predictions, ground_truth):
+    # Compare xloc and yloc lists
+    if predicted_trajectory['xloc'] == ground_truth_trajectory['xloc'] and predicted_trajectory['yloc'] == ground_truth_trajectory['yloc']:
+        return 1
+    return 0
+
+def calculate_accuracy(best_trajectory, ground_truth_dict):
     correct_predictions = 0
-    total_predictions = len(all_predictions)
 
-    for predicted in all_predictions:
-        correct_predictions += evaluate_trajectory_prediction(predicted, ground_truth)
+    check_id = best_trajectory['ID']
+    ground_truth_trajectory = ground_truth_dict.get(check_id, None)
 
-    accuracy = (correct_predictions / total_predictions) * 100
+    if ground_truth_trajectory:
+        correct_predictions += evaluate_trajectory_prediction(best_trajectory, ground_truth_trajectory)
+
+    accuracy = (correct_predictions / 1) * 100  # Since there's only one prediction to evaluate
     return accuracy
+
+
  
 def main(): # Main function 
     args = {} # Network Arguments
