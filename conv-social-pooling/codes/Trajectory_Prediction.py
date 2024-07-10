@@ -360,23 +360,23 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
     return trajectories, best_trajectory,ground_truth_underneath_overpass # return all the trajectories traversed and the best trajectory 
 
 
-def flatten_coordinates(tuples_list):
-    flattened_list = []
-    for tup in tuples_list:
-        for item in tup:
+def flatten_coordinates(tuples_list): # Helper function to flatten out the tuples
+    flattened_list = [] # declare empty list to flatten out the tuples
+    for tup in tuples_list: # loop for each tuple
+        for item in tup: # loop for each item in tuple
             # Add the item to the flattened list only if it's not already present
-            if item not in flattened_list:
-                flattened_list.append(item)
+            if item not in flattened_list: # if the item is not in the flattened list
+                flattened_list.append(item) # append the item to the flattened list
     
-    return flattened_list 
+    return flattened_list # return the flattened tuples
 
 
-def calculate_rmse(predictions, actuals):
-    differences = predictions - actuals
-    squared_differences = np.square(differences)
-    mean_squared_difference = np.mean(squared_differences)
-    rmse = np.sqrt(mean_squared_difference)
-    return rmse
+def calculate_rmse(predictions, actuals): # Helper function to calculate the RMSE
+    differences = predictions - actuals # get the differences 
+    squared_differences = np.square(differences) # square them 
+    mean_squared_difference = np.mean(squared_differences) # get the mean value of the squared differences
+    rmse = np.sqrt(mean_squared_difference) # square it again 
+    return rmse # return the rmse value 
 
 def calculate_accuracy(trajectories, best_trajectory, ground_truth_underneath_overpass):
     best_trajectory_ID = best_trajectory['ID']
@@ -389,9 +389,7 @@ def calculate_accuracy(trajectories, best_trajectory, ground_truth_underneath_ov
     # print('Best Trajectories:')
     print('best trajectory x:', best_trajectory_x)
     print('best trajectory y:', best_trajectory_y)
-
-    # print('ground temp x',ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'xloc'])
-
+ 
     # Fetch ground truth data for the matching ID
     ground_trajectory_x = ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'xloc'].values[-2:]
     ground_trajectory_y = ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'yloc'].values[-2:]
