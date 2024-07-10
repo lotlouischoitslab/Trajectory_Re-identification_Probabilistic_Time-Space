@@ -65,7 +65,7 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
     plt.figure(figsize=(18, 12)) 
 
     for m in range(num_maneuvers):
-        print(f"Processing maneuver {m+1}/{num_maneuvers}")
+        # print(f"Processing maneuver {m+1}/{num_maneuvers}")
         muX = fut_pred[m][:,batch_num,0]
         muY = fut_pred[m][:,batch_num,1]
         sigX = fut_pred[m][:,batch_num,2]
@@ -244,6 +244,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {
+        'ID':0,
         'lane':lane,
         'time':0,
         'xloc':[],
@@ -344,6 +345,7 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
                         best_trajectory['sigY'] = temp_sigY # this is the individual sigY 
                         best_trajectory['line_integral_values'] = segment_integral # append the line integral
                         best_trajectory['maneuver']= m+1 # assign the maneuver
+                        best_trajectory['ID'] = ids # assign the trajectory ID
 
                     trajectories.append(current_trajectory) # Store the current trajectory
     
@@ -355,8 +357,59 @@ def predict_trajectories(input_data, overpass_start_time_input,overpass_start_lo
         best_trajectory_df = pd.DataFrame(best_trajectory) # convert the best trajectory data into dataframe format 
         best_trajectory_df.to_csv('best_trajectories/batch_'+str(batch_num)+'_best_trajectory.csv', index=False) # then convert to csv
     
-    return trajectories, best_trajectory # return all the trajectories traversed and the best trajectory 
+    return trajectories, best_trajectory,ground_truth_underneath_overpass # return all the trajectories traversed and the best trajectory 
+
+
+def flatten_coordinates(tuples_list):
+    flattened_list = []
+    for tup in tuples_list:
+        for item in tup:
+            # Add the item to the flattened list only if it's not already present
+            if item not in flattened_list:
+                flattened_list.append(item)
     
+    return flattened_list 
+
+
+def calculate_rmse(predictions, actuals):
+    differences = predictions - actuals
+    squared_differences = np.square(differences)
+    mean_squared_difference = np.mean(squared_differences)
+    rmse = np.sqrt(mean_squared_difference)
+    return rmse
+
+def calculate_accuracy(trajectories, best_trajectory, ground_truth_underneath_overpass):
+    best_trajectory_ID = best_trajectory['ID']
+    # print('Best Trajectory ID:', best_trajectory_ID)
+
+    # Assuming xloc and yloc are arrays or lists already, use entire series
+    best_trajectory_x = np.array(best_trajectory['xloc'])
+    best_trajectory_y = np.array(best_trajectory['yloc'])
+
+    # print('Best Trajectories:')
+    print('best trajectory x:', best_trajectory_x)
+    print('best trajectory y:', best_trajectory_y)
+
+    # print('ground temp x',ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'xloc'])
+
+    # Fetch ground truth data for the matching ID
+    ground_trajectory_x = ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'xloc'].values[-2:]
+    ground_trajectory_y = ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == best_trajectory_ID, 'yloc'].values[-2:]
+    print('ground x',ground_trajectory_x)
+    print('ground y',ground_trajectory_y)
+
+    # Compute RMSE
+    rmse_x = calculate_rmse(best_trajectory_x, ground_trajectory_x)
+    rmse_y = calculate_rmse(best_trajectory_y, ground_trajectory_y)
+
+    print('RMSE X:', rmse_x)
+    print('RMSE Y:', rmse_y)
+
+    # Combined RMSE for both X and Y
+    combined_rmse = np.sqrt(rmse_x**2 + rmse_y**2)
+    print(f'Combined RMSE: {combined_rmse}')
+    accuracy = max(0,100 - combined_rmse)
+    return accuracy
  
 def main(): # Main function 
     args = {} # Network Arguments
@@ -475,18 +528,16 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            trajectory,predicted_traj = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            trajectory,predicted_traj,ground_truth_underneath_overpass = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,i)
             
             if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane,i)
                 break
-
-        # print('Predicted')
-        # print(f"{len(predicted_traj['lane'])} | {len(predicted_traj['time'])} | {len(predicted_traj['xloc'])} | {len(predicted_traj['yloc'])}")
-        # print('Original Dataframe')
-        # print(f"{len(df['lane'])} | {len(df['time'])} | {len(df['xloc'])} | {len(df['yloc'])}")
-        # predicted_traj = pd.DataFrame(predicted_traj) # convert the predicted traj into Pandas DataFrame
+    
+    accuracy_score = calculate_accuracy(trajectory,predicted_traj,ground_truth_underneath_overpass)
+    
+    print(f'Accuracy Score: {accuracy_score}%')
          
 
 if __name__ == '__main__': # run the code
