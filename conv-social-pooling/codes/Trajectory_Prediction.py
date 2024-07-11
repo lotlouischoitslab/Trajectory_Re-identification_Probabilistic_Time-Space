@@ -223,7 +223,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     for key, ident in enumerate(IDs_to_traverse):
         current_data = possible_trajectories[(possible_trajectories['ID'] == ident) & (possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)]
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident]
-        print('len cur outgoing', len(current_outgoing))
+         
         possible_traj_data = {
             'Traj': f'A{key + 1}', 'ID': ident, 'before_time': current_data['time'].values, 'time': [], 
             'xloc': current_data['xloc'].values, 'yloc': current_data['yloc'].values, 
@@ -234,7 +234,6 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
         if len(current_data) != 0:
             raw_time_stamps = current_data['time'] - overpass_start_time
             time_stamps = [round(t, 1) for t in raw_time_stamps]
-            print(f'time stamps: {time_stamps}')
             check_traj_time = min(time_stamps)
             
             if check_traj_time in stat_time_frame:
@@ -276,16 +275,17 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'time': temp_time, 'xloc': x_list, 'yloc': y_list, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'Traj': possible_traj_temp['Traj']})
+                        best_trajectory.update({'ID':ids,'time': temp_time, 'xloc': x_list, 'yloc': y_list, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'Traj': possible_traj_temp['Traj']})
 
     
     best_trajectory_df = pd.DataFrame([best_trajectory])
     best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
-    return best_trajectory, outgoing_trajectories
+    return best_trajectory, possible_traj_df
 
  
-def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory):
-    check_id = predicted_trajectory['ID']
+def evaluate_trajectory_prediction(predicted_trajectory, possible_traj_df):
+    check_traj_id = predicted_trajectory['Traj']
+    ground_truth_trajectory = possible_traj_df[possible_traj_df['Traj']==check_traj_id]
 
     # print('check ground')
     # print(ground_truth_trajectory)
@@ -293,13 +293,13 @@ def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory
     predicted_xlist = predicted_trajectory['xloc']
     predicted_ylist = predicted_trajectory['yloc']
 
-    ground_truth_xlist = ground_truth_trajectory['xloc'].values[:len(predicted_xlist)]
-    ground_truth_ylist = ground_truth_trajectory['yloc'].values[:len(predicted_ylist)]
-    print(f'predicted_xlist: {predicted_xlist}') 
-    print(f'predicted_ylist: {predicted_ylist}') 
+    ground_truth_xlist = ground_truth_trajectory['groundx'].values[0]
+    ground_truth_ylist = ground_truth_trajectory['groundy'].values[0]
+    # print(f'predicted_xlist: {predicted_xlist}') 
+    # print(f'predicted_ylist: {predicted_ylist}') 
 
-    print(f'ground_truth_xlist: {ground_truth_xlist}') 
-    print(f'ground_truth_ylist: {ground_truth_ylist}') 
+    # print(f'ground_truth_xlist: {ground_truth_xlist}') 
+    # print(f'ground_truth_ylist: {ground_truth_ylist}') 
 
     # print(f"ground truth time: {ground_truth_trajectory['time']}")
 
@@ -458,7 +458,7 @@ def main(): # Main function
             print(f'analyzed trajectory: {analyzed_traj}')
             predictions_data.append(analyzed_traj)
         
-            if i == 3: # Generate and save the distribution plots just for one trajectory
+            if i == 10: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane,i)
                 break
     
