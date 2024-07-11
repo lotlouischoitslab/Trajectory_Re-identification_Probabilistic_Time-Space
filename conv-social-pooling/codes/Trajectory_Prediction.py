@@ -180,7 +180,9 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x]
     IDs_to_traverse = possible_trajectories['ID'].unique()
 
-    overpass_start_time = overpass_start_time_input
+    #overpass_start_time = overpass_start_time_input
+    overpass_start_time = min(ground_truth_underneath_overpass['time'].values)
+    print(f'overpass start time: {overpass_start_time}')
     overpass_end_time = overpass_start_time + delta
 
     for temp_ID in IDs_to_traverse:
@@ -213,7 +215,9 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'muX': None, 'muY': None, 'sigX': None, 'sigY': None, 'line_integral_values': None}
-    highest_integral_value = float('-inf') 
+    highest_integral_value = float('-inf')
+
+    ground_truth_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'muX': None, 'muY': None, 'sigX': None, 'sigY': None, 'line_integral_values': None}
 
     for ids in IDs_to_traverse:
         current_trajectory = {'lane': lane, 'time': [], 'xloc': [], 'yloc': [], 'maneuver': [], 'muX': [], 'muY': [], 'sigX': [], 'sigY': [], 'line_integral_values': []}
@@ -245,7 +249,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'time': temp_time, 'xloc': [x1,x2], 'yloc': [y1,y2], 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
+                        best_trajectory.update({'time': temp_time, 'xloc': [x1, x2], 'yloc': [y1, y2], 'muX': temp_muX, 'muY': temp_muY, 'sigX': temp_sigX, 'sigY': temp_sigY, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
                     
                     current_trajectory['time'].append(temp_time)
                     current_trajectory['xloc'].append((x1, x2))
@@ -256,41 +260,66 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     current_trajectory['sigY'].append(temp_sigY)
                     current_trajectory['line_integral_values'].append(segment_integral)
                     current_trajectory['maneuver'].append(m + 1)
-                    
+
+        if ground_truth_underneath_overpass[(ground_truth_underneath_overpass['ID'] == ids)].empty:
+            continue
+
+        ground_truth_data = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == ids]
+        ground_truth_trajectory.update({'ID': ids, 'lane': lane, 'time': ground_truth_data['time'].values, 'xloc': ground_truth_data['xloc'].values, 'yloc': ground_truth_data['yloc'].values, 'maneuver': [None] * len(ground_truth_data), 'muX': [None] * len(ground_truth_data), 'muY': [None] * len(ground_truth_data), 'sigX': [None] * len(ground_truth_data), 'sigY': [None] * len(ground_truth_data), 'line_integral_values': [None] * len(ground_truth_data)})
+        
         trajectories.append(current_trajectory)
 
     if best_trajectory['ID'] is not None:
         best_trajectory_df = pd.DataFrame([best_trajectory])
         best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
+  
+    return best_trajectory, ground_truth_trajectory
 
-    ground_truth_dict = {}
-    for temp_ID in IDs_to_traverse:
-        ground_truth_dict[temp_ID] = {
-            'xloc': ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]['xloc'].values.tolist(),
-            'yloc': ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]['yloc'].values.tolist()
-        }
-
-    return best_trajectory, ground_truth_dict 
-
+ 
 def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory):
-    # if predicted_trajectory['ID'] != ground_truth_trajectory['ID']:
-    #     return 0
+    check_id = predicted_trajectory['ID']
 
-    # Compare xloc and yloc lists
-    if predicted_trajectory['xloc'] == ground_truth_trajectory['xloc'] and predicted_trajectory['yloc'] == ground_truth_trajectory['yloc']:
-        return 1
-    return 0
+    print(ground_truth_trajectory)
+    
+    # Ensure ground truth trajectory exists
+    if ground_truth_trajectory['ID'] != check_id:
+        print(f"No ground truth available for ID: {check_id}")
+        return 0
+    
+    predicted_xlist = predicted_trajectory['xloc']
+    predicted_ylist = predicted_trajectory['yloc']
 
-def calculate_accuracy(best_trajectory, ground_truth_dict):
+    ground_truth_xlist = ground_truth_trajectory['xloc']
+    ground_truth_ylist = ground_truth_trajectory['yloc']
+
+    print(f'predicted_xlist: {predicted_xlist}') 
+    print(f'predicted_ylist: {predicted_ylist}') 
+
+    print(f'ground_truth_xlist: {ground_truth_xlist}') 
+    print(f'ground_truth_ylist: {ground_truth_ylist}') 
+
+    print(f"ground truth time: {ground_truth_trajectory['time']}")
+
+    # Check if the lengths of the lists match
+    if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
+        print("The lengths of predicted and ground truth trajectories do not match.")
+        return 0
+
+    # Check if the trajectories match
+    for px, py, gx, gy in zip(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist):
+        if px != gx or py != gy:
+            return 0
+
+    return 1
+
+
+def calculate_accuracy(predictions_data):
     correct_predictions = 0
-
-    check_id = best_trajectory['ID']
-    ground_truth_trajectory = ground_truth_dict.get(check_id, None)
-
-    if ground_truth_trajectory:
-        correct_predictions += evaluate_trajectory_prediction(best_trajectory, ground_truth_trajectory)
-
-    accuracy = (correct_predictions / 1) * 100  # Since there's only one prediction to evaluate
+    for data in predictions_data:
+        if data == 1:
+            correct_predictions+=1 
+    
+    accuracy = (correct_predictions / len(predictions_data)) * 100  # Since there's only one prediction to evaluate
     return accuracy
 
 
@@ -370,6 +399,8 @@ def main(): # Main function
     ################################## OUTPUT DATA ##############################################################################
     print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
 
+    predictions_data = []
+
     ################################## LANES TO BE ANALYZED #####################################################################################
     predicted_traj = None # we are going to store the predicted trajectories 
     for lane in lanes_to_analyze: # for each lane to be analyzed 
@@ -412,14 +443,24 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            predicted_traj,ground_truth_underneath_overpass = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            predicted_traj,ground_truth_trajectory = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,i)
             
-            if i == 0: # Generate and save the distribution plots just for one trajectory
+            # if i == 0: # Generate and save the distribution plots just for one trajectory
+            #     generate_normal_distribution(fut_pred_np, lane,i)
+            #     break
+            
+
+            analyzed_traj = evaluate_trajectory_prediction(predicted_traj,ground_truth_trajectory)
+            print(f'analyzed trajectory: {analyzed_traj}')
+            predictions_data.append(analyzed_traj)
+        
+            if i == 1: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane,i)
                 break
     
-    accuracy_score = calculate_accuracy(predicted_traj,ground_truth_underneath_overpass)
+    
+    accuracy_score = calculate_accuracy(predictions_data)
     
     print(f'Accuracy Score: {accuracy_score}%')
          
