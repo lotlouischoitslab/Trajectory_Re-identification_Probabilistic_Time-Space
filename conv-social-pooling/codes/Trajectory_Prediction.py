@@ -449,18 +449,14 @@ def main(): # Main function
             predicted_traj,ground_truth_trajectory = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,i)
             
-            # if i == 0: # Generate and save the distribution plots just for one trajectory
-            #     generate_normal_distribution(fut_pred_np, lane,i)
-            #     break
-            
 
             analyzed_traj = evaluate_trajectory_prediction(predicted_traj,ground_truth_trajectory)
             print(f'analyzed trajectory: {analyzed_traj}')
             predictions_data.append(analyzed_traj)
         
-            if i == 10: # Generate and save the distribution plots just for one trajectory
-                generate_normal_distribution(fut_pred_np, lane,i)
-                break
+            # if i == 50: # Generate and save the distribution plots just for one trajectory
+            #     generate_normal_distribution(fut_pred_np, lane,i)
+            #     break
     
     
     accuracy_score = calculate_accuracy(predictions_data)
