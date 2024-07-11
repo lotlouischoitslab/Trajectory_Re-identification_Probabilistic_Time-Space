@@ -458,7 +458,6 @@ def main(): # Main function
             #     generate_normal_distribution(fut_pred_np, lane,i)
             #     break
     
-    
     accuracy_score = calculate_accuracy(predictions_data)
     
     print(f'Accuracy Score: {accuracy_score}%')
