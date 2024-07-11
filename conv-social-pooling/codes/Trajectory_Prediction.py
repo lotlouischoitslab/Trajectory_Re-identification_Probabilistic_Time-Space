@@ -169,54 +169,80 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
         axs[2].legend()
         plt.suptitle('Trajectories X and Y Locations over Time')
         plt.savefig('temp_trajectory_plot.png')
-    
 
+
+    
 def predict_trajectories(input_data, overpass_start_time_input, overpass_start_loc_x, overpass_end_loc_x, overpass_start_loc_y, overpass_end_loc_y, lane, fut_pred, batch_num, delta):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
-    
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass 
     outgoing_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass 
     ground_truth_underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc_x) & (input_data['xloc'] <= overpass_end_loc_x)] # underneath the overpass 
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed
 
-    # overpass_start_time = overpass_start_time_input
-    overpass_start_time = min(ground_truth_underneath_overpass['time'].values)
-    print(f'overpass start time: {overpass_start_time}')
+    overpass_start_time = overpass_start_time_input
     overpass_end_time = overpass_start_time + delta
- 
+    print(f'overpass start time: {overpass_start_time}')
+    print(f'overpass end time: {overpass_end_time}')
 
+  
     for temp_ID in IDs_to_traverse:
-        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
-        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
-        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x
+        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] = (
+            incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'xloc'] - overpass_start_loc_x
+        ).round(2)
+        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] = (
+            ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'xloc'] - overpass_start_loc_x
+        ).round(2)
+        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] = (
+            possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'xloc'] - overpass_start_loc_x
+        ).round(2)
+        outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'xloc'] = (
+            outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'xloc'] - overpass_start_loc_x
+        ).round(2)
 
-        outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x 
+        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] = (
+            incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] - overpass_start_loc_y
+        ).round(2)
+        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] = (
+            ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] - overpass_start_loc_y
+        ).round(2)
+        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] = (
+            possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] - overpass_start_loc_y
+        ).round(2)
+        outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'yloc'] = (
+            outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'yloc'] - overpass_start_loc_y
+        ).round(2)
 
-        incoming_trajectories.loc[incoming_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y 
-        ground_truth_underneath_overpass.loc[ground_truth_underneath_overpass['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
-        possible_trajectories.loc[possible_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
-
-        outgoing_trajectories.loc[outgoing_trajectories['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
- 
-    # print(f'outgoing overpass: {outgoing_trajectories}') 
+    outgoing_pd = pd.DataFrame(outgoing_trajectories)
+    outgoing_pd.to_csv('outgoing.csv')
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta, 0.1)
     stat_time_frame = np.round(stat_time_frame, 1)
 
-    for ident in IDs_to_traverse:
+    for key, ident in enumerate(IDs_to_traverse):
         current_data = possible_trajectories[(possible_trajectories['ID'] == ident) & (possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)]
-        possible_traj_data = {'ID': ident, 'before_time': current_data['time'], 'time': [], 'xloc': current_data['xloc'], 'yloc': current_data['yloc']}
-        
+        current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident]
+        print('len cur outgoing', len(current_outgoing))
+        possible_traj_data = {
+            'Traj': f'A{key + 1}', 'ID': ident, 'before_time': current_data['time'].values, 'time': [], 
+            'xloc': current_data['xloc'].values, 'yloc': current_data['yloc'].values, 
+            'groundx': current_outgoing['xloc'].values[:len(current_data['xloc'])], 
+            'groundy': current_outgoing['yloc'].values[:len(current_data['yloc'])]
+        }
+
         if len(current_data) != 0:
             raw_time_stamps = current_data['time'] - overpass_start_time
             time_stamps = [round(t, 1) for t in raw_time_stamps]
+            print(f'time stamps: {time_stamps}')
             check_traj_time = min(time_stamps)
             
             if check_traj_time in stat_time_frame:
                 possible_traj_data['time'] = time_stamps
                 possible_traj_list.append(possible_traj_data)
+
+    possible_traj_df = pd.DataFrame(possible_traj_list)
+    possible_traj_df.to_csv(f'possible_trajectories/batch_{batch_num}_possible_trajectories.csv', index=False)
 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'line_integral_values': None}
@@ -225,8 +251,8 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     for ids in IDs_to_traverse:
         for possible_traj_temp in possible_traj_list:
             traj_time = possible_traj_temp['time']
-            x_list = possible_traj_temp['xloc'].values
-            y_list = possible_traj_temp['yloc'].values
+            x_list = possible_traj_temp['xloc']
+            y_list = possible_traj_temp['yloc']
             
             for m in range(num_maneuvers):
                 muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T
@@ -250,13 +276,11 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                     
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'time': temp_time, 'xloc': [x1, x2], 'yloc': [y1, y2], 'line_integral_values': segment_integral, 'maneuver': m + 1, 'ID': ids})
-                    
+                        best_trajectory.update({'time': temp_time, 'xloc': x_list, 'yloc': y_list, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'Traj': possible_traj_temp['Traj']})
 
-    if best_trajectory['ID'] is not None:
-        best_trajectory_df = pd.DataFrame([best_trajectory])
-        best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
-  
+    
+    best_trajectory_df = pd.DataFrame([best_trajectory])
+    best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
     return best_trajectory, outgoing_trajectories
 
  
@@ -269,9 +293,8 @@ def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory
     predicted_xlist = predicted_trajectory['xloc']
     predicted_ylist = predicted_trajectory['yloc']
 
-    ground_truth_xlist = list(ground_truth_trajectory['xloc'].values)[1:3]
-    ground_truth_ylist = list(ground_truth_trajectory['yloc'].values)[1:3]
-
+    ground_truth_xlist = ground_truth_trajectory['xloc'].values[:len(predicted_xlist)]
+    ground_truth_ylist = ground_truth_trajectory['yloc'].values[:len(predicted_ylist)]
     print(f'predicted_xlist: {predicted_xlist}') 
     print(f'predicted_ylist: {predicted_ylist}') 
 
@@ -282,6 +305,7 @@ def evaluate_trajectory_prediction(predicted_trajectory, ground_truth_trajectory
 
     # Check if the lengths of the lists match
     if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
+        print(len(predicted_xlist),len(ground_truth_xlist),len(predicted_ylist) ,len(ground_truth_ylist) )
         print("The lengths of predicted and ground truth trajectories do not match.")
         return 0
 
@@ -391,7 +415,6 @@ def main(): # Main function
             print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
              
             hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, maneuver_enc  = data # unpack the data   
-             
 
             if args['use_cuda']:
                 hist = hist.cuda()
