@@ -180,9 +180,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     ground_truth_underneath_overpass = input_data[(input_data['xloc'] >= overpass_start_loc_x) & (input_data['xloc'] <= overpass_end_loc_x)] # underneath the overpass 
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed
-
-    # overpass_start_time = overpass_start_time_input
-    overpass_start_time = min(ground_truth_underneath_overpass['time'].values)
+    overpass_start_time = overpass_start_time_input
     overpass_end_time = overpass_start_time + delta
     # print(f'overpass start time: {overpass_start_time}')
     # print(f'overpass end time: {overpass_end_time}')
@@ -247,44 +245,61 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'line_integral_values': None}
     highest_integral_value = float('-inf')
+
+    print(f'IDs to traverse: {IDs_to_traverse}')
  
+    best_trajectories = []
+
     for ids in IDs_to_traverse:
+        highest_integral_value = float('-inf')  # Reset for each ID
+        best_traj_info = None
+
         for possible_traj_temp in possible_traj_list:
             traj_time = possible_traj_temp['time']
             x_list = possible_traj_temp['xloc']
             y_list = possible_traj_temp['yloc']
-            
+
             for m in range(num_maneuvers):
-                # muX, muY, sigX, sigY = fut_pred[m][:, batch_num-1, :4].T
-                muX = fut_pred[m][:,batch_num,0]
-                muY= fut_pred[m][:,batch_num,1]
-                sigX = fut_pred[m][:,batch_num,2]
-                sigY = fut_pred[m][:,batch_num,3]
-                # print(fut_pred[m].shape[1])
+                muX = fut_pred[m][:,0,0]
+                muY = fut_pred[m][:,0,1]
+                sigX = fut_pred[m][:,0,2]
+                sigY = fut_pred[m][:,0,3]
+
                 start_idx = list(stat_time_frame).index(traj_time[0])
                 end_idx = len(traj_time) - 1
-                
+
                 mux_store = muX[start_idx:]
                 muy_store = muY[start_idx:]
                 sigx_store = sigX[start_idx:]
                 sigy_store = sigY[start_idx:]
-                
+
                 for i in range(end_idx):
                     x1, x2 = x_list[i], x_list[i + 1]
                     y1, y2 = y_list[i], y_list[i + 1]
-                    
+
                     temp_time = stat_time_frame[i]
                     temp_muX, temp_muY = mux_store[i], muy_store[i]
                     temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
-                
+
                     segment_integral = line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
-                    
+
                     if segment_integral > highest_integral_value:
                         highest_integral_value = segment_integral
-                        best_trajectory.update({'ID':ids,'time': temp_time, 'xloc': x_list, 'yloc': y_list, 'line_integral_values': segment_integral, 'maneuver': m + 1, 'Traj': possible_traj_temp['Traj']})
+                        best_traj_info = {
+                            'ID': ids,
+                            'time': temp_time,
+                            'xloc': x_list,
+                            'yloc': y_list,
+                            'line_integral_values': segment_integral,
+                            'maneuver': m + 1,
+                            'Traj': possible_traj_temp['Traj']
+                        }
 
-    
-    best_trajectory_df = pd.DataFrame([best_trajectory])
+        if best_traj_info:
+            best_trajectories.append(best_traj_info)
+
+    # Convert the list of best trajectories into a DataFrame
+    best_trajectory_df = pd.DataFrame(best_trajectories)
     best_trajectory_df.to_csv(f'best_trajectories/simulation_{index}_best_trajectory.csv', index=False)
     return best_trajectory, possible_traj_df
 
@@ -372,6 +387,7 @@ def main(): # Main function
     #lanes_to_analyze = sorted(df['lane'].unique())[1:-1] # lanes to analyze 
     temp_lane = -2 
     lanes_to_analyze = [temp_lane] # lanes to analyze 
+    # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
     batch_size = 512 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
@@ -456,9 +472,12 @@ def main(): # Main function
             print(f'analyzed trajectory: {analyzed_traj}')
             predictions_data.append(analyzed_traj)
     
-            # if n == 55: # Generate and save the distribution plots just for one trajectory
+            # if i == 100: # Generate and save the distribution plots just for one trajectory
             #     generate_normal_distribution(fut_pred_np, lane,batch_size-1)
             #     break
+
+            if i == 0:
+                break 
             
             
 
