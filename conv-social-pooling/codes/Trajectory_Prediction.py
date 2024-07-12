@@ -172,7 +172,7 @@ def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_un
 
 
     
-def predict_trajectories(input_data, overpass_start_time_input, overpass_start_loc_x, overpass_end_loc_x, overpass_start_loc_y, overpass_end_loc_y, lane, fut_pred, batch_num, delta):
+def predict_trajectories(input_data, overpass_start_time_input, overpass_start_loc_x, overpass_end_loc_x, overpass_start_loc_y, overpass_end_loc_y, lane, fut_pred, batch_num, delta,index):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass 
@@ -181,10 +181,11 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed
 
-    overpass_start_time = overpass_start_time_input
+    # overpass_start_time = overpass_start_time_input
+    overpass_start_time = min(ground_truth_underneath_overpass['time'].values)
     overpass_end_time = overpass_start_time + delta
-    print(f'overpass start time: {overpass_start_time}')
-    print(f'overpass end time: {overpass_end_time}')
+    # print(f'overpass start time: {overpass_start_time}')
+    # print(f'overpass end time: {overpass_end_time}')
 
   
     for temp_ID in IDs_to_traverse:
@@ -241,7 +242,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 possible_traj_list.append(possible_traj_data)
 
     possible_traj_df = pd.DataFrame(possible_traj_list)
-    possible_traj_df.to_csv(f'possible_trajectories/batch_{batch_num}_possible_trajectories.csv', index=False)
+    possible_traj_df.to_csv(f'possible_trajectories/simulation_{index}_possible_trajectories.csv', index=False)
 
     trajectories = [] # final set of trajectories that we would have traversed 
     best_trajectory = {'ID': None, 'lane': lane, 'time': None, 'xloc': None, 'yloc': None, 'maneuver': None, 'line_integral_values': None}
@@ -254,7 +255,12 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
             y_list = possible_traj_temp['yloc']
             
             for m in range(num_maneuvers):
-                muX, muY, sigX, sigY = fut_pred[m][:, batch_num, :4].T
+                # muX, muY, sigX, sigY = fut_pred[m][:, batch_num-1, :4].T
+                muX = fut_pred[m][:,batch_num,0]
+                muY= fut_pred[m][:,batch_num,1]
+                sigX = fut_pred[m][:,batch_num,2]
+                sigY = fut_pred[m][:,batch_num,3]
+                # print(fut_pred[m].shape[1])
                 start_idx = list(stat_time_frame).index(traj_time[0])
                 end_idx = len(traj_time) - 1
                 
@@ -279,7 +285,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
 
     
     best_trajectory_df = pd.DataFrame([best_trajectory])
-    best_trajectory_df.to_csv(f'best_trajectories/batch_{batch_num}_best_trajectory.csv', index=False)
+    best_trajectory_df.to_csv(f'best_trajectories/simulation_{index}_best_trajectory.csv', index=False)
     return best_trajectory, possible_traj_df
 
  
@@ -318,13 +324,10 @@ def evaluate_trajectory_prediction(predicted_trajectory, possible_traj_df):
 
 
 def calculate_accuracy(predictions_data):
-    correct_predictions = 0
-    for data in predictions_data:
-        if data == 1:
-            correct_predictions+=1 
-    
-    accuracy = (correct_predictions / len(predictions_data)) * 100  # Since there's only one prediction to evaluate
+    correct_predictions = sum(data == 1 for data in predictions_data)
+    accuracy = (correct_predictions / len(predictions_data)) * 100
     return accuracy
+
 
 
  
@@ -408,12 +411,11 @@ def main(): # Main function
     ################################## LANES TO BE ANALYZED #####################################################################################
     predicted_traj = None # we are going to store the predicted trajectories 
     for lane in lanes_to_analyze: # for each lane to be analyzed 
-        print(f'Lane: {lane}') # print the lane  
- 
+        print(f'Lane: {lane}') # print the lane   
         for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
            
             print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
-             
+            
             hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, maneuver_enc  = data # unpack the data   
 
             if args['use_cuda']:
@@ -446,22 +448,24 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            predicted_traj,ground_truth_trajectory = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,i,delta) # where the function is called and I feed in maneurver pred and future prediction points         
-            generate_normal_distribution(fut_pred_np, lane,i)
-            
+ 
+            predicted_traj,ground_truth_trajectory = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction(predicted_traj,ground_truth_trajectory)
             print(f'analyzed trajectory: {analyzed_traj}')
             predictions_data.append(analyzed_traj)
-        
-            # if i == 50: # Generate and save the distribution plots just for one trajectory
-            #     generate_normal_distribution(fut_pred_np, lane,i)
+    
+            # if n == 55: # Generate and save the distribution plots just for one trajectory
+            #     generate_normal_distribution(fut_pred_np, lane,batch_size-1)
             #     break
-    
-    accuracy_score = calculate_accuracy(predictions_data)
-    
+            
+            
+
+
+    accuracy_score = calculate_accuracy(predictions_data)    
     print(f'Accuracy Score: {accuracy_score}%')
-         
+
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
