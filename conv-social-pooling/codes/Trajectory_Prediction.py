@@ -221,12 +221,9 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     best_trajectories = []
 
     for ids in IDs_to_traverse:
-        
         best_traj_info = None  # Reset for each ID
 
-        for possible_traj_temp in possible_traj_list:
-            # if possible_traj_temp['ID'] < ids:
-            #     continue  # Skip if the trajectory ID does not match the current ID
+        for possible_traj_temp in possible_traj_list: 
 
             highest_integral_value = float('-inf')  # Reset for each ID
                 
@@ -320,10 +317,16 @@ def evaluate_trajectory_prediction(predicted_trajectory_input, possible_traj_df,
             # Check if the trajectories match
              
             # Directly compare the lists
-            if (predicted_xlist != ground_truth_xlist).any() or (predicted_ylist != ground_truth_ylist).any():
-                correct_predictions.append(0)
-            else:
-                correct_predictions.append(1)
+            # if (predicted_xlist != ground_truth_xlist).any() or (predicted_ylist != ground_truth_ylist).any():
+            #     correct_predictions.append(0)
+            # else:
+            #     correct_predictions.append(1)
+        
+            for px, py, gx, gy in zip(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist):
+                if px != gx or py != gy:
+                    correct_predictions.append(0)
+                else:
+                    correct_predictions.append(1)
  
     return correct_predictions
 
@@ -385,7 +388,7 @@ def main(): # Main function
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
     overpass_start_loc_y,overpass_end_loc_y = 161.8, 162.4 # both in meters 
-    overpass_start_time = 194 # time where the overpass begins in seconds 190.7 (initial) 191
+    overpass_start_time = 195 # time where the overpass begins in seconds 195 (OPTIMAL) 197 achieved 100%
     delta = 5 # time interval that we will be predicting for
 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
