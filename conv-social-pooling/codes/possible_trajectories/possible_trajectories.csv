@@ -1,4 +1,4 @@
-Traj,ID,before_time,time,xloc,yloc
+Traj,ID,before_time,time,xloc,yloc,old_xloc,old_yloc
 A1,0,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -13,7 +13,11 @@ A1,0,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  83.216725 84.170475]","[0.73 0.74 0.76 0.77 0.79 0.8  0.82 0.83 0.84 0.86 0.87 0.88 0.89 0.91
  0.92 0.93 0.94 0.95 0.96 0.97 0.98 0.99 1.   1.01 1.02 1.03 1.04 1.04
  1.05 1.06 1.06 1.07 1.07 1.08 1.08 1.09 1.09 1.09 1.09 1.1  1.1  1.1
- 1.1  1.1  1.1  1.1  1.1  1.1  1.1  1.1  1.09]"
+ 1.1  1.1  1.1  1.1  1.1  1.1  1.1  1.1  1.09]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A2,3,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -29,7 +33,11 @@ A2,3,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  106.02625  106.9384   107.85055 ]","[0.84 0.84 0.85 0.86 0.86 0.87 0.88 0.88 0.88 0.89 0.89 0.9  0.9  0.9
  0.9  0.9  0.9  0.89 0.89 0.89 0.88 0.88 0.88 0.87 0.87 0.86 0.85 0.85
  0.84 0.83 0.82 0.81 0.81 0.79 0.78 0.77 0.76 0.74 0.73 0.71 0.69 0.68
- 0.66 0.64 0.62 0.6  0.58 0.56 0.54 0.52 0.49]"
+ 0.66 0.64 0.62 0.6  0.58 0.56 0.54 0.52 0.49]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A4,52,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -46,7 +54,11 @@ A4,52,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  -2.69 -2.74 -2.79 -2.84 -2.9  -2.95 -3.   -3.05 -3.11 -3.16 -3.22 -3.27
  -3.33 -3.38 -3.44 -3.5  -3.55 -3.61 -3.67 -3.73 -3.79 -3.84 -3.9  -3.96
  -4.02 -4.08 -4.14 -4.2  -4.26 -4.32 -4.38 -4.44 -4.5  -4.56 -4.62 -4.68
- -4.74 -4.8  -4.86]"
+ -4.74 -4.8  -4.86]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A5,57,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -63,7 +75,11 @@ A5,57,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
   0.04  0.   -0.04 -0.09 -0.13 -0.17 -0.22 -0.26 -0.31 -0.35 -0.4  -0.45
  -0.5  -0.55 -0.6  -0.65 -0.7  -0.75 -0.8  -0.86 -0.91 -0.96 -1.02 -1.08
  -1.13 -1.19 -1.25 -1.31 -1.37 -1.43 -1.49 -1.55 -1.61 -1.68 -1.74 -1.81
- -1.87 -1.94 -2.  ]"
+ -1.87 -1.94 -2.  ]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A6,61,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -80,7 +96,11 @@ A6,61,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
   0.39  0.38  0.37  0.35  0.34  0.33  0.31  0.3   0.28  0.27  0.25  0.23
   0.21  0.19  0.17  0.15  0.12  0.1   0.07  0.05  0.02 -0.01 -0.04 -0.07
  -0.1  -0.13 -0.16 -0.2  -0.23 -0.27 -0.3  -0.34 -0.38 -0.42 -0.46 -0.5
- -0.54 -0.58 -0.63]"
+ -0.54 -0.58 -0.63]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A7,66,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -97,8 +117,12 @@ A7,66,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  -5.89 -5.96 -6.02 -6.09 -6.15 -6.22 -6.29 -6.35 -6.42 -6.49 -6.55 -6.62
  -6.69 -6.76 -6.83 -6.9  -6.96 -7.03 -7.1  -7.17 -7.24 -7.31 -7.38 -7.45
  -7.51 -7.58 -7.65 -7.72 -7.8  -7.87 -7.94 -8.01 -8.08 -8.15 -8.22 -8.29
- -8.37 -8.44 -8.51]"
-A8,68,[195.  195.1 195.2],"[0.0, 0.1, 0.2]",[225.305825 225.734225 226.156975],[-7.63 -7.65 -7.67]
+ -8.37 -8.44 -8.51]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
+A8,68,[195.  195.1 195.2],"[0.0, 0.1, 0.2]",[225.305825 225.734225 226.156975],[-7.63 -7.65 -7.67],[nan nan nan],[nan nan nan]
 A9,69,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  196.2 196.3 196.4 196.5 196.6 196.7 196.8 196.9 197.  197.1 197.2 197.3
  197.4 197.5 197.6 197.7 197.8 197.9 198.  198.1 198.2 198.3 198.4 198.5
@@ -115,9 +139,13 @@ A9,69,"[195.  195.1 195.2 195.3 195.4 195.5 195.6 195.7 195.8 195.9 196.  196.1
  -5.33 -5.38 -5.44 -5.5  -5.56 -5.61 -5.67 -5.73 -5.79 -5.85 -5.9  -5.96
  -6.02 -6.08 -6.14 -6.2  -6.26 -6.32 -6.38 -6.44 -6.5  -6.56 -6.62 -6.68
  -6.74 -6.8  -6.86 -6.92 -6.98 -7.04 -7.1  -7.16 -7.23 -7.29 -7.35 -7.42
- -7.48 -7.54 -7.61]"
+ -7.48 -7.54 -7.61]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]","[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]"
 A18,145,"[198.4 198.5 198.6 198.7 198.8 198.9 199.  199.1 199.2 199.3 199.4 199.5
  199.6 199.7 199.8 199.9 200. ]","[3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0]","[31.03055  32.0892   33.149275 34.2108   35.2738   36.3388   37.4058
  38.475325 39.547925 40.6241   41.703825 42.787125 43.8745   44.965425
  46.059925 47.1585   48.2611  ]","[0.39 0.4  0.41 0.42 0.43 0.44 0.45 0.46 0.47 0.47 0.48 0.49 0.49 0.5
- 0.51 0.51 0.52]"
+ 0.51 0.51 0.52]",[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan],[nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]
