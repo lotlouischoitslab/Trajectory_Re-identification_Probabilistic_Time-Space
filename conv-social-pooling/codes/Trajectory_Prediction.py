@@ -215,6 +215,13 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         fig.savefig(f'trajectory_plots/trajectory-'+ axis_temp+'.png')
 
 
+def adjust_trajectories(input_data, overpass_start_loc_x, overpass_start_loc_y):
+    input_data['old_xloc'] = input_data['xloc']
+    input_data['old_yloc'] = input_data['yloc']
+    input_data['xloc'] -= overpass_start_loc_x
+    input_data['yloc'] -= overpass_start_loc_y
+    return input_data
+
 
 def predict_trajectories(input_data, overpass_start_time_input, overpass_start_loc_x, overpass_end_loc_x, overpass_start_loc_y, overpass_end_loc_y, lane, fut_pred, batch_num, delta, index):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
@@ -231,11 +238,11 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
 
     plot_original_trajectories(incoming_trajectories,outgoing_trajectories)
 
-    for temp_ID in IDs_to_traverse:
-        for df in [incoming_trajectories, ground_truth_underneath_overpass, possible_trajectories, outgoing_trajectories]:
-            df.loc[df['ID'] == temp_ID, ['old_xloc', 'old_yloc']] = df.loc[df['ID'] == temp_ID, ['xloc', 'yloc']]
-            df.loc[df['ID'] == temp_ID, 'xloc'] -= overpass_start_loc_x
-            df.loc[df['ID'] == temp_ID, 'yloc'] -= overpass_start_loc_y
+    incoming_trajectories = adjust_trajectories(incoming_trajectories, overpass_start_loc_x, overpass_start_loc_y)
+    outgoing_trajectories = adjust_trajectories(outgoing_trajectories, overpass_start_loc_x, overpass_start_loc_y)
+    ground_truth_underneath_overpass = adjust_trajectories(ground_truth_underneath_overpass, overpass_start_loc_x, overpass_start_loc_y)
+    possible_trajectories = adjust_trajectories(possible_trajectories, overpass_start_loc_x, overpass_start_loc_y)
+
 
     
     ingoing_pd = pd.DataFrame(incoming_trajectories)
@@ -285,6 +292,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 y_list = possible_traj_temp['yloc']
                 old_x_list = possible_traj_temp['old_xloc']
                 old_y_list = possible_traj_temp['old_yloc']
+                print('old',old_x_list)
                 segment_integral = 0.0  # Reset for each maneuver
 
                 for m in range(num_maneuvers):
@@ -318,8 +326,8 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                         'time': traj_time,
                         'xloc': x_list,
                         'yloc': y_list,
-                        'old_x':old_x_list,
-                        'old_y':old_y_list,
+                        'old_xloc':old_x_list,
+                        'old_yloc':old_y_list,
                         'line_integral_values': segment_integral,
                         'maneuver': m + 1,
                         'Traj': possible_traj_temp['Traj']
@@ -341,8 +349,17 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     return max_integral_df, possible_traj_df, outgoing_trajectories
 
 
-def plot_predicted_trajectories():
-    pass 
+def plot_predicted_trajectories(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist, traj_id,timeframe):
+    plt.figure(figsize=(10, 5))
+    plt.scatter(timeframe, predicted_xlist, color='r', label='Predicted Trajectory')
+    plt.plot(timeframe, ground_truth_xlist, 'b-', label='Ground Truth Trajectory')
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('X Location')
+    plt.title(f'Trajectory Comparison for Vehicle ID {traj_id}')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'trajectory_plots/trajectory_comparison_{traj_id}.png')
+ 
  
  
 def evaluate_trajectory_prediction(predicted_trajectory_input, possible_traj_df,outgoing_trajectories,start_time): 
@@ -351,8 +368,8 @@ def evaluate_trajectory_prediction(predicted_trajectory_input, possible_traj_df,
 
     for check_traj_id in IDs_to_traverse: 
         ground_truth_trajectory = outgoing_trajectories[(outgoing_trajectories['ID'] == check_traj_id) & (outgoing_trajectories['time'] >= start_time)]
-        predicted_trajectory = predicted_trajectory_input[predicted_trajectory_input['ID']==check_traj_id]    
-        
+        predicted_trajectory = predicted_trajectory_input[predicted_trajectory_input['ID']==check_traj_id]
+         
         print(f'Check: {check_traj_id}')
 
         if len(predicted_trajectory['xloc']) != 0:
@@ -362,11 +379,23 @@ def evaluate_trajectory_prediction(predicted_trajectory_input, possible_traj_df,
 
             ground_truth_xlist = ground_truth_trajectory['xloc'].values[:len(predicted_xlist)]
             ground_truth_ylist = ground_truth_trajectory['yloc'].values[:len(predicted_ylist)]
+    
+            predicted_xlist_plot = predicted_trajectory['old_xloc'].values[0]
+            predicted_ylist_plot = predicted_trajectory['old_yloc'].values[0]
+
+            ground_truth_xlist_plot = ground_truth_trajectory['old_xloc'].values[:len(predicted_xlist)]
+            ground_truth_ylist_plot = ground_truth_trajectory['old_yloc'].values[:len(predicted_ylist)]
+
+
+            timeframe = np.linspace(0,5,len(predicted_xlist)) # space out from 0 to 5 seconds with length of the predicted trajectory  
+
             print(f'predicted_xlist: {predicted_xlist}') 
             print(f'predicted_ylist: {predicted_ylist}') 
 
             print(f'ground_truth_xlist: {ground_truth_xlist}') 
             print(f'ground_truth_ylist: {ground_truth_ylist}')  
+
+            plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, check_traj_id,timeframe)
 
             # Check if the lengths of the lists match
             if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
