@@ -337,6 +337,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     possible_traj_df = pd.DataFrame(possible_traj_list)
     possible_traj_df.to_csv(f'possible_trajectories/possible_trajectories.csv', index=False)
     best_trajectories = []
+    trajectory_updates = []
 
     for ids in IDs_to_traverse:
         best_traj_info = None  # Reset for each ID
@@ -391,11 +392,16 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                         'Traj': possible_traj_temp['Traj']
                     }
 
+                    trajectory_updates.append(best_traj_info.copy())  # Track updates
+
             if best_traj_info: 
                 if best_traj_info['line_integral_values'] != 0:
                     best_trajectories.append(best_traj_info)
              
-    
+    # Convert the list of trajectories into a DataFrame 
+    trajectory_updates_df = pd.DataFrame(trajectory_updates)
+    trajectory_updates_df.to_csv(f'best_trajectories/simulation_{index}_trajectory_updates.csv', index=False)
+
     # Convert the list of best trajectories into a DataFrame
     best_trajectory_df = pd.DataFrame(best_trajectories)
     best_trajectory_df.to_csv(f'best_trajectories/prior_simulation_{index}_best_trajectory.csv', index=False)
