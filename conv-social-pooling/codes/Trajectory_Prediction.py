@@ -291,8 +291,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 x_list = possible_traj_temp['xloc']
                 y_list = possible_traj_temp['yloc']
                 old_x_list = possible_traj_temp['old_xloc']
-                old_y_list = possible_traj_temp['old_yloc']
-                print('old',old_x_list)
+                old_y_list = possible_traj_temp['old_yloc'] 
                 segment_integral = 0.0  # Reset for each maneuver
 
                 for m in range(num_maneuvers):
@@ -472,7 +471,7 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
+    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
