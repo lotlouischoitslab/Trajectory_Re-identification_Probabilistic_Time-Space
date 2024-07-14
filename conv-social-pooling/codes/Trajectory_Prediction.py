@@ -489,6 +489,12 @@ def calculate_accuracy(correct_predictions_data):
     accuracy = (correct_predictions / len(correct_predictions_data)) * 100
     return accuracy
 
+def plot_accuracy_graph(overpass_start_times,accuracy_score_list):
+    plt.figure(figsize=(10,6))
+    plt.plot(overpass_start_times,accuracy_score_list)
+    plt.xlabel('Overpass Start Time (s)') 
+    plt.ylabel('Accuracy Score %') 
+    plt.savefig('Accuracy.png')
 
 
  
@@ -541,92 +547,98 @@ def main(): # Main function
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
     overpass_start_loc_y,overpass_end_loc_y = 161.8, 162.4 # both in meters 
-    overpass_start_time = 195 # time where the overpass begins in seconds 195 (OPTIMAL) 197 achieved 100%
     delta = 5 # time interval that we will be predicting for
+    overpass_start_time = 195 # time where the overpass begins in seconds 195 (OPTIMAL) 197 achieved 100%
 
-    
-    ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
-    net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    model_path = 'trained_model_TGSIM/cslstm_m.tar'
-    net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
+    overpass_start_time_list = np.arange(overpass_start_time,overpass_start_time+2,1)
+    accuracy_score_list = []
 
-    ################################# CHECK GPU AVAILABILITY ###############################################################
-    if args['use_cuda']: 
-        net = net.to(device)
-    #########################################################################################################################
+    for overpass_start_time_temp in overpass_start_time_list:
+        print(f'Overpass Start Time: {overpass_start_time_temp} seconds')
+        ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
+        net = highwayNet_six_maneuver(args) # we are going to initialize the network 
+        model_path = 'trained_model_TGSIM/cslstm_m.tar'
+        net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
-    ################################# INITIALIZE DATA LOADERS ################################################################
-    predSet = tgsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
-    predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=predSet.collate_fn)
-    lossVals = torch.zeros(50).to(device) # Louis code
-    counts = torch.zeros(50).to(device) # Louis code
+        ################################# CHECK GPU AVAILABILITY ###############################################################
+        if args['use_cuda']: 
+            net = net.to(device)
+        #########################################################################################################################
 
-    ################################## SAVING DATA ##############################################################################
-    fut_predictions = [] # future prediction values 
-    maneuver_predictions = [] # maneuver prediction values 
+        ################################# INITIALIZE DATA LOADERS ################################################################
+        predSet = tgsimDataset(filepath_pred_Set, t_h=30, t_f=100, d_s=2)
+        predDataloader = DataLoader(predSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=predSet.collate_fn)
+        lossVals = torch.zeros(50).to(device) # Louis code
+        counts = torch.zeros(50).to(device) # Louis code
 
-    ################################## OUTPUT DATA ##############################################################################
-    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
+        ################################## SAVING DATA ##############################################################################
+        fut_predictions = [] # future prediction values 
+        maneuver_predictions = [] # maneuver prediction values 
 
-    predictions_data = []
+        ################################## OUTPUT DATA ##############################################################################
+        print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
 
-    ################################## LANES TO BE ANALYZED #####################################################################################
-    predicted_traj = None # we are going to store the predicted trajectories 
-    for lane in lanes_to_analyze: # for each lane to be analyzed 
-        print(f'Lane: {lane}') # print the lane   
-        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-           
-            print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
+        predictions_data = []
+
+        ################################## LANES TO BE ANALYZED #####################################################################################
+        predicted_traj = None # we are going to store the predicted trajectories 
+        for lane in lanes_to_analyze: # for each lane to be analyzed 
+            print(f'Lane: {lane}') # print the lane   
+            for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
             
-            hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, maneuver_enc  = data # unpack the data   
+                print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
+                
+                hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, maneuver_enc  = data # unpack the data   
 
-            if args['use_cuda']:
-                hist = hist.cuda()
-                nbrs = nbrs.cuda()
-                mask = mask.cuda()
-                lat_enc = lat_enc.cuda()
-                lon_enc = lon_enc.cuda()
-                fut = fut.cuda()
-                op_mask = op_mask.cuda()
-                maneuver_enc = maneuver_enc.cuda()
+                if args['use_cuda']:
+                    hist = hist.cuda()
+                    nbrs = nbrs.cuda()
+                    mask = mask.cuda()
+                    lat_enc = lat_enc.cuda()
+                    lon_enc = lon_enc.cuda()
+                    fut = fut.cuda()
+                    op_mask = op_mask.cuda()
+                    maneuver_enc = maneuver_enc.cuda()
 
-            fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
-            fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
+                fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc) # feed the parameters into the neural network for forward pass
+                fut_pred_max = torch.zeros_like(fut_pred[0]) # get the max predicted values 
 
-            for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
-                indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
-                fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
+                for k in range(maneuver_pred.shape[0]): # for each value in the maneuver predicted shapes
+                    indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
+                    fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
-            # l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-            # l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
-            # c = c.to(device)
+                # l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
+                # l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
+                # c = c.to(device)
 
-            # lossVals += l.detach() # increment the loss value 
-            # counts += c.detach() # increment the count value  
-            fut_pred_np = [] # store the future pred points 
+                # lossVals += l.detach() # increment the loss value 
+                # counts += c.detach() # increment the count value  
+                fut_pred_np = [] # store the future pred points 
 
-            for k in range(6): #manuevers mean the 
-                fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
-                fut_pred_np.append(fut_pred_np_point)
+                for k in range(6): #manuevers mean the 
+                    fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
+                    fut_pred_np.append(fut_pred_np_point)
 
-            fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
- 
-            incoming_trajectories,predicted_traj,possible_traj_df,outgoing_trajectories = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
-            generate_normal_distribution(fut_pred_np, lane,batch_size-1)
-
-            analyzed_traj = evaluate_trajectory_prediction(predicted_traj,possible_traj_df,outgoing_trajectories,overpass_start_time)
-            print(f'analyzed trajectory: {analyzed_traj}')
- 
-            accuracy_score = calculate_accuracy(analyzed_traj)    
-            print(f'Accuracy Score: {accuracy_score}%')
-
-            plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
-
-            if i == 0: # Generate and save the distribution plots just for one trajectory
+                fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
+    
+                incoming_trajectories,predicted_traj,possible_traj_df,outgoing_trajectories = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
                 generate_normal_distribution(fut_pred_np, lane,batch_size-1)
-                break 
 
+                analyzed_traj = evaluate_trajectory_prediction(predicted_traj,possible_traj_df,outgoing_trajectories,overpass_start_time)
+                print(f'analyzed trajectory: {analyzed_traj}')
+    
+                accuracy_score = calculate_accuracy(analyzed_traj)    
+                print(f'Accuracy Score: {accuracy_score}%')
+                accuracy_score_list.append(accuracy_score)
 
+                plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
+
+                if i == 0: # Generate and save the distribution plots just for one trajectory
+                    generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+                    break 
+    
+    plot_accuracy_graph(overpass_start_time_list,accuracy_score_list)
+ 
 
 if __name__ == '__main__': # run the code
     main() # call the main function 
