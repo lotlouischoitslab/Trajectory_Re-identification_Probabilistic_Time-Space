@@ -1,3 +1,7 @@
+ 
+
+
+
 from __future__ import print_function
 import torch
 from model_six_maneuvers import highwayNet_six_maneuver
@@ -215,6 +219,61 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         fig.savefig(f'trajectory_plots/trajectory-'+ axis_temp+'.png')
 
 
+def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df):
+    IDs = possible_traj_df['ID'].unique() 
+    all_ts = []
+    all_ys = [] 
+
+    fig, ax = plt.subplots() # get xs and ts of each vehicle
+
+    first_time_pred = []
+    first_point_pred = []
+    last_time_pred = []
+    last_point_pred = []
+
+    for i in IDs:
+        # print(f'ID: {i}')
+        temp_data = incoming_trajectories[incoming_trajectories['ID']==i]
+        ys = temp_data['old_xloc'].to_numpy() 
+        ts = temp_data.time.to_numpy()
+        # print(ts)
+        ax.scatter(ts, ys,s=1) 
+        if len(ts) != 0:
+            first_time_pred.append(ts[-1])
+            first_point_pred.append(ys[-1])
+    
+
+    for j in IDs:
+        print(f'ID: {j}')
+        temp_data = outgoing_trajectories[outgoing_trajectories['ID']==j]
+        ys = temp_data['old_xloc'].to_numpy() 
+        ts = temp_data.time.to_numpy()
+        ax.scatter(ts, ys,s=1)
+        if len(ts) != 0:
+            last_time_pred.append(ts[0])
+            last_point_pred.append(ys[0])
+
+    for t1,t2,f1,f2 in zip(first_time_pred,last_time_pred,first_point_pred,last_point_pred):
+        plt.plot([t1,t2],[f1,f2],color='r',label='connect')
+     
+    
+    print('first_time_pred',first_time_pred)
+    print('last_time_pred',last_time_pred)
+
+    print('first_point_pred',first_point_pred)
+    print('last_point_pred',last_point_pred)
+
+    ax.set_xlim(40, 250)
+    ax.set_ylim(1000, 2200)  # Set y-axis range from 0 to 2200 
+    ax.set_xlabel('Time (s)', fontsize = 20)
+    ax.set_ylabel('Location (m)', fontsize = 20)
+    ax.xaxis.set_major_locator(plt.MaxNLocator(100)) # Increase the number of grid lines on the x-axis 
+    ax.yaxis.set_major_locator(plt.MaxNLocator(60)) # Increase the number of grid lines on the y-axis
+    ax.grid()
+
+    fig.set_size_inches(120,30)
+    fig.savefig(f'trajectory_plots/selected_trajectory.png')
+
 def adjust_trajectories(input_data, overpass_start_loc_x, overpass_start_loc_y):
     input_data['old_xloc'] = input_data['xloc']
     input_data['old_yloc'] = input_data['yloc']
@@ -345,7 +404,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     # Filter the DataFrame to only include rows with the maximum integral values for each ID
     max_integral_df = best_trajectory_df.loc[idx]
     max_integral_df.to_csv(f'best_trajectories/simulation_{index}_best_trajectory.csv', index=False)
-    return max_integral_df, possible_traj_df, outgoing_trajectories
+    return incoming_trajectories,max_integral_df, possible_traj_df, outgoing_trajectories
 
 
 def plot_predicted_trajectories(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist, traj_id,timeframe):
@@ -546,7 +605,7 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
  
-            predicted_traj,possible_traj_df,outgoing_trajectories = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            incoming_trajectories,predicted_traj,possible_traj_df,outgoing_trajectories = predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction(predicted_traj,possible_traj_df,outgoing_trajectories,overpass_start_time)
@@ -554,6 +613,8 @@ def main(): # Main function
  
             accuracy_score = calculate_accuracy(analyzed_traj)    
             print(f'Accuracy Score: {accuracy_score}%')
+
+            plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
 
             if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred_np, lane,batch_size-1)
