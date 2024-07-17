@@ -330,6 +330,8 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta+0.1, 0.1)
     stat_time_frame = np.round(stat_time_frame, 1)
+    
+
 
     for key, ident in enumerate(IDs_to_traverse): 
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
@@ -354,6 +356,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
         possible_trajectories = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
 
         possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
+        outgoing_trajectories.to_csv('outgoing'+str(ident)+'traj.csv')
         print('overpass time',overpass_start_time,'to',overpass_end_time)
         
         best_trajectory = None
@@ -387,15 +390,36 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 sigy_store = sigY[start_idx:]
 
 
-                for i in range(len(traj_time)-2):
-                    x1, x2 = x_list[len(traj_time)-len(mux_store)+i], x_list[len(traj_time)-len(mux_store)+i+1]
-                    y1, y2 = y_list[len(traj_time)-len(muy_store)+i], y_list[len(traj_time)-len(mux_store)+i+1]
+                # for i in range(len(traj_time)-2):
+                #     x1, x2 = x_list[len(traj_time)-len(mux_store)+i], x_list[len(traj_time)-len(mux_store)+i+1]
+                #     y1, y2 = y_list[len(traj_time)-len(muy_store)+i], y_list[len(traj_time)-len(mux_store)+i+1]
 
-                    temp_time = stat_time_frame[i]
-                    temp_muX, temp_muY = mux_store[i], muy_store[i]
-                    temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
+                #     temp_time = stat_time_frame[i]
+                #     temp_muX, temp_muY = mux_store[i], muy_store[i]
+                #     temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
 
-                    segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                #     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+
+                for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
+                    index = len(traj_time) - len(mux_store) + i
+
+                    # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
+                    if 0 <= index < len(x_list) - 1:  
+                        x1, x2 = x_list[index], x_list[index + 1]
+                        y1, y2 = y_list[index], y_list[index + 1]
+
+                        # Ensure your time indexing also does not go out of bounds
+                        if i < len(stat_time_frame) - 1:
+                            temp_time = stat_time_frame[i]
+                            temp_muX, temp_muY = mux_store[i], muy_store[i]
+                            temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
+
+                            # Now perform your line integral or any other calculations
+                            segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                    else:
+                        print(f"Skipping index {index} as it is out of bounds.")
+                        continue  # Skip this iteration if indices are out of range
+
 
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
@@ -422,7 +446,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
 
         if best_trajectory:
             best_trajectory_df = pd.DataFrame([best_trajectory])
-            best_trajectory_df.to_csv(f'best_trajectories/simulation_{index}_best_trajectory.csv', index=False)
+            best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
         #break
 
  
