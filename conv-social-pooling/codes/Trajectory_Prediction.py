@@ -296,12 +296,16 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
 
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
+    overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass 
-    outgoing_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
-    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
+    # outgoing_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
+    # possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
+
+    outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
+    possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed
-    overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
+     
     # overpass_start_time = overpass_start_time_input 
     # overpass_end_time = overpass_start_time + delta
     # print(f'overpass start time: {overpass_start_time}')
@@ -398,7 +402,6 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigy_store = sigY[start_idx:]
 
 
-
                 for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
 
@@ -449,7 +452,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
         
          
-        #break
+        # break
 
  
 
