@@ -208,7 +208,7 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         fig, ax = plt.subplots() # get xs and ts of each vehicle
 
         for i in incoming_IDs:
-            print(f'ID: {i}')
+            # print(f'ID: {i}')
             temp_data = incoming_trajectories[incoming_trajectories['ID']==i]
             ys = temp_data[axis_temp].to_numpy() 
             ts = temp_data.time.to_numpy()
@@ -216,7 +216,7 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         
 
         for j in outgoing_IDs:
-            print(f'ID: {j}')
+            # print(f'ID: {j}')
             temp_data = outgoing_trajectories[outgoing_trajectories['ID']==j]
             ys = temp_data[axis_temp].to_numpy() 
             ts = temp_data.time.to_numpy()
@@ -262,7 +262,7 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
     
 
     for j in IDs:
-        print(f'ID: {j}')
+        # print(f'ID: {j}')
         temp_data = outgoing_trajectories[outgoing_trajectories['ID']==j]
         ys = temp_data['old_xloc'].to_numpy() 
         ts = temp_data.time.to_numpy()
@@ -275,11 +275,11 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
         plt.plot([t1,t2],[f1,f2],color='r',label='connect')
      
     
-    print('first_time_pred',first_time_pred)
-    print('last_time_pred',last_time_pred)
+    # print('first_time_pred',first_time_pred)
+    # print('last_time_pred',last_time_pred)
 
-    print('first_point_pred',first_point_pred)
-    print('last_point_pred',last_point_pred)
+    # print('first_point_pred',first_point_pred)
+    # print('last_point_pred',last_point_pred)
 
     ax.set_xlim(40, 250)
     ax.set_ylim(1000, 2200)  # Set y-axis range from 0 to 2200 
@@ -294,18 +294,7 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
 
 
 
-def adjust_trajectories(input_data, overpass_start_loc_x, overpass_start_loc_y):
-    modified_data = input_data.copy()  # Create a copy of the input DataFrame
-    modified_data['old_xloc'] = modified_data['xloc']
-    modified_data['old_yloc'] = modified_data['yloc']
-    modified_data['xloc'] -= overpass_start_loc_x
-    modified_data['yloc'] -= overpass_start_loc_y
-    return modified_data
-
-
-
-
-def predict_trajectories(input_data, overpass_start_time_input, overpass_start_loc_x, overpass_end_loc_x, overpass_start_loc_y, overpass_end_loc_y, lane, fut_pred, batch_num, delta, index):
+def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass 
@@ -318,40 +307,58 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
     # print(f'overpass start time: {overpass_start_time}')
     # print(f'overpass end time: {overpass_end_time}')
 
-    plot_original_trajectories(incoming_trajectories,outgoing_trajectories) 
- 
+    plot_original_trajectories(incoming_trajectories,outgoing_trajectories)
+
+    incoming_trajectories_copy = incoming_trajectories.copy()
+    outgoing_trajectories_copy = outgoing_trajectories.copy() 
+    possible_trajectories_copy = possible_trajectories.copy()  
+
+    incoming_trajectories['old_xloc'] = incoming_trajectories_copy['xloc']
+    outgoing_trajectories['old_xloc'] = outgoing_trajectories_copy['xloc']
+    possible_trajectories['old_xloc'] = possible_trajectories_copy['xloc']
+
+    incoming_trajectories['xloc'] -= overpass_start_loc_x
+    outgoing_trajectories['xloc'] -= overpass_start_loc_x
+    possible_trajectories['xloc'] -= overpass_start_loc_x
+
+    incoming_trajectories['old_yloc'] = incoming_trajectories_copy['yloc']
+    outgoing_trajectories['old_yloc'] = outgoing_trajectories_copy['yloc']
+    possible_trajectories['old_yloc'] = possible_trajectories_copy['yloc']
+
+   
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
 
     outgoing_pd = pd.DataFrame(outgoing_trajectories)
     outgoing_pd.to_csv('before/outgoing.csv')
 
+    possible_before_pd = pd.DataFrame(possible_trajectories)
+    possible_before_pd.to_csv('before/possible_before.csv')
+
 
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta+0.1, 0.1)
     stat_time_frame = np.round(stat_time_frame, 1)
-    
+
 
 
     for key, ident in enumerate(IDs_to_traverse): 
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
-        current_data = possible_trajectories[possible_trajectories['ID'] == ident].copy() 
+        current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
-        print(f'Ident traverse: {ident}')
+        # print(f'Ident traverse: {ident}')
         
         if len(current_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
             continue  # Skip this ID if there's no incoming data
-        print('time checked',current_data['time'].values)
+
+        # print('time checked',current_data['time'].values)
         overpass_start_time = current_data['time'].values[0]
         overpass_end_time = overpass_start_time + 5
-        overpass_start_loc_y = current_data['yloc'].values[0]
-
-        incoming_trajectories = adjust_trajectories(ingoing_temp_data, overpass_start_loc_x, overpass_start_loc_y)
-        outgoing_trajectories = adjust_trajectories(current_outgoing, overpass_start_loc_x, overpass_start_loc_y) 
-        possible_trajectories = adjust_trajectories(possible_trajectories, overpass_start_loc_x, overpass_start_loc_y)
-        possible_trajectories_temp_copy = possible_trajectories.copy()  # Make a copy of the input DataFrame
-        possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_temp_copy['time'] - overpass_start_time).round(1)
+        overpass_start_loc_y = current_data['yloc'].values[0]       
+        #possible_trajectories.loc[possible_trajectories['ID'] == ident, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
+        
+        possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
 
         possible_trajectories = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
 
@@ -364,6 +371,7 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
         possible_IDS = possible_trajectories['ID'].unique()
 
         for possible_traj_temp_ID in possible_IDS: 
+            possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'old_yloc'] = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc']-overpass_start_loc_y
             highest_integral_value = float('-inf')  # Reset for each ID
             temp_proj_to_traverse = possible_trajectories[possible_trajectories['ID']==possible_traj_temp_ID]
             traj_time = temp_proj_to_traverse['adjusted_time'].values
@@ -390,15 +398,6 @@ def predict_trajectories(input_data, overpass_start_time_input, overpass_start_l
                 sigy_store = sigY[start_idx:]
 
 
-                # for i in range(len(traj_time)-2):
-                #     x1, x2 = x_list[len(traj_time)-len(mux_store)+i], x_list[len(traj_time)-len(mux_store)+i+1]
-                #     y1, y2 = y_list[len(traj_time)-len(muy_store)+i], y_list[len(traj_time)-len(mux_store)+i+1]
-
-                #     temp_time = stat_time_frame[i]
-                #     temp_muX, temp_muY = mux_store[i], muy_store[i]
-                #     temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
-
-                #     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
 
                 for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
@@ -479,12 +478,12 @@ def evaluate_trajectory_prediction():
         ID_to_check = predicted_trajectory_input['ID'].values[0]  # Extract the single ID value
         ground_truth_trajectory = outgoing_trajectories[outgoing_trajectories['ID'] == ID_to_check]
 
-        if len(predicted_trajectory_input['old_xloc']) != 0:
-            s_clean_x = predicted_trajectory_input['old_xloc'].values[0].strip("[]")
+        if len(predicted_trajectory_input['xloc']) != 0:
+            s_clean_x = predicted_trajectory_input['xloc'].values[0].strip("[]")
             list_str_x = s_clean_x.split()
             predicted_xlist = [round(float(x),2) for x in list_str_x]
 
-            s_clean_y = predicted_trajectory_input['old_yloc'].values[0].strip("[]")
+            s_clean_y = predicted_trajectory_input['yloc'].values[0].strip("[]")
             list_str_y = s_clean_y.split()
             predicted_ylist = [round(float(y),2) for y in list_str_y]
  
@@ -500,11 +499,11 @@ def evaluate_trajectory_prediction():
 
             timeframe = np.linspace(0, 5, len(predicted_xlist))  # space out from 0 to 5 seconds with length of the predicted trajectory  
 
-            # print(f'predicted_xlist: {predicted_xlist}') 
-            # print(f'predicted_ylist: {predicted_ylist}') 
+            print(f'predicted_xlist: {predicted_xlist}') 
+            print(f'predicted_ylist: {predicted_ylist}') 
 
-            # print(f'ground_truth_xlist: {ground_truth_xlist}') 
-            # print(f'ground_truth_ylist: {ground_truth_ylist}')  
+            print(f'ground_truth_xlist: {ground_truth_xlist}') 
+            print(f'ground_truth_ylist: {ground_truth_ylist}')  
 
             # plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, ID_to_check, timeframe)
 
@@ -590,10 +589,6 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
-
-    # overpass_start_loc_x,overpass_end_loc_x = 1770, 1800 # both in meters 
-    overpass_start_loc_y,overpass_end_loc_y = 153.75, 158.07 # both in meters 
-    overpass_start_time = 190
     delta = 5 # time interval that we will be predicting for 
 
     # overpass_start_time_list = np.arange(overpass_start_time,overpass_start_time+2,1)
@@ -665,7 +660,7 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
 
-            predict_trajectories(original_data,overpass_start_time, overpass_start_loc_x,overpass_end_loc_x,overpass_start_loc_y,overpass_end_loc_y,lane,fut_pred_np,batch_size-1,delta,i) # where the function is called and I feed in maneurver pred and future prediction points         
+            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction()
