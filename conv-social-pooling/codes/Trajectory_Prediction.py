@@ -355,9 +355,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         # print('time checked',current_data['time'].values)
         overpass_start_time = current_data['time'].values[0]
         overpass_end_time = overpass_start_time + 5
-        overpass_start_loc_y = current_data['yloc'].values[0]       
-        #possible_trajectories.loc[possible_trajectories['ID'] == ident, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
-        
+        # overpass_start_loc_y = current_data['yloc'].values[0]        
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
 
         possible_trajectories = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
@@ -371,15 +369,17 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         possible_IDS = possible_trajectories['ID'].unique()
 
         for possible_traj_temp_ID in possible_IDS: 
-            possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'old_yloc'] = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc']-overpass_start_loc_y
+            #possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'] = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'old_yloc']-overpass_start_loc_y
+            #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
             highest_integral_value = float('-inf')  # Reset for each ID
             temp_proj_to_traverse = possible_trajectories[possible_trajectories['ID']==possible_traj_temp_ID]
             traj_time = temp_proj_to_traverse['adjusted_time'].values
             x_list = temp_proj_to_traverse['xloc'].values
-            y_list = temp_proj_to_traverse['yloc'].values
+            y_list = temp_proj_to_traverse['yloc'].values 
             old_x_list = temp_proj_to_traverse['old_xloc'].values
             old_y_list = temp_proj_to_traverse['old_yloc'].values
             segment_integral = 0.0  # Reset for each maneuver
+            overpass_start_loc_y = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'].values[0]
 
             for m in range(num_maneuvers):
                 muX = fut_pred[m][:,batch_num,0]
@@ -414,7 +414,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                             temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
 
                             # Now perform your line integral or any other calculations
-                            segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                            segment_integral += line_integral(x1, y1-overpass_start_loc_y, x2, y2-overpass_start_loc_y, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     else:
                         print(f"Skipping index {index} as it is out of bounds.")
                         continue  # Skip this iteration if indices are out of range
@@ -423,6 +423,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
                 best_traj_info = {
+                    'Vehicle_ID':ident,
                     'ID': possible_traj_temp_ID,
                     'time': traj_time,
                     'xloc': x_list,
@@ -446,6 +447,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         if best_trajectory:
             best_trajectory_df = pd.DataFrame([best_trajectory])
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
+        
+         
         #break
 
  
@@ -469,14 +472,16 @@ def evaluate_trajectory_prediction():
     possible_trajectories_dir = os.listdir("possible_trajectories")
     outgoing_trajectories = pd.read_csv('before/outgoing.csv')
     correct_predictions = []
+    print(f'files: {len(best_trajectories_files)}')
 
     for predicted_trajectory_input_file in best_trajectories_files: 
         predicted_trajectory_input_path = os.path.join(best_trajectories_dir, predicted_trajectory_input_file)
-        predicted_trajectory_input = pd.read_csv(predicted_trajectory_input_path)
-        # print(predicted_trajectory_input)
+        predicted_trajectory_input = pd.read_csv(predicted_trajectory_input_path) 
         
-        ID_to_check = predicted_trajectory_input['ID'].values[0]  # Extract the single ID value
+        #ID_to_check = predicted_trajectory_input['ID'].values[0]  # Extract the single ID value
+        ID_to_check = predicted_trajectory_input['Vehicle_ID'].values[0]
         ground_truth_trajectory = outgoing_trajectories[outgoing_trajectories['ID'] == ID_to_check]
+        print(f'check ground id: {ID_to_check}')
 
         if len(predicted_trajectory_input['xloc']) != 0:
             s_clean_x = predicted_trajectory_input['xloc'].values[0].strip("[]")
