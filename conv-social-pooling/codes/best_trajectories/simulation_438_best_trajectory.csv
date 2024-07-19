@@ -1,2 +1,2 @@
-Vehicle_ID,ID,time,xloc,yloc,old_xloc,old_yloc,line_integral_values,maneuver
-438,94,[4.8 4.9],[1600.68665  1601.686725],[158.34 158.36],[1600.68665  1601.686725],[158.34 158.36],0.0,6
+Vehicle_ID,ID,time,xloc,yloc,line_integral_values,maneuver
+438,94,[4.8 4.9],[1600.68665  1601.686725],[158.34 158.36],0.0,6

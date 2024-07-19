@@ -1,4 +1,4 @@
-,ID,time,xloc,yloc,lane,speed,acceleration,length-smoothed,width-smoothed,type-most-common,ACC,old_xloc,old_yloc,adjusted_time
-51365,586,79.8,1600.00195,158.4,-2,6.93125,-0.0525,2.4,2.4,small-vehicle,No,1600.00195,158.4,4.3
-51366,586,79.9,1600.695075,158.42,-2,6.926,-0.0525,2.4,2.4,small-vehicle,No,1600.695075,158.42,4.4
-51367,586,80.0,1601.387675,158.43,-2,6.92075,-0.005,2.4,2.4,small-vehicle,No,1601.387675,158.43,4.5
+,ID,time,xloc,yloc,lane,speed,acceleration,length-smoothed,width-smoothed,type-most-common,ACC,adjusted_time
+51365,586,79.8,1600.00195,158.4,-2,6.93125,-0.0525,2.4,2.4,small-vehicle,No,4.3
+51366,586,79.9,1600.695075,158.42,-2,6.926,-0.0525,2.4,2.4,small-vehicle,No,4.4
+51367,586,80.0,1601.387675,158.43,-2,6.92075,-0.005,2.4,2.4,small-vehicle,No,4.5

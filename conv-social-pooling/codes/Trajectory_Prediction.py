@@ -277,7 +277,7 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
     for i in IDs:
         # print(f'ID: {i}')
         temp_data = incoming_trajectories[incoming_trajectories['ID']==i]
-        ys = temp_data['old_xloc'].to_numpy() 
+        ys = temp_data['xloc'].to_numpy() 
         ts = temp_data.time.to_numpy()
         # print(ts)
         ax.scatter(ts, ys,s=1) 
@@ -289,7 +289,7 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
     for j in IDs:
         # print(f'ID: {j}')
         temp_data = outgoing_trajectories[outgoing_trajectories['ID']==j]
-        ys = temp_data['old_xloc'].to_numpy() 
+        ys = temp_data['xloc'].to_numpy() 
         ts = temp_data.time.to_numpy()
         ax.scatter(ts, ys,s=1)
         if len(ts) != 0:
@@ -358,16 +358,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
     possible_trajectories_copy = possible_trajectories.copy()  
 
-    incoming_trajectories['old_xloc'] = incoming_trajectories_copy['xloc']
-    outgoing_trajectories['old_xloc'] = outgoing_trajectories_copy['xloc']
-    possible_trajectories['old_xloc'] = possible_trajectories_copy['xloc']
- 
-
-    incoming_trajectories['old_yloc'] = incoming_trajectories_copy['yloc']
-    outgoing_trajectories['old_yloc'] = outgoing_trajectories_copy['yloc']
-    possible_trajectories['old_yloc'] = possible_trajectories_copy['yloc']
- 
- 
+    
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
 
@@ -387,10 +378,11 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
+        
         # print(f'Ident traverse: {ident}')
-        plt.figure()
-        plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
-        plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
+        # plt.figure()
+        # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
+        # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
@@ -421,14 +413,13 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
             traj_time = temp_proj_to_traverse['adjusted_time'].values
             x_list = temp_proj_to_traverse['xloc'].values
-            y_list = temp_proj_to_traverse['yloc'].values 
-            old_x_list = temp_proj_to_traverse['old_xloc'].values
-            old_y_list = temp_proj_to_traverse['old_yloc'].values
+            y_list = temp_proj_to_traverse['yloc'].values  
             segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
-                muX = fut_pred[m][:,batch_num,0]+1570
+                muX = fut_pred[m][:,batch_num,0]+overpass_start_loc_x
                 muY = fut_pred[m][:,batch_num,1]+overpass_start_loc_y
+                muY = fut_pred[m][:,batch_num,1]
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]
                 print(traj_time)
@@ -445,16 +436,16 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 N = len(traj_time) - 2
     
                 # # Plot muX and xloc
-                plt.plot(current_data['time'].values[:len(x_list)], x_list, label=f'Possible xloc for ID {ident}')
+                # plt.plot(current_data['time'].values[:len(x_list)], x_list, label=f'Possible xloc for ID {ident}')
 
-                muX_time = np.linspace(overpass_start_time,overpass_end_time,len(muX))
-                plt.scatter(muX_time, muX, label=f'muX Maneuver {m+1} for ID {ident}')
+                # muX_time = np.linspace(overpass_start_time,overpass_end_time,len(muX))
+                # plt.scatter(muX_time, muX, label=f'muX Maneuver {m+1} for ID {ident}')
 
-                plt.xlabel('Time')
-                plt.ylabel('X Location')
-                plt.legend()
-                plt.title('Possible xloc and Predicted muX')
-                plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
+                # plt.xlabel('Time')
+                # plt.ylabel('X Location')
+                # plt.legend()
+                # plt.title('Possible xloc and Predicted muX')
+                # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
                  
 
                 for i in range(N):  # you already avoid the last index to ensure x2 can be accessed
@@ -485,9 +476,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     'ID': possible_traj_temp_ID,
                     'time': traj_time,
                     'xloc': x_list,
-                    'yloc': y_list,
-                    'old_xloc':old_x_list,
-                    'old_yloc':old_y_list,
+                    'yloc': y_list, 
                     'line_integral_values': segment_integral,
                     'maneuver': m + 1 
                 }
@@ -507,7 +496,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
     
  
-        #break
+        # break
 
  
 
