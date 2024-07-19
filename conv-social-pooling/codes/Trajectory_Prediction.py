@@ -20,6 +20,11 @@ from scipy.special import erf
 from scipy.stats import multivariate_normal
 from scipy.interpolate import interp1d
 from ast import literal_eval
+
+import numpy as np
+import scipy.integrate as integrate
+from scipy.special import erf
+import math
    
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -41,7 +46,7 @@ yloc: Lateral E/S Movement
 ############################################# LINE INTEGRAL CALCULATIONS ######################################################
 # def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): 
 #     cost = 0
-#     sig = np.sqrt((sigX**2 + sigY**2)/2)
+#     sig = np.sqrt((sigX**2 + sigY**2))
 
 #     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
 #     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig))
@@ -55,25 +60,49 @@ yloc: Lateral E/S Movement
     
 #     # print(f'integral value: {cost}')
 #     return cost
- 
+
+
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    epsilon = 1e-10  # Small value to prevent division by zero
-    cost = 0
-    sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
-
-    # Adjusted calculations to use muX, muY, sigX, and sigY directly.
-    a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
-    b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
-        (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
-    c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
-
-    cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
-            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
-            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    # Define the parameterized line segment
+    def line_segment(t):
+        return x1 + t * (x2 - x1), y1 + t * (y2 - y1)
     
-    # print(f'integral value: {cost}')
-    return cost
+    # Define the integrand
+    def integrand(t):
+        x, y = line_segment(t)
+        sig = np.sqrt(sigX**2 + sigY**2)
+        a = (x - muX)**2 + (y - muY)**2
+        return np.exp(-a / (2 * sig**2)) / (2 * np.pi * sig**2)
 
+    # Integrate over the line segment from t=0 to t=1
+    integral, error = integrate.quad(integrand, 0, 1)
+    
+    # Scale by the length of the line segment
+    length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    cost = integral * length
+    
+    return cost
+ 
+# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
+#     epsilon = 1e-10  # Small value to prevent division by zero
+#     cost = 0
+#     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
+
+#     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+#     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
+#     b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+#         (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+#     c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
+
+#     cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
+#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    
+#     # print(f'integral value: {cost}')
+#     return cost
+
+
+ 
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -294,6 +323,20 @@ def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajec
 
 
 
+def determine_overpass_y(incoming_trajectories): 
+    y_list = []
+    y_ids = incoming_trajectories['ID'].unique()
+    for temp in y_ids:
+        temp_y = incoming_trajectories[incoming_trajectories['ID']==temp]['yloc'].values 
+         
+        y_list.append(temp_y[-1])
+    
+    result = np.mean(y_list) 
+    print('y',result)
+    return result
+
+ 
+
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass
@@ -310,6 +353,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     # overpass_end_time = overpass_start_time + delta
     # print(f'overpass start time: {overpass_start_time}')
     # print(f'overpass end time: {overpass_end_time}')
+ 
+    overpass_start_loc_y = determine_overpass_y(incoming_trajectories)
 
     plot_original_trajectories(incoming_trajectories,outgoing_trajectories)
 
@@ -329,6 +374,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     outgoing_trajectories['old_yloc'] = outgoing_trajectories_copy['yloc']
     possible_trajectories['old_yloc'] = possible_trajectories_copy['yloc']
 
+    incoming_trajectories['yloc'] -= overpass_start_loc_y
+    outgoing_trajectories['yloc'] -= overpass_start_loc_y
+    possible_trajectories['yloc'] -= overpass_start_loc_y
+
    
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
@@ -343,8 +392,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta+0.1, 0.1)
     stat_time_frame = np.round(stat_time_frame, 1)
-
-
+ 
 
     for key, ident in enumerate(IDs_to_traverse): 
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
@@ -352,38 +400,38 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
         # print(f'Ident traverse: {ident}')
         
-        if len(current_data['time']) == 0:
+        if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
             continue  # Skip this ID if there's no incoming data
 
         # print('time checked',current_data['time'].values)
-        overpass_start_time = current_data['time'].values[0]
-        overpass_end_time = overpass_start_time + 5
-        # overpass_start_loc_y = current_data['yloc'].values[0]        
+        overpass_start_time = ingoing_temp_data['time'].values[-1]
+        overpass_end_time = overpass_start_time + 5 
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
 
-        possible_trajectories = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
+        possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
 
-        possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
-        outgoing_trajectories.to_csv('outgoing'+str(ident)+'traj.csv')
+        possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
+        outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
         print('overpass time',overpass_start_time,'to',overpass_end_time)
         
         best_trajectory = None
         trajectory_updates = []
-        possible_IDS = possible_trajectories['ID'].unique()
+        possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
+        print(f'possible IDS: {possible_IDS}')
 
-        for possible_traj_temp_ID in possible_IDS: 
-            #possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'] = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'old_yloc']-overpass_start_loc_y
+        for possible_traj_temp_ID in possible_IDS:  
             #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
             highest_integral_value = float('-inf')  # Reset for each ID
-            temp_proj_to_traverse = possible_trajectories[possible_trajectories['ID']==possible_traj_temp_ID]
+            temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[possible_trajectories_for_each_vehicle_ID['ID']==possible_traj_temp_ID]
+            #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
             traj_time = temp_proj_to_traverse['adjusted_time'].values
             x_list = temp_proj_to_traverse['xloc'].values
             y_list = temp_proj_to_traverse['yloc'].values 
             old_x_list = temp_proj_to_traverse['old_xloc'].values
             old_y_list = temp_proj_to_traverse['old_yloc'].values
             segment_integral = 0.0  # Reset for each maneuver
-            overpass_start_loc_y = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'].values[0]
+            #overpass_start_loc_y = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'].values[0]
 
             for m in range(num_maneuvers):
                 muX = fut_pred[m][:,batch_num,0]
@@ -401,8 +449,21 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigx_store = sigX[start_idx:]
                 sigy_store = sigY[start_idx:]
 
+                N = len(traj_time) - 2
+    
+                # # Plot muX and xloc
+                # plt.plot(traj_time, x_list, label=f'Possible xloc for ID {ident}')
+                # plt.plot(traj_time[:-1], mux_store, label=f'muX Maneuver {m+1} for ID {ident}')
 
-                for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
+                # plt.xlabel('Time')
+                # plt.ylabel('X Location')
+                # plt.legend()
+                # plt.title('Possible xloc and Predicted muX')
+                # plt.savefig('plots/muX_vs_xloc.png')
+                # plt.show()
+
+
+                for i in range(N):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
 
                     # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
@@ -417,7 +478,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                             temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
 
                             # Now perform your line integral or any other calculations
-                            segment_integral += line_integral(x1, y1-overpass_start_loc_y, x2, y2-overpass_start_loc_y, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                            segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     else:
                         print(f"Skipping index {index} as it is out of bounds.")
                         continue  # Skip this iteration if indices are out of range
@@ -450,9 +511,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         if best_trajectory:
             best_trajectory_df = pd.DataFrame([best_trajectory])
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
-        
-         
-        # break
+    
+ 
+        break
 
  
 
