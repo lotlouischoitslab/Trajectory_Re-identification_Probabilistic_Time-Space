@@ -1,7 +1,3 @@
- 
-
-
-
 from __future__ import print_function
 import torch
 from model_six_maneuvers import highwayNet_six_maneuver
@@ -62,44 +58,44 @@ yloc: Lateral E/S Movement
 #     return cost
 
 
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    # Define the parameterized line segment
-    def line_segment(t):
-        return x1 + t * (x2 - x1), y1 + t * (y2 - y1)
-    
-    # Define the integrand
-    def integrand(t):
-        x, y = line_segment(t)
-        sig = np.sqrt(sigX**2 + sigY**2)
-        a = (x - muX)**2 + (y - muY)**2
-        return np.exp(-a / (2 * sig**2)) / (2 * np.pi * sig**2)
-
-    # Integrate over the line segment from t=0 to t=1
-    integral, error = integrate.quad(integrand, 0, 1)
-    
-    # Scale by the length of the line segment
-    length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-    cost = integral * length
-    
-    return cost
- 
 # def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-#     epsilon = 1e-10  # Small value to prevent division by zero
-#     cost = 0
-#     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
-
-#     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
-#     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
-#     b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
-#         (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
-#     c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
-
-#     cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
-#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
-#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+#     # Define the parameterized line segment
+#     def line_segment(t):
+#         return x1 + t * (x2 - x1), y1 + t * (y2 - y1)
     
-#     # print(f'integral value: {cost}')
+#     # Define the integrand
+#     def integrand(t):
+#         x, y = line_segment(t)
+#         sig = np.sqrt(sigX**2 + sigY**2)
+#         a = (x - muX)**2 + (y - muY)**2
+#         return np.exp(-a / (2 * sig**2)) / (2 * np.pi * sig**2)
+
+#     # Integrate over the line segment from t=0 to t=1
+#     integral, error = integrate.quad(integrand, 0, 1)
+    
+#     # Scale by the length of the line segment
+#     length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+#     cost = integral * length
+    
 #     return cost
+ 
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
+    epsilon = 1e-10  # Small value to prevent division by zero
+    cost = 0
+    sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
+
+    # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+    a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
+    b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+        (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+    c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
+
+    cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+            (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
+            math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    
+    # print(f'integral value: {cost}')
+    return cost
 
 
  
@@ -365,20 +361,13 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     incoming_trajectories['old_xloc'] = incoming_trajectories_copy['xloc']
     outgoing_trajectories['old_xloc'] = outgoing_trajectories_copy['xloc']
     possible_trajectories['old_xloc'] = possible_trajectories_copy['xloc']
-
-    incoming_trajectories['xloc'] -= overpass_start_loc_x
-    outgoing_trajectories['xloc'] -= overpass_start_loc_x
-    possible_trajectories['xloc'] -= overpass_start_loc_x
+ 
 
     incoming_trajectories['old_yloc'] = incoming_trajectories_copy['yloc']
     outgoing_trajectories['old_yloc'] = outgoing_trajectories_copy['yloc']
     possible_trajectories['old_yloc'] = possible_trajectories_copy['yloc']
-
-    incoming_trajectories['yloc'] -= overpass_start_loc_y
-    outgoing_trajectories['yloc'] -= overpass_start_loc_y
-    possible_trajectories['yloc'] -= overpass_start_loc_y
-
-   
+ 
+ 
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
 
@@ -399,6 +388,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
         # print(f'Ident traverse: {ident}')
+        plt.figure()
+        plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
+        plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
@@ -409,7 +401,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         overpass_end_time = overpass_start_time + 5 
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
 
-        possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']<= 5.0)] 
+        possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']< 5.0)] 
 
         possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
         outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
@@ -419,6 +411,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
         print(f'possible IDS: {possible_IDS}')
+
+        
 
         for possible_traj_temp_ID in possible_IDS:  
             #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
@@ -430,12 +424,11 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             y_list = temp_proj_to_traverse['yloc'].values 
             old_x_list = temp_proj_to_traverse['old_xloc'].values
             old_y_list = temp_proj_to_traverse['old_yloc'].values
-            segment_integral = 0.0  # Reset for each maneuver
-            #overpass_start_loc_y = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'].values[0]
+            segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
-                muX = fut_pred[m][:,batch_num,0]
-                muY = fut_pred[m][:,batch_num,1]
+                muX = fut_pred[m][:,batch_num,0]+1570
+                muY = fut_pred[m][:,batch_num,1]+overpass_start_loc_y
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]
                 print(traj_time)
@@ -452,16 +445,17 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 N = len(traj_time) - 2
     
                 # # Plot muX and xloc
-                # plt.plot(traj_time, x_list, label=f'Possible xloc for ID {ident}')
-                # plt.plot(traj_time[:-1], mux_store, label=f'muX Maneuver {m+1} for ID {ident}')
+                plt.plot(current_data['time'].values[:len(x_list)], x_list, label=f'Possible xloc for ID {ident}')
 
-                # plt.xlabel('Time')
-                # plt.ylabel('X Location')
-                # plt.legend()
-                # plt.title('Possible xloc and Predicted muX')
-                # plt.savefig('plots/muX_vs_xloc.png')
-                # plt.show()
+                muX_time = np.linspace(overpass_start_time,overpass_end_time,len(muX))
+                plt.scatter(muX_time, muX, label=f'muX Maneuver {m+1} for ID {ident}')
 
+                plt.xlabel('Time')
+                plt.ylabel('X Location')
+                plt.legend()
+                plt.title('Possible xloc and Predicted muX')
+                plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
+                 
 
                 for i in range(N):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
@@ -513,7 +507,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
     
  
-        break
+        #break
 
  
 

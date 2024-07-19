@@ -216,7 +216,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     # print(f'overpass start time: {overpass_start_time}')
     # print(f'overpass end time: {overpass_end_time}')
  
-    overpass_start_loc_y = determine_overpass_y(incoming_trajectories) 
+    overpass_start_loc_y = determine_overpass_y(incoming_trajectories)
+
+    plot_original_trajectories(incoming_trajectories,outgoing_trajectories)
 
     incoming_trajectories_copy = incoming_trajectories.copy()
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
@@ -225,20 +227,13 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     incoming_trajectories['old_xloc'] = incoming_trajectories_copy['xloc']
     outgoing_trajectories['old_xloc'] = outgoing_trajectories_copy['xloc']
     possible_trajectories['old_xloc'] = possible_trajectories_copy['xloc']
-
-    incoming_trajectories['xloc'] -= overpass_start_loc_x
-    outgoing_trajectories['xloc'] -= overpass_start_loc_x
-    possible_trajectories['xloc'] -= overpass_start_loc_x
+ 
 
     incoming_trajectories['old_yloc'] = incoming_trajectories_copy['yloc']
     outgoing_trajectories['old_yloc'] = outgoing_trajectories_copy['yloc']
     possible_trajectories['old_yloc'] = possible_trajectories_copy['yloc']
-
-    incoming_trajectories['yloc'] -= overpass_start_loc_y
-    outgoing_trajectories['yloc'] -= overpass_start_loc_y
-    possible_trajectories['yloc'] -= overpass_start_loc_y
-
-   
+ 
+ 
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
 
@@ -291,7 +286,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             old_x_list = temp_proj_to_traverse['old_xloc'].values
             old_y_list = temp_proj_to_traverse['old_yloc'].values
             segment_integral = 0.0  # Reset for each maneuver
-            plt.plot(traj_time, x_list, label=f'Possible xloc for ID {ident}')
+            #overpass_start_loc_y = possible_trajectories.loc[possible_trajectories['ID'] == possible_traj_temp_ID, 'yloc'].values[0]
 
             for m in range(num_maneuvers):
                 muX = fut_pred[m][:,batch_num,0]
@@ -311,16 +306,16 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
 
                 N = len(traj_time) - 2
     
-                # Plot muX and xloc
-                
-                plt.scatter(traj_time[:-1], mux_store, label=f'muX Maneuver {m+1} for ID {ident}')
+                # # Plot muX and xloc
+                # plt.plot(traj_time, x_list, label=f'Possible xloc for ID {ident}')
+                # plt.plot(traj_time[:-1], mux_store, label=f'muX Maneuver {m+1} for ID {ident}')
 
-                plt.xlabel('Time')
-                plt.ylabel('X Location')
-                plt.legend()
-                plt.title('Possible xloc and Predicted muX')
-                plt.savefig('plots/muX_vs_xloc'+str(ident)+str(possible_traj_temp_ID)+'.png')
-                
+                # plt.xlabel('Time')
+                # plt.ylabel('X Location')
+                # plt.legend()
+                # plt.title('Possible xloc and Predicted muX')
+                # plt.savefig('plots/muX_vs_xloc.png')
+                # plt.show()
 
 
                 for i in range(N):  # you already avoid the last index to ensure x2 can be accessed
@@ -375,8 +370,6 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
  
         break
 
-  
-
 
 
 def calculate_accuracy(correct_predictions_data):
@@ -384,14 +377,7 @@ def calculate_accuracy(correct_predictions_data):
     accuracy = (correct_predictions / len(correct_predictions_data)) * 100
     return accuracy
 
-
-# def plot_accuracy_graph(overpass_start_times,accuracy_score_list):
-#     plt.figure(figsize=(10,6))
-#     plt.plot(overpass_start_times,accuracy_score_list)
-#     plt.xlabel('Overpass Start Time (s)') 
-#     plt.ylabel('Accuracy Score %') 
-#     plt.savefig('Accuracy.png')
-
+ 
 
  
 def main(): # Main function 
@@ -438,7 +424,7 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
+    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
@@ -512,21 +498,37 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
+            stats = {
+                'maneuver': [],
+                'mux': [],
+                'muy': [],
+                'sigx': [],
+                'sigy': [],
+                'time':[]
+            }
+
+            for m in range(6):
+                muX = fut_pred_np[m][:, batch_size-1, 0]
+                muY = fut_pred_np[m][:, batch_size-1, 1]
+                sigX = fut_pred_np[m][:, batch_size-1, 2]
+                sigY = fut_pred_np[m][:, batch_size-1, 3]
+                stats['maneuver'].extend([m+1] * len(muX))  # Extend maneuver for all values of muX
+                stats['mux'].extend(muX)
+                stats['muy'].extend(muY)
+                stats['sigx'].extend(sigX)
+                stats['sigy'].extend(sigY)
+                time = np.arange(0,5,0.1)
+                stats['time'].extend(time)
+
+            stats_Store = pd.DataFrame(stats)
+            stats_Store.to_csv('check_man.csv', index=False)
+                 
 
             predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
-            # generate_normal_distribution(fut_pred_np, lane,batch_size-1)
-
-            # analyzed_traj = evaluate_trajectory_prediction()
-            # print(f'analyzed trajectory: {analyzed_traj}')
-
-            # accuracy_score = calculate_accuracy(analyzed_traj)    
-            # print(f'Accuracy Score: {accuracy_score}%')
-            # accuracy_score_list.append(accuracy_score)
-
-            #plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
+ 
 
             if i == 0: # Generate and save the distribution plots just for one trajectory
-                generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+                 
                 break 
     
     #plot_accuracy_graph(overpass_start_time_list,accuracy_score_list)
