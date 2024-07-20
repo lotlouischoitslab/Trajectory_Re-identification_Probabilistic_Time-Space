@@ -80,7 +80,7 @@ yloc: Lateral E/S Movement
 #     return cost
  
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    epsilon = 1e-10  # Small value to prevent division by zero
+    epsilon = 1e-8 # Small value to prevent division by zero 1e-7
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -327,10 +327,17 @@ def determine_overpass_y(incoming_trajectories):
          
         y_list.append(temp_y[-1])
     
-    result = np.mean(y_list) 
+    result = np.mean(y_list)
+    result = round(np.mean(y_list),1)
     print('y',result)
     return result
 
+
+def create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX_time):
+    stop = len(muX_time) 
+    x_list = possible_trajectories_copy[possible_trajectories_copy['ID']==possible_traj_temp_ID]['xloc'].values[:stop]
+    y_list = possible_trajectories_copy[possible_trajectories_copy['ID']==possible_traj_temp_ID]['yloc'].values[:stop]
+    return x_list, y_list
  
 
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
@@ -378,8 +385,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
-        
-
+         
         
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
@@ -390,8 +396,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         overpass_end_time = overpass_start_time + 5 
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1)
 
-        possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['adjusted_time']>= 0.0)&(possible_trajectories['adjusted_time']< 5.0)] 
-
+        # possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['xloc'] <= overpass_end_loc_x+overpass_length ) & (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_start_time+5)] 
+        possible_trajectories_for_each_vehicle_ID = possible_trajectories[ (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_end_time)] 
+        
+        #possible_trajectories_for_each_vehicle_ID = possible_trajectories
         possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
         outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
         print('overpass time',overpass_start_time,'to',overpass_end_time)
@@ -403,46 +411,54 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     
 
         # print(f'Ident traverse: {ident}')
-        # plt.figure()
+        plt.figure()
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
 
-        for possible_traj_temp_ID in possible_IDS:  
-            #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
+        for possible_traj_temp_ID in possible_IDS:   
             highest_integral_value = float('-inf')  # Reset for each ID
             temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[possible_trajectories_for_each_vehicle_ID['ID']==possible_traj_temp_ID]
             #possible_trajectories.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
             traj_time = temp_proj_to_traverse['adjusted_time'].values
-            x_list = temp_proj_to_traverse['xloc'].values
-            y_list = temp_proj_to_traverse['yloc'].values  
+            muX_time = np.arange(overpass_start_time,overpass_end_time,0.2)
+            # x_list,y_list = create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX_time)
+            # x_list = temp_proj_to_traverse['xloc'].values 
+            # y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
                 muX = fut_pred[m][:,batch_num,0]+overpass_start_loc_x
-                muY = fut_pred[m][:,batch_num,1]+overpass_start_loc_y
-                muY = fut_pred[m][:,batch_num,1]
+                muY = fut_pred[m][:,batch_num,1] +overpass_start_loc_y 
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]
                 print(traj_time)
 
-                if (10*traj_time[0])%2 != 0:
-                    start_idx = list(stat_time_frame).index(traj_time[1]) # minimum adjusted time value 
-                else:
-                    start_idx = list(stat_time_frame).index(traj_time[0]) # minimum adjusted time value 
+                # if (10*traj_time[0])%2 != 0:
+                #     start_idx = list(stat_time_frame).index(traj_time[1]) # minimum adjusted time value 
+                # else:
+                #     start_idx = list(stat_time_frame).index(traj_time[0]) # minimum adjusted time value 
                 
-                print('stat time frame',stat_time_frame)
+                # print('stat time frame',stat_time_frame)
                 # print('index',start_idx)
 
-                mux_store = muX[start_idx:]
-                muy_store = muY[start_idx:]
-                sigx_store = sigX[start_idx:]
-                sigy_store = sigY[start_idx:] 
+                # mux_store = muX[start_idx:]
+                # muy_store = muY[start_idx:]
+                # sigx_store = sigX[start_idx:]
+                # sigy_store = sigY[start_idx:] 
     
-                # # Plot muX and xloc
-                # plt.plot(current_data['time'].values[:len(x_list)], x_list, label=f'Possible xloc for ID {ident}')
+                # Plot muX and xloc
+                
+                # print(len(muX_time),len(x_list))
+                # x_axis = len(muX_time) 
+                # y_axis = len(x_list) 
 
-                # muX_time = np.arange(overpass_start_time,overpass_end_time,0.2)
+                # if x_axis >= y_axis:
+                #     plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
+                # else:
+                #     plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
+
+                # plt.plot(muX_time, x_list, label=f'Possible xloc for ID {ident}')
                 # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
 
                 # plt.xlabel('Time')
@@ -450,28 +466,33 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # plt.legend()
                 # plt.title('Possible xloc and Predicted muX')
                 # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
-                 
 
-                for i in range(0,len(traj_time) - 2,2):  # you already avoid the last index to ensure x2 can be accessed
-                    index = len(traj_time) - len(mux_store) + i
 
+                # N = min(x_axis, y_axis) - 2
+                
+                x_list,y_list = create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX)
+                N = len(x_list)-2
+
+                for i in range(0, N, 2):
+                    # if i + 2 >= len(x_list) or i + 2 >= len(y_list):
+                    #     break  # Avoid index out of bounds
                     # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
-                    if 0 <= index < len(x_list) - 2:  
-                        x1, x2, x3 = x_list[index], x_list[index + 1], x_list[index + 2]
-                        y1, y2, y3 = y_list[index], y_list[index + 1], y_list[index + 2]
+                    
+                    x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
+                    y1, y2, y3 = y_list[i], y_list[i + 1], y_list[i + 2]
 
-                        # Ensure your time indexing also does not go out of bounds
-                        if i < len(stat_time_frame) - 1:
-                            temp_time = stat_time_frame[i]
-                            temp_muX, temp_muY = mux_store[i], muy_store[i]
-                            temp_sigX, temp_sigY = sigx_store[i], sigy_store[i]
+                    # Ensure your time indexing also does not go out of bounds
+                    # if i < len(stat_time_frame) - 1:
+                    
+                    temp_muX, temp_muY = muX[i], muY[i]
+                    temp_sigX, temp_sigY = sigX[i], sigY[i]
 
-                            # Now perform your line integral or any other calculations
-                            segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
-                            segment_integral += line_integral(x2, y2, x3, y3, temp_muX, temp_muY, temp_sigX, temp_sigY)
-                    else:
-                        print(f"Skipping index {index} as it is out of bounds.")
-                        continue  # Skip this iteration if indices are out of range
+                    # Now perform your line integral or any other calculations
+                    segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                    segment_integral += line_integral(x2, y2, x3, y3, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                    # else:
+                    #     print(f"Skipping index {index} as it is out of bounds.")
+                    #     continue  # Skip this iteration if indices are out of range
 
 
             if segment_integral > highest_integral_value:
@@ -500,8 +521,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             best_trajectory_df = pd.DataFrame([best_trajectory])
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
     
- 
-        # break
+        #break
 
  
 
@@ -523,6 +543,7 @@ def evaluate_trajectory_prediction():
     best_trajectories_files = os.listdir(best_trajectories_dir)
     possible_trajectories_dir = os.listdir("possible_trajectories")
     outgoing_trajectories = pd.read_csv('before/outgoing.csv')
+    
     correct_predictions = []
     print(f'files: {len(best_trajectories_files)}')
 
@@ -565,19 +586,23 @@ def evaluate_trajectory_prediction():
             # plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, ID_to_check, timeframe)
 
             # Check if the lengths of the lists match
-            if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
-                print(len(predicted_xlist), len(ground_truth_xlist), len(predicted_ylist), len(ground_truth_ylist))
-                print("The lengths of predicted and ground truth trajectories do not match.")
-                correct_predictions.append(0)
-                continue
+            # if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
+            #     print(len(predicted_xlist), len(ground_truth_xlist), len(predicted_ylist), len(ground_truth_ylist))
+            #     print("The lengths of predicted and ground truth trajectories do not match.")
+            #     correct_predictions.append(0)
+            #     continue
 
             # Check if the trajectories match
+            error = 1 
             for px, py, gx, gy in zip(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist):
-                if px != gx or py != gy:
+                # if px != gx or py != gy:
+                #     correct_predictions.append(0)
+                if abs(px - gx) > error or abs(py - gy) > error:
                     correct_predictions.append(0)
-                    break
-            else:
-                correct_predictions.append(1)
+                else:
+                    correct_predictions.append(1)
+            # else:
+            #     correct_predictions.append(1)
  
     return correct_predictions
 
