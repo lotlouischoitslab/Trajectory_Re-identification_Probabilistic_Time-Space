@@ -370,7 +370,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
 
 
     possible_traj_list = []  # Store all the possible trajectories
-    stat_time_frame = np.arange(0, delta+0.1, 0.1)
+    stat_time_frame = np.arange(0, delta, 0.2) # This is the 0.2 seconds increment part 
     stat_time_frame = np.round(stat_time_frame, 1)
  
 
@@ -379,10 +379,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
         
-        # print(f'Ident traverse: {ident}')
-        # plt.figure()
-        # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
-        # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
+
         
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
@@ -403,7 +400,12 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
         print(f'possible IDS: {possible_IDS}')
+    
 
+        # print(f'Ident traverse: {ident}')
+        # plt.figure()
+        # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
+        # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
 
         for possible_traj_temp_ID in possible_IDS:  
@@ -424,22 +426,23 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigY = fut_pred[m][:,batch_num,3]
                 print(traj_time)
 
-                start_idx = list(stat_time_frame).index(traj_time[0]) # minimum adjusted time value 
+                if (10*traj_time[0])%2 != 0:
+                    start_idx = list(stat_time_frame).index(traj_time[1]) # minimum adjusted time value 
+                else:
+                    start_idx = list(stat_time_frame).index(traj_time[0]) # minimum adjusted time value 
                 # print('stat time frame',stat_time_frame)
                 # print('index',start_idx)
 
                 mux_store = muX[start_idx:]
                 muy_store = muY[start_idx:]
                 sigx_store = sigX[start_idx:]
-                sigy_store = sigY[start_idx:]
-
-                N = len(traj_time) - 2
+                sigy_store = sigY[start_idx:] 
     
                 # # Plot muX and xloc
                 # plt.plot(current_data['time'].values[:len(x_list)], x_list, label=f'Possible xloc for ID {ident}')
 
-                # muX_time = np.linspace(overpass_start_time,overpass_end_time,len(muX))
-                # plt.scatter(muX_time, muX, label=f'muX Maneuver {m+1} for ID {ident}')
+                # muX_time = np.arange(overpass_start_time,overpass_end_time,0.2)
+                # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
 
                 # plt.xlabel('Time')
                 # plt.ylabel('X Location')
@@ -448,13 +451,13 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
                  
 
-                for i in range(N):  # you already avoid the last index to ensure x2 can be accessed
+                for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
 
                     # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
-                    if 0 <= index < len(x_list) - 1:  
-                        x1, x2 = x_list[index], x_list[index + 1]
-                        y1, y2 = y_list[index], y_list[index + 1]
+                    if 0 <= index < len(x_list) - 2:  
+                        x1, x2, x3 = x_list[index], x_list[index + 1], x_list[index + 2]
+                        y1, y2, y3 = y_list[index], y_list[index + 1], y_list[index + 2]
 
                         # Ensure your time indexing also does not go out of bounds
                         if i < len(stat_time_frame) - 1:
@@ -464,6 +467,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
 
                             # Now perform your line integral or any other calculations
                             segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
+                            segment_integral += line_integral(x2, y2, x3, y3, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     else:
                         print(f"Skipping index {index} as it is out of bounds.")
                         continue  # Skip this iteration if indices are out of range
