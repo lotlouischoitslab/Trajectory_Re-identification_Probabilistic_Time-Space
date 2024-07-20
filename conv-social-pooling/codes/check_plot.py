@@ -517,14 +517,14 @@ def main(): # Main function
                 stats['muy'].extend(muY)
                 stats['sigx'].extend(sigX)
                 stats['sigy'].extend(sigY)
-                time = np.arange(0,5,0.1)
+                time = np.arange(0,10,0.2)
                 stats['time'].extend(time)
 
             stats_Store = pd.DataFrame(stats)
             stats_Store.to_csv('check_man.csv', index=False)
                  
 
-            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            # predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
  
 
             if i == 0: # Generate and save the distribution plots just for one trajectory

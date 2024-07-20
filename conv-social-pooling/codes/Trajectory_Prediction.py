@@ -430,7 +430,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     start_idx = list(stat_time_frame).index(traj_time[1]) # minimum adjusted time value 
                 else:
                     start_idx = list(stat_time_frame).index(traj_time[0]) # minimum adjusted time value 
-                # print('stat time frame',stat_time_frame)
+                
+                print('stat time frame',stat_time_frame)
                 # print('index',start_idx)
 
                 mux_store = muX[start_idx:]
@@ -451,7 +452,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
                  
 
-                for i in range(len(traj_time) - 2):  # you already avoid the last index to ensure x2 can be accessed
+                for i in range(0,len(traj_time) - 2,2):  # you already avoid the last index to ensure x2 can be accessed
                     index = len(traj_time) - len(mux_store) + i
 
                     # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
