@@ -40,9 +40,9 @@ yloc: Lateral E/S Movement
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
- 
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY):
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-5 
+
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
+    epsilon = 1e-5 # Small value to prevent division by zero 1e-6 
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -300,10 +300,14 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
+
+    outgoing_trajectories_to_plot_only = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
+    
+    
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed 
     overpass_start_loc_y = determine_overpass_y(incoming_trajectories)
 
-    plot_original_trajectories(incoming_trajectories,outgoing_trajectories)
+    plot_original_trajectories(incoming_trajectories,outgoing_trajectories_to_plot_only)
 
     incoming_trajectories_copy = incoming_trajectories.copy()
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
@@ -554,13 +558,9 @@ def main(): # Main function
     batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    #overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # both in meters 
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters 
     delta = 5 # time interval that we will be predicting for 
-
-    # overpass_start_time_list = np.arange(overpass_start_time,overpass_start_time+2,1)
-    accuracy_score_list = []
-  
+ 
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     model_path = 'trained_model_TGSIM/cslstm_m.tar'
@@ -634,8 +634,7 @@ def main(): # Main function
             print(f'analyzed trajectory: {analyzed_traj}')
 
             accuracy_score = calculate_accuracy(analyzed_traj)    
-            print(f'Accuracy Score: {accuracy_score}%')
-            accuracy_score_list.append(accuracy_score)
+            print(f'Accuracy Score: {accuracy_score}%') 
 
             #plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
 
