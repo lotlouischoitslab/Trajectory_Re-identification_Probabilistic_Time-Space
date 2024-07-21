@@ -423,8 +423,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             traj_time = temp_proj_to_traverse['adjusted_time'].values
             muX_time = np.arange(overpass_start_time,overpass_end_time,0.2)
             # x_list,y_list = create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX_time)
-            # x_list = temp_proj_to_traverse['xloc'].values 
-            # y_list = temp_proj_to_traverse['yloc'].values 
+            x_list = temp_proj_to_traverse['xloc'].values 
+            y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
@@ -450,15 +450,15 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # Plot muX and xloc
                 
                 # print(len(muX_time),len(x_list))
-                # x_axis = len(muX_time) 
-                # y_axis = len(x_list) 
+                x_axis = len(muX_time) 
+                y_axis = len(x_list) 
 
                 # if x_axis >= y_axis:
                 #     plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
                 # else:
                 #     plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
 
-                # plt.plot(muX_time, x_list, label=f'Possible xloc for ID {ident}')
+                # #plt.plot(muX_time, x_list, label=f'Possible xloc for ID {ident}')
                 # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
 
                 # plt.xlabel('Time')
@@ -470,30 +470,22 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
 
                 # N = min(x_axis, y_axis) - 2
                 
-                x_list,y_list = create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX)
+                #x_list,y_list = create_trajectories(possible_traj_temp_ID,possible_trajectories_copy,muX)
                 N = len(x_list)-2
 
-                for i in range(0, N, 2):
-                    # if i + 2 >= len(x_list) or i + 2 >= len(y_list):
-                    #     break  # Avoid index out of bounds
-                    # Ensure the index is valid for both x1 and x2 (since you access index + 1 for x2)
-                    
+                for i in range(0, N, 2): 
                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
-                    y1, y2, y3 = y_list[i], y_list[i + 1], y_list[i + 2]
-
-                    # Ensure your time indexing also does not go out of bounds
-                    # if i < len(stat_time_frame) - 1:
+                    y1, y2, y3 = y_list[i], y_list[i + 1], y_list[i + 2] 
                     
                     temp_muX, temp_muY = muX[i], muY[i]
                     temp_sigX, temp_sigY = sigX[i], sigY[i]
+                
+                    temp_muX2, temp_muY2 = muX[i+1], muY[i+1]
+                    temp_sigX2, temp_sigY2 = sigX[i+1], sigY[i+1]
 
                     # Now perform your line integral or any other calculations
                     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
-                    segment_integral += line_integral(x2, y2, x3, y3, temp_muX, temp_muY, temp_sigX, temp_sigY)
-                    # else:
-                    #     print(f"Skipping index {index} as it is out of bounds.")
-                    #     continue  # Skip this iteration if indices are out of range
-
+                    segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
 
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
@@ -584,26 +576,14 @@ def evaluate_trajectory_prediction():
             print(f'ground_truth_ylist: {ground_truth_ylist}')  
 
             # plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, ID_to_check, timeframe)
-
-            # Check if the lengths of the lists match
-            # if len(predicted_xlist) != len(ground_truth_xlist) or len(predicted_ylist) != len(ground_truth_ylist):
-            #     print(len(predicted_xlist), len(ground_truth_xlist), len(predicted_ylist), len(ground_truth_ylist))
-            #     print("The lengths of predicted and ground truth trajectories do not match.")
-            #     correct_predictions.append(0)
-            #     continue
-
-            # Check if the trajectories match
-            error = 1 
+ 
+            # Check if the trajectories match 
             for px, py, gx, gy in zip(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist):
-                # if px != gx or py != gy:
-                #     correct_predictions.append(0)
-                if abs(px - gx) > error or abs(py - gy) > error:
-                    correct_predictions.append(0)
+                if px != gx or py != gy:
+                    correct_predictions.append(0) 
                 else:
                     correct_predictions.append(1)
-            # else:
-            #     correct_predictions.append(1)
- 
+             
     return correct_predictions
 
 
@@ -670,7 +650,8 @@ def main(): # Main function
     batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
+    #overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
+    overpass_start_loc_x,overpass_end_loc_x = 1790, 1800 # both in meters 
     delta = 5 # time interval that we will be predicting for 
 
     # overpass_start_time_list = np.arange(overpass_start_time,overpass_start_time+2,1)
