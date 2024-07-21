@@ -40,9 +40,8 @@ yloc: Lateral E/S Movement
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
-
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-6 
+    epsilon = 1e-5 # Small value to prevent division by zero 1e-6 or 5 
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -59,7 +58,6 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Functio
     return cost
 ##################################################################################################################################################
 
- 
 
 # The heatmap values on the right show the value of the normal distribution
 # x and y have to be the prediction values. 
@@ -112,73 +110,7 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
     plt.colorbar(combined_contour)
     plt.savefig('plots/combined_maneuver.png')
 
-
-
-def plot_pred_trajectories(IDs_to_traverse,incoming_trajectories,ground_truth_underneath_overpass,possible_traj_list,fut_pred,stat_time_frame,batch_num,overpass_start_time,overpass_end_time,num_maneuvers): # plot trajectory function    
-    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharey=True) 
-    IDs_to_traverse = [0] 
-    print('PLOTTING TRAJECTORIES')
-    for temp_ID in IDs_to_traverse: # for each trajectory ID 
-        incoming_trajectories_plot = incoming_trajectories[incoming_trajectories['ID'] == temp_ID]
-        ground_truth_plot = ground_truth_underneath_overpass[ground_truth_underneath_overpass['ID'] == temp_ID]
-        for poss in possible_traj_list: 
-            # axs[0].plot(poss['before_time'], poss['xloc'], label=f'poss ID {temp_ID}', linestyle='--')
-            # axs[0].set_xlabel('Time')
-            # axs[0].set_ylabel('X Location')
-            # axs[0].legend() 
-
-            # axs[1].plot(poss['before_time'], poss['yloc'], label=f'poss ID {temp_ID}', linestyle='--')
-            # axs[1].set_xlabel('Time')
-            # axs[1].set_ylabel('Y Location')
-            # axs[1].legend()
-        
-            axs[2].plot(poss['xloc'], poss['yloc'], label=f'poss ID {temp_ID}') 
-            axs[2].set_xlabel('X Location')
-            axs[2].set_ylabel('Y Location')
-            axs[2].legend()
-
-        
-        # Plot original trajectory points before prediction
-        #axs[0].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['xloc'], label=f'Incoming ID {temp_ID}')
-        # axs[0].plot(ground_truth_plot['time'], ground_truth_plot['xloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
-        # axs[0].set_title('X Locations over Time')
-        # axs[0].set_xlabel('Time')
-        # axs[0].set_ylabel('X Location')
-        # axs[0].legend()
-
-        
-        # #axs[1].plot(incoming_trajectories_plot['time'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
-        # axs[1].plot(ground_truth_plot['time'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth',linewidth=2.0)
-        # axs[1].set_title('Y Locations over Time')
-        # axs[1].set_xlabel('Time')
-        # axs[1].set_ylabel('Y Location')
-        # axs[1].legend()
-
-        # Plot xloc vs yloc graph
-        #axs[2].plot(incoming_trajectories_plot['xloc'], incoming_trajectories_plot['yloc'], label=f'Incoming ID {temp_ID}')
-        axs[2].plot(ground_truth_plot['xloc'], ground_truth_plot['yloc'], label=f'Trajectory ID {temp_ID} Ground Truth')
-        axs[2].set_xlabel('X Location')
-        axs[2].set_ylabel('Y Location')
-        axs[2].legend()
-
-    
-        colors = ['red', 'green', 'blue', 'purple', 'orange','yellow']  # Plot predictive mean locations for each maneuver
-        for m in range(num_maneuvers):
-            muX = fut_pred[m][:,batch_num,0]
-            muY= fut_pred[m][:,batch_num,1]
-            sigX = fut_pred[m][:,batch_num,2]
-            sigY = fut_pred[m][:,batch_num,3]
-            
-            # axs[0].scatter(stat_time_frame, muX, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
-            # axs[1].scatter(stat_time_frame, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
-            axs[2].scatter(muX, muY, color=colors[m],s=2,label=f'Maneuver {m+1}', zorder=1)
-            
-        # axs[0].legend()
-        # axs[1].legend()
-        axs[2].legend()
-        plt.suptitle('Trajectories X and Y Locations over Time')
-        plt.savefig('temp_trajectory_plot.png')
-
+  
 
 def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
     incoming_IDs = incoming_trajectories['ID'].unique()
@@ -219,7 +151,7 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         ax.yaxis.set_major_locator(plt.MaxNLocator(60)) # Increase the number of grid lines on the y-axis
         ax.grid()
 
-        fig.set_size_inches(120,30)
+        fig.set_size_inches(80,30)
         fig.savefig(f'trajectory_plots/trajectory-'+ axis_temp+'.png')
 
 
@@ -555,7 +487,7 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048]
+    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters 
@@ -564,6 +496,7 @@ def main(): # Main function
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
     model_path = 'trained_model_TGSIM/cslstm_m.tar'
+    #model_path = 'temp_trained_model/cslstm_m.tar'
     net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
@@ -590,10 +523,7 @@ def main(): # Main function
     predicted_traj = None # we are going to store the predicted trajectories 
     for lane in lanes_to_analyze: # for each lane to be analyzed 
         print(f'Lane: {lane}') # print the lane   
-        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader 
-        
-            print(f'Index of Data: {i}/{len(predDataloader)}') # just for testing, print out the index of the current data to be analyzed 
-            
+        for i, data  in enumerate(predDataloader): # for each index and data in the predicted data loader  
             hist, nbrs, mask, lat_enc, lon_enc, fut, op_mask, maneuver_enc  = data # unpack the data   
 
             if args['use_cuda']:
