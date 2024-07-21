@@ -472,12 +472,8 @@ def main(): # Main function
 
  
     ######################################### PRED SET DIRECTORY #########################################################################################
-    # filepath_pred_Set = '/Users/louis/cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10-seconds/test' # Local Machine
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/test' # HAL GPU Cluster
-    
-    ######################################################################################################################################################
     file_to_read = 'I294_Cleaned.csv'  
-    
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
 
@@ -490,13 +486,13 @@ def main(): # Main function
     batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters 
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
     delta = 5 # time interval that we will be predicting for 
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    model_path = 'trained_model_TGSIM/cslstm_m.tar'
-    #model_path = 'temp_trained_model/cslstm_m.tar'
+    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 70% accuracy 
+    #model_path = 'temp_trained_model/cslstm_m.tar' # The updated model we need to test out 
     net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
