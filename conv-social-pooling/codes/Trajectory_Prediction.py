@@ -555,7 +555,7 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     #overpass_start_loc_x,overpass_end_loc_x = 1570, 1600 # both in meters 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # both in meters 
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # both in meters 
     delta = 5 # time interval that we will be predicting for 
 
     # overpass_start_time_list = np.arange(overpass_start_time,overpass_start_time+2,1)
