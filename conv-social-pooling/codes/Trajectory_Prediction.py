@@ -333,8 +333,6 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
-                # muX = fut_pred[m][:,batch_num,0]+overpass_start_loc_x
-                # muY = fut_pred[m][:,batch_num,1] +overpass_start_loc_y 
                 muX_before = fut_pred[m][:,batch_num,0] 
                 muY_before = fut_pred[m][:,batch_num,1] 
 
@@ -529,7 +527,7 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 128 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
+    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
