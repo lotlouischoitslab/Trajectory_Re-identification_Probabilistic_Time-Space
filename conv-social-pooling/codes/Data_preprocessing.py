@@ -377,11 +377,14 @@ def process_data_flow_density(file, dataset_id, reference_time = 0, input_histor
 	# These two sets of trajectory contain grids with x and y locations instead of vehicle id
 	dataset_trajectories_x_grid = [[] for i in range(max_id + 1)]
 	dataset_trajectories_y_grid = [[] for i in range(max_id + 1)]
+	count = 0
 
 	for trajectory in total_data.trajectories:
 		points_x = []
 		points_y = []
 		print(f'trajectory processing')
+		count += 1 
+		print(count,len(total_data.trajectories))
 		for t_p in trajectory.points:
 			po_x = [t_p.frame_number, t_p.x_loc, t_p.y_loc]
 			po_y = [t_p.frame_number, t_p.x_loc, t_p.y_loc]
@@ -542,25 +545,29 @@ def main():
 		 
 		 
 	 
-	random.shuffle(total_trajectories)
-	random.shuffle(total_trajectories_x)
-	random.shuffle(total_trajectories_y)
+	# random.shuffle(total_trajectories)
+	# random.shuffle(total_trajectories_x)
+	# random.shuffle(total_trajectories_y)
 
-	num_train = int(len(total_trajectories)*0.8 )
-	num_val = int(len(total_trajectories)*0.1) 
+	# num_train = int(len(total_trajectories)*0.8 )
+	# num_val = int(len(total_trajectories)*0.1) 
+
+	training_trajectories = total_trajectories 
+	training_trajectories_x = total_trajectories_x 
+	training_trajectories_y = total_trajectories_y 
 	 
 
-	training_trajectories = total_trajectories[:num_train]
-	training_trajectories_x = total_trajectories_x[:num_train]
-	training_trajectories_y = total_trajectories_y[:num_train]
+	# training_trajectories = total_trajectories[:num_train]
+	# training_trajectories_x = total_trajectories_x[:num_train]
+	# training_trajectories_y = total_trajectories_y[:num_train]
 
-	validation_trajectories = total_trajectories[num_train:num_train+num_val]
-	validation_trajectories_x = total_trajectories_x[num_train:num_train+num_val]
-	validation_trajectories_y = total_trajectories_y[num_train:num_train+num_val]
+	# validation_trajectories = total_trajectories[num_train:num_train+num_val]
+	# validation_trajectories_x = total_trajectories_x[num_train:num_train+num_val]
+	# validation_trajectories_y = total_trajectories_y[num_train:num_train+num_val]
 
-	test_trajectories = total_trajectories[num_train+num_val:]
-	test_trajectories_x = total_trajectories_x[num_train+num_val:]
-	test_trajectories_y = total_trajectories_y[num_train+num_val:]
+	# test_trajectories = total_trajectories[num_train+num_val:]
+	# test_trajectories_x = total_trajectories_x[num_train+num_val:]
+	# test_trajectories_y = total_trajectories_y[num_train+num_val:]
 
 
 		
@@ -585,23 +592,23 @@ def main():
 		pickle.dump(training_trajectories_y, filehandle)
 	
 
-	with open(output_directory+"valid_trajectory.data", 'wb') as filehandle:
-		pickle.dump(validation_trajectories, filehandle)
+	# with open(output_directory+"valid_trajectory.data", 'wb') as filehandle:
+	# 	pickle.dump(validation_trajectories, filehandle)
 
-	with open(output_directory+"valid_trajectory_x.data", 'wb') as filehandle:
-		pickle.dump(validation_trajectories_x, filehandle)
+	# with open(output_directory+"valid_trajectory_x.data", 'wb') as filehandle:
+	# 	pickle.dump(validation_trajectories_x, filehandle)
 
-	with open(output_directory+"valid_trajectory_y.data", 'wb') as filehandle:
-		pickle.dump(validation_trajectories_y, filehandle)
+	# with open(output_directory+"valid_trajectory_y.data", 'wb') as filehandle:
+	# 	pickle.dump(validation_trajectories_y, filehandle)
 	
-	with open(output_directory+"test_trajectory.data", 'wb') as filehandle:
-		pickle.dump(test_trajectories, filehandle)
+	# with open(output_directory+"test_trajectory.data", 'wb') as filehandle:
+	# 	pickle.dump(test_trajectories, filehandle)
 
-	with open(output_directory+"test_trajectory_x.data", 'wb') as filehandle:
-		pickle.dump(test_trajectories_x, filehandle)
+	# with open(output_directory+"test_trajectory_x.data", 'wb') as filehandle:
+	# 	pickle.dump(test_trajectories_x, filehandle)
 
-	with open(output_directory+"test_trajectory_y.data", 'wb') as filehandle:
-		pickle.dump(test_trajectories_y, filehandle)
+	# with open(output_directory+"test_trajectory_y.data", 'wb') as filehandle:
+	# 	pickle.dump(test_trajectories_y, filehandle)
 	
 
 	print("All files are saved!")
