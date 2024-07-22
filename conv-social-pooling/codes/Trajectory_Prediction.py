@@ -43,7 +43,7 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-7 # Small value to prevent division by zero 1e-5 1e-6 1e-7 
+    epsilon = 1e-4 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
