@@ -17,6 +17,8 @@ from scipy.stats import multivariate_normal
 from scipy.interpolate import interp1d
 from ast import literal_eval
 
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
+
 import numpy as np
 import scipy.integrate as integrate
 from scipy.special import erf
@@ -41,7 +43,7 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-6 or 5 
+    epsilon = 1e-7 # Small value to prevent division by zero 1e-5 1e-6 1e-7 
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -223,6 +225,34 @@ def determine_overpass_y(incoming_trajectories):
     result = np.mean(y_list)
     result = round(np.mean(y_list),1) 
     return result
+
+
+def scale_data(muX, muY, method='minmax'): 
+    muX = np.array(muX).reshape(-1, 1)
+    muY = np.array(muY).reshape(-1, 1)
+    
+    if method == 'minmax':
+        scaler = MinMaxScaler()
+    elif method == 'zscore':
+        scaler = StandardScaler()
+    elif method == 'log':
+        scaler = None
+        muX = np.log1p(abs(muX))
+        muY = np.log1p(abs(muY))
+    elif method == 'robust':
+        scaler = RobustScaler()
+    else:
+        raise ValueError("Invalid method. Choose from 'minmax', 'zscore', 'log', 'robust'.")
+
+    if scaler:
+        muX_scaled = scaler.fit_transform(muX).flatten()
+        muY_scaled = scaler.fit_transform(muY).flatten()
+    else:
+        muX_scaled = muX.flatten()
+        muY_scaled = muY.flatten()
+
+    return muX_scaled.tolist(), muY_scaled.tolist()
+
   
 
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
@@ -230,8 +260,11 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
-    outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
-    possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
+    # outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
+    # possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
+    
+    outgoing_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
+    possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
 
     outgoing_trajectories_to_plot_only = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
     
@@ -293,29 +326,39 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             highest_integral_value = float('-inf')  # Reset for each ID
             temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[possible_trajectories_for_each_vehicle_ID['ID']==possible_traj_temp_ID]
             traj_time = temp_proj_to_traverse['adjusted_time'].values
+            traj_time_original = temp_proj_to_traverse['time'].values
             muX_time = np.arange(overpass_start_time,overpass_end_time,0.2) 
             x_list = temp_proj_to_traverse['xloc'].values 
             y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
 
             for m in range(num_maneuvers):
-                muX = fut_pred[m][:,batch_num,0]+overpass_start_loc_x
-                muY = fut_pred[m][:,batch_num,1] +overpass_start_loc_y 
+                # muX = fut_pred[m][:,batch_num,0]+overpass_start_loc_x
+                # muY = fut_pred[m][:,batch_num,1] +overpass_start_loc_y 
+                muX_before = fut_pred[m][:,batch_num,0] 
+                muY_before = fut_pred[m][:,batch_num,1] 
+
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]  
+                 
+ 
+                muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
+                muX = [(16*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
+                muY = [(my)+overpass_start_loc_y for my in muY_scaled] 
                  
     
                 # Plot muX and xloc
                 # print(len(muX_time),len(x_list))
-                # x_axis = len(muX_time) 
-                # y_axis = len(x_list) 
+                x_axis = len(muX_time) 
+                y_axis = len(x_list) 
 
                 # if x_axis >= y_axis:
                 #     plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
                 # else:
                 #     plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
 
-                # #plt.plot(muX_time, x_list, label=f'Possible xloc for ID {ident}')
+                print(muX)
+                # plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
                 # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
                 # plt.xlabel('Time')
                 # plt.ylabel('X Location')
@@ -483,10 +526,11 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 256 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
+    batch_size = 4096 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
+    #overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # both in meters Overpass width 17 meters (56 feets)
     delta = 5 # time interval that we will be predicting for 
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
