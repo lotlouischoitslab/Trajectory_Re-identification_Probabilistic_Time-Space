@@ -53,6 +53,7 @@ def extract_number_from_filename(filename):
         return None
     
 def analyze_trajectories():  
+    incoming = pd.read_csv('before/incoming.csv')
     best_trajectories_dir = "best_trajectories"
     best_trajectories_files = os.listdir(best_trajectories_dir)
     possible_trajectories_dir = "possible_trajectories"
@@ -102,6 +103,9 @@ def analyze_trajectories():
     accuracy = 100*(len(correct_predictions) / len(possible_trajectories_files))
     print(f'Accuracy: {accuracy:.2f}%')
 
+
+def straight_line_method():
+    pass 
    
  
 def main(): # Main function 

@@ -303,7 +303,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             continue  # Skip this ID if there's no incoming data
  
         overpass_start_time = ingoing_temp_data['time'].values[-1]
-        overpass_end_time = overpass_start_time + 5 
+        overpass_end_time = overpass_start_time + delta 
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1) 
         possible_trajectories_for_each_vehicle_ID = possible_trajectories[ (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_end_time)] 
         possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
@@ -341,12 +341,12 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                  
  
                 gradient = (np.max(x_list) - np.min(x_list))
-                if gradient <= 10:
-                    gradient += 10
+                if gradient <= 12:
+                    gradient += 12
                 print(f'gradient: {gradient}')
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
-                muY = [(my)+overpass_start_loc_y for my in muY_scaled] 
+                muY = [my+overpass_start_loc_y for my in muY_scaled] 
                  
     
                 # Plot muX and xloc
@@ -532,7 +532,7 @@ def main(): # Main function
     batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]    
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
-    #overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)
+    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)
     delta = 5 # time interval that we will be predicting for 
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
