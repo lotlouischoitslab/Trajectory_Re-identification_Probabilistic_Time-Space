@@ -342,7 +342,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
 
                 #gradient = 16 
                 gradient = np.max(x_list) - np.min(x_list)
-                #print(f'gradient: {gradient}')
+                print(f'gradient: {gradient}')
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [(my)+overpass_start_loc_y for my in muY_scaled] 
@@ -359,7 +359,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 #     plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
 
                 # print(muX)
-                # traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
+                traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
                 # plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
                 # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
                 # plt.xlabel('Time')
