@@ -17,7 +17,7 @@ def straight_line_method(overpass_start_loc_x, average_speed, delta, overpass_st
         'adjusted_time': adjusted_time_frame,
         'xloc': x
     }
-    print(len(time_frame), len(adjusted_time_frame), len(x))
+    
     return pd.DataFrame(df)
 
 def analyze_trajectories():  
@@ -35,10 +35,8 @@ def analyze_trajectories():
         ground_truth_trajectory = outgoing_trajectories[outgoing_trajectories['ID'] == temp_id]
         ground_truth_x = ground_truth_trajectory['xloc'].values
         temp_incoming = incoming_trajectories[incoming_trajectories['ID'] == temp_id]
-        
-        # Calculate average speed of the last two points before the overpass
-        average_speed = np.mean(temp_incoming['speed'].values[-2:])
-        print(f'average speed: {average_speed} m/s')
+        average_speed = np.mean(temp_incoming['speed'].values[-2:]) # Calculate average speed of the last two points before the overpass
+        # print(f'average speed: {average_speed} m/s')
         
         overpass_start_time = temp_incoming['time'].values[-1]
         
@@ -53,7 +51,6 @@ def analyze_trajectories():
         linear_start_time = min(linear_df['time'].values)
 
         for second_id in unique_ids:
-            print(f'For first ID: {temp_id} | second ID: {second_id}')
             possible_trajectory = outgoing_trajectories[(outgoing_trajectories['ID'] == second_id) & (outgoing_trajectories['time'] >= linear_start_time)]
             poss_x = possible_trajectory['xloc'].values 
             
@@ -63,16 +60,15 @@ def analyze_trajectories():
             min_len = min(len(linear_x), len(poss_x))
             temp_error = sum((linear_x[:min_len] - poss_x[:min_len]) ** 2)
             
-            print(f'ground_truth_x: {ground_truth_x}')
-            print(f'possible x: {poss_x}')
-            print(f'temp error: {temp_error}')
+            # print(f'ground_truth_x: {ground_truth_x}')
+            # print(f'possible x: {poss_x}')
+            # print(f'temp error: {temp_error}')
             
             if temp_error < error:
                 error = temp_error
                 best_possible_x = poss_x[:min_len]
          
         if best_possible_x is not None:
-            # Ensure lengths match before using np.allclose
             min_len = min(len(best_possible_x), len(ground_truth_x))
             if np.allclose(best_possible_x[:min_len], ground_truth_x[:min_len], atol=1e-4):
                 correct_predictions.append(1)
@@ -81,7 +77,8 @@ def analyze_trajectories():
 
     correct_predictions_results = sum(correct_predictions)
     accuracy = (correct_predictions_results / len(correct_predictions)) * 100
-    print(f'Accuracy: {accuracy:.2f}%')
+    accuracy = np.round(accuracy,2)
+    print(f'Accuracy: {accuracy}%')
 
 def main(): 
     analyze_trajectories()

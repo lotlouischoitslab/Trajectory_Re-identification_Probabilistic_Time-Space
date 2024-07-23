@@ -255,7 +255,7 @@ def scale_data(muX, muY, method='minmax'):
 
   
 
-def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta):
+def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
@@ -308,16 +308,12 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         possible_trajectories_for_each_vehicle_ID = possible_trajectories[ (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_end_time)] 
         possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
         outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
-        print('overpass time',overpass_start_time,'to',overpass_end_time)
         
         best_trajectory = None
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
-        print(f'possible IDS: {possible_IDS}')
     
-
-        # print(f'Ident traverse: {ident}')
-        plt.figure()
+        # plt.figure()
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
@@ -340,17 +336,17 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigY = fut_pred[m][:,batch_num,3]  
                  
                 gradient = (np.max(x_list) - np.min(x_list))
-                if gradient <= 12:
-                    gradient += 12
+                
+                if gradient <= alpha:
+                    gradient += alpha
                     
-                print(f'gradient: {gradient}') 
+                # print(f'gradient: {gradient}') 
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
                  
     
                 # Plot muX and xloc
-                # print(len(muX_time),len(x_list))
                 x_axis = len(muX_time) 
                 y_axis = len(x_list) 
 
@@ -435,14 +431,13 @@ def evaluate_trajectory_prediction():
     outgoing_trajectories = pd.read_csv('before/outgoing.csv')
     
     correct_predictions = []
-    print(f'files: {len(best_trajectories_files)}')
 
     for predicted_trajectory_input_file in best_trajectories_files: 
         predicted_trajectory_input_path = os.path.join(best_trajectories_dir, predicted_trajectory_input_file)
         predicted_trajectory_input = pd.read_csv(predicted_trajectory_input_path)  
         ID_to_check = predicted_trajectory_input['Vehicle_ID'].values[0]
         ground_truth_trajectory = outgoing_trajectories[outgoing_trajectories['ID'] == ID_to_check]
-        print(f'check ground id: {ID_to_check}')
+        
 
         if len(predicted_trajectory_input['xloc']) != 0:
             s_clean_x = predicted_trajectory_input['xloc'].values[0].strip("[]")
@@ -465,11 +460,11 @@ def evaluate_trajectory_prediction():
 
             timeframe = np.linspace(0, 5, len(predicted_xlist))  # space out from 0 to 5 seconds with length of the predicted trajectory  
 
-            print(f'predicted_xlist: {predicted_xlist}') 
-            print(f'predicted_ylist: {predicted_ylist}') 
+            # print(f'predicted_xlist: {predicted_xlist}') 
+            # print(f'predicted_ylist: {predicted_ylist}') 
 
-            print(f'ground_truth_xlist: {ground_truth_xlist}') 
-            print(f'ground_truth_ylist: {ground_truth_ylist}')  
+            # print(f'ground_truth_xlist: {ground_truth_xlist}') 
+            # print(f'ground_truth_ylist: {ground_truth_ylist}')  
 
             # plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, ID_to_check, timeframe)
  
@@ -486,7 +481,7 @@ def evaluate_trajectory_prediction():
 def calculate_accuracy(correct_predictions_data):
     correct_predictions = sum(data == 1 for data in correct_predictions_data)
     accuracy = (correct_predictions / len(correct_predictions_data)) * 100
-    return accuracy
+    return np.round(accuracy,2)
 
 
  
@@ -520,26 +515,20 @@ def main(): # Main function
  
     ######################################### PRED SET DIRECTORY #########################################################################################
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/test' # HAL GPU Cluster
-    file_to_read = 'I294_Cleaned.csv'  
+    file_to_read = 'I294_Cleaned.csv'  # TGSIM csv dataset
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
+    lanes_to_analyze = [-2] # lanes to analyze  
+    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]  
 
-    #lanes_to_analyze = sorted(df['lane'].unique())[1:-1] # lanes to analyze 
-    temp_lane = -2 
-    lanes_to_analyze = [temp_lane] # lanes to analyze 
-    # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
-    print(f'Unique lanes: {lanes_to_analyze}') 
-    
-    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]    
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
-    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 
     delta = 5 # time interval that we will be predicting for 
+    alpha = 12 # value to adjust for the statistical parameters
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 70% accuracy 
-    #model_path = 'temp_trained_model/cslstm_m.tar' # The updated model we need to test out 
+    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 80% accuracy  
     net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
@@ -586,12 +575,7 @@ def main(): # Main function
                 indx = torch.argmax(maneuver_pred[k, :]).detach() # get the arg max of the maneuvered prediction values
                 fut_pred_max[:, k, :] = fut_pred[indx][:, k, :] # future predicted value max 
 
-            # l, c = maskedMSETest(fut_pred_max, fut, op_mask) # get the loss value and the count value 
-            # l = l.to(device)  # device is the device you determined earlier (cuda or cpu)
-            # c = c.to(device)
-
-            # lossVals += l.detach() # increment the loss value 
-            # counts += c.detach() # increment the count value  
+           
             fut_pred_np = [] # store the future pred points 
 
             for k in range(6): #manuevers mean the 
@@ -600,7 +584,7 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
 
-            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
+            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction()
