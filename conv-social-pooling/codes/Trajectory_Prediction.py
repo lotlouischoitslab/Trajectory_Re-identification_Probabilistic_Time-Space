@@ -340,7 +340,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigY = fut_pred[m][:,batch_num,3]  
                  
 
-                gradient = 16 
+                #gradient = 16 
+                gradient = np.max(x_list) - np.min(x_list)
                 #print(f'gradient: {gradient}')
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
@@ -527,11 +528,10 @@ def main(): # Main function
     # lanes_to_analyze = sorted(df['lane'].unique())  # lanes to analyze 
     print(f'Unique lanes: {lanes_to_analyze}') 
     
-    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]   
-
+    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]    
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets)
-    #overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # both in meters Overpass width 17 meters (56 feets)
+    #overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)
     delta = 5 # time interval that we will be predicting for 
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
