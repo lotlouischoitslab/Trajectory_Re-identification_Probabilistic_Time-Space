@@ -100,7 +100,7 @@ def analyze_trajectories():
             correct_predictions.append(vehicle_ID)
 
     accuracy = 100*(len(correct_predictions) / len(possible_trajectories_files))
-    print(f'Accuracy: {accuracy:.2f}')
+    print(f'Accuracy: {accuracy:.2f}%')
 
    
  
