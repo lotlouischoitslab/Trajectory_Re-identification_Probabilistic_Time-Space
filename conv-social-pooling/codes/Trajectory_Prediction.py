@@ -343,7 +343,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 if gradient <= 12:
                     gradient += 12
                     
-                print(f'gradient: {gradient}')
+                print(f'gradient: {gradient}') 
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
