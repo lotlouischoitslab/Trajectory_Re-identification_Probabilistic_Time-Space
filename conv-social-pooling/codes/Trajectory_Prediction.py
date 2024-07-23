@@ -43,7 +43,7 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
+    epsilon = 1e-6 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -384,6 +384,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     # Now perform your line integral or any other calculations
                     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
+
+                
 
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
