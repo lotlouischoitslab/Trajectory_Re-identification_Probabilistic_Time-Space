@@ -481,8 +481,7 @@ def evaluate_trajectory_prediction():
                     correct_predictions.append(1)
              
     return correct_predictions
-
-
+ 
 
 def calculate_accuracy(correct_predictions_data):
     correct_predictions = sum(data == 1 for data in correct_predictions_data)
