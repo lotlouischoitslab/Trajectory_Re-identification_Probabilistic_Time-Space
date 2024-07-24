@@ -217,7 +217,6 @@ def determine_overpass_y(incoming_trajectories):
     y_ids = incoming_trajectories['ID'].unique()
     for temp in y_ids:
         temp_y = incoming_trajectories[incoming_trajectories['ID']==temp]['yloc'].values 
-         
         y_list.append(temp_y[-1])
     
     result = np.mean(y_list)
@@ -260,15 +259,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
- 
-
-    outgoing_trajectories_to_plot_only = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
-    
     
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed 
-    overpass_start_loc_y = determine_overpass_y(incoming_trajectories)
-
-    plot_original_trajectories(incoming_trajectories,outgoing_trajectories_to_plot_only)
+    overpass_start_loc_y = determine_overpass_y(incoming_trajectories) 
 
     incoming_trajectories_copy = incoming_trajectories.copy()
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
@@ -517,14 +510,27 @@ def main(): # Main function
     lanes_to_analyze = [-2] # lanes to analyze  
     batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192] 
 
-    ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 
+    ################################## OVERPASS LOCATION (ASSUMPTION) #################################################################################################################################################################
+    ################################## SUCCESS CASES ##################################################################################################################################################################################
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 80.83% Accuracy    
+    overpass_start_loc_x,overpass_end_loc_x = 1931, 1948 # both in meters Overpass width 17 meters (56 feets) 75.37% Accuracy  
+    overpass_start_loc_x,overpass_end_loc_x = 2093, 2110 # both in meters Overpass width 17 meters (56 feets) 73.56% Accuracy 
+    overpass_start_loc_x,overpass_end_loc_x = 1110, 1127 # both in meters Overpass width 17 meters (56 feets) 71.05% Accuracy 
+    #################################################################################################################################################################################
+ 
+    ################################### FALIED CASES ############################################################################################################
+    overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets) 
+    overpass_start_loc_x,overpass_end_loc_x = 1460, 1477 # both in meters Overpass width 17 meters (56 feets) 
+    overpass_start_loc_x,overpass_end_loc_x = 1320, 1337 # both in meters Overpass width 17 meters (56 feets) 
+    #################################################################################################################################################################################
+ 
+
     delta = 5 # time interval that we will be predicting for 
     alpha = 12 # value to adjust for the statistical parameters
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 80% accuracy  (Between 78.12% to 81.66%, I chose 80.86%)
+    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 80.86% accuracy  (Between 78.12% to 81.66%, I chose 80.86%)
     net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
@@ -543,9 +549,9 @@ def main(): # Main function
     maneuver_predictions = [] # maneuver prediction values 
 
     ################################## OUTPUT DATA ##############################################################################
-    print(f'Length of the pred data loader: {len(predDataloader)}') # this prints out 1660040 
+    print(f'Length of the pred data loader: {len(predDataloader)}')
 
-    predictions_data = []
+    predictions_data = [] # prediction data to store 
 
     ################################## LANES TO BE ANALYZED #####################################################################################
     predicted_traj = None # we are going to store the predicted trajectories 
@@ -579,7 +585,6 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-
             predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
