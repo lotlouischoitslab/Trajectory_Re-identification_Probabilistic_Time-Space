@@ -262,9 +262,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
-    
-    # outgoing_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
-    # possible_trajectories = input_data[input_data['xloc'] >= overpass_end_loc_x] # All possible trajectories that we need to consider
+ 
 
     outgoing_trajectories_to_plot_only = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
     
@@ -519,7 +517,7 @@ def main(): # Main function
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
     lanes_to_analyze = [-2] # lanes to analyze  
-    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]  
+    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]  1024 4096
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 
