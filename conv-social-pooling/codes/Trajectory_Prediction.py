@@ -519,11 +519,20 @@ def main(): # Main function
     #################################################################################################################################################################################
  
     ################################### FALIED CASES ############################################################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets) 
-    overpass_start_loc_x,overpass_end_loc_x = 1460, 1477 # both in meters Overpass width 17 meters (56 feets) 
+    overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)  
     overpass_start_loc_x,overpass_end_loc_x = 1320, 1337 # both in meters Overpass width 17 meters (56 feets) 
     #################################################################################################################################################################################
- 
+    
+    ################################### TRIAL RUNS #################################################################################################
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1835 # 35 meters
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1840 # 40 meters
+
 
     delta = 5 # time interval that we will be predicting for 
     alpha = 12 # value to adjust for the statistical parameters
