@@ -60,10 +60,9 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Functio
     return cost
 ##################################################################################################################################################
 
-
-# The heatmap values on the right show the value of the normal distribution
+# The heatmap values on the right show the value of the normal distribution.
 # x and y have to be the prediction values. 
-# Now let's plot the trajectories using x and y trajectories. Then bring into the starting point
+# Now let's plot the trajectories using x and y trajectories. Then bring into the starting point.
 
 def generate_normal_distribution(fut_pred, lane,batch_num):
     num_maneuvers = len(fut_pred)
@@ -74,7 +73,6 @@ def generate_normal_distribution(fut_pred, lane,batch_num):
     plt.figure(figsize=(18, 12)) 
 
     for m in range(num_maneuvers):
-        # print(f"Processing maneuver {m+1}/{num_maneuvers}")
         muX = fut_pred[m][:,batch_num,0]
         muY = fut_pred[m][:,batch_num,1]
         sigX = fut_pred[m][:,batch_num,2]
@@ -513,11 +511,11 @@ def main(): # Main function
  
     ######################################### PRED SET DIRECTORY #########################################################################################
     filepath_pred_Set = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/test' # HAL GPU Cluster
-    file_to_read = 'I294_Cleaned.csv'  # TGSIM csv dataset
+    file_to_read = 'I294_Cleaned.csv'  # TGSIM csv dataset 
     df = pd.read_csv(file_to_read) # read in the data 
     original_data = df.copy() # copy the dataframe 
     lanes_to_analyze = [-2] # lanes to analyze  
-    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]  1024 4096
+    batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192] 
 
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 
@@ -526,7 +524,7 @@ def main(): # Main function
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
-    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 80% accuracy  
+    model_path = 'trained_model_TGSIM/cslstm_m.tar' # The model that achieved 80% accuracy  (Between 78.12% to 81.66%, I chose 80.86%)
     net.load_state_dict(torch.load(model_path, map_location=torch.device(device))) # load the model onto the local machine 
 
     ################################# CHECK GPU AVAILABILITY ###############################################################
