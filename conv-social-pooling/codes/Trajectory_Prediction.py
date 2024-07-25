@@ -45,7 +45,7 @@ yloc: Lateral E/S Movement
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
     epsilon = 1e-3 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal 
     cost = 0 # Initial line integral cost
-    sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
+    sig = np.sqrt((sigX**2 + sigY**2)/6) + epsilon # sigma value # 2 4 6 8 10
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
@@ -252,7 +252,7 @@ def scale_data(muX, muY, method='minmax'):
 
   
 
-def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
+def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha,gamma):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
@@ -325,10 +325,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]  
                  
-                gradient = 10*((np.max(x_list) - np.min(x_list))/overpass_length)
+                gradient = gamma*((np.max(x_list) - np.min(x_list))/overpass_length)
                 
                 if gradient <= alpha:
-                    gradient += 10*(alpha/overpass_length)
+                    gradient += gamma*(alpha/overpass_length)
  
                 print(f'gradient: {gradient}')   
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
@@ -537,8 +537,9 @@ def main(): # Main function
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1840 # 40 meters
 
 
-    delta = 5 # time interval that we will be predicting for 
-    alpha = 12 # value to adjust for the statistical parameters
+    delta = 5 # Time interval that we will be predicting for 
+    alpha = 12 # First value to adjust for the statistical parameters
+    gamma = 9 # Second value to adjust for the statistical parameters
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -597,7 +598,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha) # where the function is called and I feed in maneurver pred and future prediction points         
+            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha,gamma) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction()
