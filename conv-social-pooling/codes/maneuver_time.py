@@ -36,17 +36,20 @@ warnings.simplefilter('ignore', np.RankWarning)
 '''
 xloc: Longitudinal N/S movement 
 yloc: Lateral E/S Movement
-''' 
+'''
+      
  
 def generate_normal_distribution(fut_pred, lane, batch_num):
     num_maneuvers = len(fut_pred)
-    x = np.linspace(0, 100, 100)
-    y = np.linspace(-100, 100, 100)  # Reduced y-range for better visibility
+    x = np.linspace(20, 120, 100)
+    y = np.linspace(-10, 10, 100)  # Reduced y-range for better visibility
     X, Y = np.meshgrid(x, y)
     time = 0
 
-    for count in range(0, 51, 10):
-        plt.figure(figsize=(12, 8))  # Ensure consistent figure size for combined plots 
+    for count in range(10, 51, 10):
+        time += 2
+        plt.figure(figsize=(12, 8))  # Ensure consistent figure size for combined plots
+
         combined_Zs = np.zeros((num_maneuvers, X.shape[0], X.shape[1]))  # Reset combined_Z for each time step
 
         for m in range(num_maneuvers):
@@ -73,7 +76,6 @@ def generate_normal_distribution(fut_pred, lane, batch_num):
         plt.tight_layout()
         plt.savefig(f'contour_maps/combined_maneuvers_{time}_seconds.png')
         plt.close()
-        time += 2
         
 
 def main():
@@ -152,8 +154,19 @@ def main():
                 maneuver_enc = maneuver_enc.cuda()
 
             fut_pred, maneuver_pred = net(hist, nbrs, mask, lat_enc, lon_enc)  # feed the parameters into the neural network for forward pass
-          
-            
+            fut_pred_max = torch.zeros_like(fut_pred[0])  # get the max predicted values 
+
+            for k in range(maneuver_pred.shape[0]):  # for each value in the maneuver predicted shapes
+                indx = torch.argmax(maneuver_pred[k, :]).detach()  # get the arg max of the maneuvered prediction values
+                fut_pred_max[:, k, :] = fut_pred[indx][:, k, :]  # future predicted value max  
+
+            fut_pred_np = []  # store the future pred points 
+
+            for k in range(6):  # maneuvers mean the 
+                fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
+                fut_pred_np.append(fut_pred_np_point)
+
+            fut_pred_np = np.array(fut_pred_np)  # convert the fut pred points into numpy
             if i == 0: # Generate and save the distribution plots just for one trajectory
                 generate_normal_distribution(fut_pred,lane ,batch_size-1)
                 break
