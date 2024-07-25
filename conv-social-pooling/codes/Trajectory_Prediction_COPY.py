@@ -43,7 +43,7 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
+    epsilon = 5e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -59,58 +59,6 @@ def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Functio
     
     return cost
 ##################################################################################################################################################
-
-
-# The heatmap values on the right show the value of the normal distribution
-# x and y have to be the prediction values. 
-# Now let's plot the trajectories using x and y trajectories. Then bring into the starting point
-
-def generate_normal_distribution(fut_pred, lane,batch_num):
-    num_maneuvers = len(fut_pred)
-    x = np.linspace(0,100,100)  
-    y = np.linspace(-100,100,100)  
-    Xc, Yc = np.meshgrid(x, y)
-    combined_Z = np.zeros(Xc.shape)
-    plt.figure(figsize=(18, 12)) 
-
-    for m in range(num_maneuvers):
-        # print(f"Processing maneuver {m+1}/{num_maneuvers}")
-        muX = fut_pred[m][:,batch_num,0]
-        muY = fut_pred[m][:,batch_num,1]
-        sigX = fut_pred[m][:,batch_num,2]
-        sigY = fut_pred[m][:,batch_num,3]
-      
-        X, Y = np.meshgrid(x, y)
-        Z = np.zeros(X.shape) # Initialize a zero matrix for the PDF values
-
-        # Calculate the PDF values for each point on the grid
-        for i in range(len(muX)):
-            mean = [muX[i], muY[i]]
-            cov = [[sigX[i]**2, 0], [0, sigY[i]**2]]  # Assuming no covariance
-            rv = multivariate_normal(mean, cov)
-            Z += rv.pdf(np.dstack((X, Y)))
-        
-        combined_Z += Z
-
-        # Plot the contour map 
-        plt.subplot(2,3,m+1)
-        contour = plt.contourf(X, Y, Z, cmap='viridis')
-        plt.xlabel('X - Lateral Coordinate')
-        plt.ylabel('Y - Longitudinal Coordinate')
-        plt.title(f'Contour Plot for Maneuver {m+1}')
-        plt.colorbar(contour)
-        # plt.savefig('plots/maneuver'+str(m+1)+'.png')
-    
-    # Plot the combined contour map for all maneuvers
-    plt.tight_layout()
-    plt.savefig('plots/all_maneuvers_subplot.png')
-    plt.figure(figsize=(9, 6))
-    combined_contour = plt.contourf(Xc, Yc, combined_Z, cmap='viridis')
-    plt.xlabel('X - Lateral Coordinate')
-    plt.ylabel('Y - Longitudinal Coordinate')
-    plt.title('Combined Contour Plot for All Maneuvers')
-    plt.colorbar(combined_contour)
-    plt.savefig('plots/combined_maneuver.png')
 
   
 
@@ -263,13 +211,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # All possible trajectories that we need to consider
 
-    outgoing_trajectories_to_plot_only = input_data[input_data['xloc'] >= overpass_end_loc_x] # Groundtruth trajectory after the overpass  
-    
     
     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed 
     overpass_start_loc_y = determine_overpass_y(incoming_trajectories)
-
-    plot_original_trajectories(incoming_trajectories,outgoing_trajectories_to_plot_only)
+ 
 
     incoming_trajectories_copy = incoming_trajectories.copy()
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
@@ -314,7 +259,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     
 
         # print(f'Ident traverse: {ident}')
-        plt.figure()
+       
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
@@ -339,6 +284,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 gradient = (np.max(x_list) - np.min(x_list))
                 if gradient <= 12:
                     gradient += 12
+ 
                     
                 print(f'gradient: {gradient}')
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
@@ -367,6 +313,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
  
                 N = len(x_list)-2
+ 
 
                 for i in range(0, N, 2): 
                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
@@ -528,7 +475,7 @@ def main(): # Main function
     
     batch_size = 1024 # batch size for the model and choose from [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]    
     ################################## OVERPASS LOCATION (ASSUMPTION) ########################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # both in meters Overpass width 17 meters (56 feets)
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # both in meters Overpass width 17 meters (56 feets)
     # overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)
     delta = 5 # time interval that we will be predicting for 
  
@@ -594,10 +541,10 @@ def main(): # Main function
                 fut_pred_np_point = fut_pred[k].clone().detach().cpu().numpy()
                 fut_pred_np.append(fut_pred_np_point)
 
-            fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
 
+            fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy 
             predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta) # where the function is called and I feed in maneurver pred and future prediction points         
-            generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+             
 
             analyzed_traj = evaluate_trajectory_prediction()
             print(f'analyzed trajectory: {analyzed_traj}')
@@ -607,8 +554,7 @@ def main(): # Main function
 
             #plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
 
-            if i == 0: # Generate and save the distribution plots just for one trajectory
-                generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+            if i == 0: # Generate and save the distribution plots just for one trajectory 
                 break 
      
  

@@ -36,8 +36,7 @@ warnings.simplefilter('ignore', np.RankWarning)
 '''
 xloc: Longitudinal N/S movement 
 yloc: Lateral E/S Movement
-'''
-      
+''' 
  
 def generate_normal_distribution(fut_pred, lane, batch_num):
     num_maneuvers = len(fut_pred)
@@ -46,10 +45,8 @@ def generate_normal_distribution(fut_pred, lane, batch_num):
     X, Y = np.meshgrid(x, y)
     time = 0
 
-    for count in range(10, 51, 10):
-        time += 2
-        plt.figure(figsize=(12, 8))  # Ensure consistent figure size for combined plots
-
+    for count in range(0, 51, 10):
+        plt.figure(figsize=(12, 8))  # Ensure consistent figure size for combined plots 
         combined_Zs = np.zeros((num_maneuvers, X.shape[0], X.shape[1]))  # Reset combined_Z for each time step
 
         for m in range(num_maneuvers):
@@ -76,6 +73,7 @@ def generate_normal_distribution(fut_pred, lane, batch_num):
         plt.tight_layout()
         plt.savefig(f'contour_maps/combined_maneuvers_{time}_seconds.png')
         plt.close()
+        time += 2
         
 
 def main():

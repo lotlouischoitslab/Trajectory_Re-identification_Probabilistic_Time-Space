@@ -42,10 +42,26 @@ yloc: Lateral E/S Movement
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function  
-    cost = 0 # Initial line integral cost  
-    epsilon = 1e-2
-    sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
+# def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function  
+#     cost = 0 # Initial line integral cost  
+#     epsilon = 1e-2
+#     sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
+
+#     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
+#     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
+#     b = ((-2 * x1 * x1 + 2 * x1 * x2 + 2 * x1 * muX - 2 * x2 * muX) + \
+#         (-2 * y1 * y1 + 2 * y1 * y2 + 2 * y1 * muY - 2 * y2 * muY)) * (1 / (2 * sig))
+#     c = (math.pow(x1 - muX, 2) + math.pow(y1 - muY, 2)) * (1 / (2 * sig))
+
+#     cost += (math.exp(((b * b) / (4 * a)) - c) / (2 * math.pi * sig)) * (1 / math.sqrt(a)) * \
+#             (math.sqrt(math.pi) / 2) * (math.erf(math.sqrt(a) + b / (2 * math.sqrt(a))) - math.erf(b / (2 * math.sqrt(a)))) * \
+#             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+    
+#     return cost
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
+    epsilon = 5e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
+    cost = 0
+    sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
@@ -525,10 +541,10 @@ def main(): # Main function
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  94.24% | 20.59% Accuracy
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  94.24% | 20.59% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 85.25% | 23.53% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.21% | 25.00% Accuracy
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 51.98% | 30.88% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 51.98% | 30.88% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.25% | 25.00% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 21.88% | 22.06% Accuracy
 
