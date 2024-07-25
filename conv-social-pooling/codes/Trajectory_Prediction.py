@@ -42,12 +42,8 @@ yloc: Lateral E/S Movement
 '''
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
-def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-2 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal 
-    cost = 0 # Initial line integral cost
-    sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
-
-
+def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function  
+    cost = 0 # Initial line integral cost  
     epsilon = 1e-2
     sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
 
@@ -532,9 +528,9 @@ def main(): # Main function
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  94.24% | 20.59% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 85.25% | 23.53% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.21% | 25.00% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 51.98% | 30.88% Accuracy
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 51.98% | 30.88% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.25% | 25.00% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 16.40% | 22.06% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 21.88% | 22.06% Accuracy
 
 
     delta = 5 # time interval that we will be predicting for 

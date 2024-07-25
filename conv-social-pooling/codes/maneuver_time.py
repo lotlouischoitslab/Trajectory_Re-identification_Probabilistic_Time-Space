@@ -179,17 +179,67 @@ yloc: Lateral E/S Movement
 
 
 
+# def generate_normal_distribution(fut_pred, lane, batch_num):
+#     num_maneuvers = len(fut_pred)
+#     x = np.linspace(0, 100, 100)
+#     y = np.linspace(-50, 50, 100)  # Reduced y-range for better visibility
+#     Xc, Yc = np.meshgrid(x, y)
+#     combined_Z = np.zeros(Xc.shape)
+#     plt.figure(figsize=(18, 12))
+#     time = 0
+
+#     for count in range(10, 51, 10):
+#         time += 2
+#         for m in range(num_maneuvers):
+#             muX = fut_pred[m][:, batch_num, 0][:count].detach().numpy()
+#             muY = fut_pred[m][:, batch_num, 1][:count].detach().numpy()
+#             sigX = fut_pred[m][:, batch_num, 2][:count].detach().numpy()
+#             sigY = fut_pred[m][:, batch_num, 3][:count].detach().numpy()
+        
+#             X, Y = np.meshgrid(x, y)
+#             Z = np.zeros(X.shape)  # Initialize a zero matrix for the PDF values
+
+#             # Calculate the PDF values for each point on the grid
+#             for i in range(len(muX)):
+#                 mean = [muX[i], muY[i]]
+#                 cov = [[sigX[i]**2, 0], [0, sigY[i]**2]]  # Assuming no covariance
+#                 rv = multivariate_normal(mean, cov)
+#                 Z += rv.pdf(np.dstack((X, Y)))
+            
+#             combined_Z += Z
+
+#             #Plot the contour map 
+#             plt.subplot(2, 3, m+1)
+#             contour = plt.contourf(X, Y, Z, levels=30, cmap='viridis')  # Increased levels for more detail
+#             plt.xlabel('X - Lateral Coordinate')
+#             plt.ylabel('Y - Longitudinal Coordinate')
+#             plt.ylim(-20, 20)  # Set y-limit for better visibility
+#             plt.title(f'Contour Plot for Maneuver {m+1}')
+#             plt.colorbar(contour) 
+        
+#         # Plot the combined contour map for all maneuvers
+#         plt.tight_layout()
+#         plt.savefig(f'contour_maps/all_maneuvers_subplot_{time}_seconds.png')
+#         plt.figure(figsize=(9, 6))
+#         combined_contour = plt.contourf(Xc, Yc, combined_Z, levels=30, cmap='viridis')  # Increased levels for more detail
+#         plt.xlabel('X - Lateral Coordinate')
+#         plt.ylabel('Y - Longitudinal Coordinate')
+#         plt.ylim(-20, 20)  # Set y-limit for better visibility
+#         plt.title(f'Combined Contour Plot for All Maneuvers at count {count}')
+
+
 def generate_normal_distribution(fut_pred, lane, batch_num):
     num_maneuvers = len(fut_pred)
     x = np.linspace(0, 100, 100)
-    y = np.linspace(-50, 50, 100)  # Reduced y-range for better visibility
+    y = np.linspace(-20, 20, 100)  # Reduced y-range for better visibility
     Xc, Yc = np.meshgrid(x, y)
     combined_Z = np.zeros(Xc.shape)
     plt.figure(figsize=(18, 12))
     time = 0
 
-    for count in range(11, 51, 11):
+    for count in range(10, 51, 10):
         time += 2
+        plt.figure(figsize=(18, 12))  # Ensure consistent figure size for subplots
         for m in range(num_maneuvers):
             muX = fut_pred[m][:, batch_num, 0][:count].detach().numpy()
             muY = fut_pred[m][:, batch_num, 1][:count].detach().numpy()
@@ -208,26 +258,31 @@ def generate_normal_distribution(fut_pred, lane, batch_num):
             
             combined_Z += Z
 
-            #Plot the contour map 
-            plt.subplot(2, 3, m+1)
-            contour = plt.contourf(X, Y, Z, levels=30, cmap='viridis')  # Increased levels for more detail
+            # Plot the contour map
+            plt.subplot(2, 3, m + 1)
+            contour = plt.contourf(X, Y, Z, levels=50, cmap='viridis')  # Increased levels for more detail and changed cmap
             plt.xlabel('X - Lateral Coordinate')
             plt.ylabel('Y - Longitudinal Coordinate')
-            plt.ylim(-50, 50)  # Set y-limit for better visibility
-            plt.title(f'Contour Plot for Maneuver {m+1}')
-            plt.colorbar(contour) 
-        
-        # Plot the combined contour map for all maneuvers
+            plt.ylim(-10, 10)  # Set y-limit for better visibility
+            plt.title(f'Contour Plot for Maneuver {m + 1}')
+            plt.colorbar(contour)
+
         plt.tight_layout()
         plt.savefig(f'contour_maps/all_maneuvers_subplot_{time}_seconds.png')
-        plt.figure(figsize=(9, 6))
-        combined_contour = plt.contourf(Xc, Yc, combined_Z, levels=30, cmap='viridis')  # Increased levels for more detail
-        plt.xlabel('X - Lateral Coordinate')
-        plt.ylabel('Y - Longitudinal Coordinate')
-        plt.ylim(-50, 50)  # Set y-limit for better visibility
-        plt.title(f'Combined Contour Plot for All Maneuvers at count {count}')
-        plt.colorbar(combined_contour)
-        plt.savefig(f'contour_maps/combined_maneuver_count{count}.png')
+        plt.close()
+
+        # Plot the combined contour map for all maneuvers
+        # plt.figure(figsize=(9, 6))  # Ensure consistent figure size for combined plot
+        # combined_contour = plt.contourf(Xc, Yc, combined_Z, levels=50, cmap='viridis')  # Increased levels for more detail and changed cmap
+        # plt.xlabel('X - Lateral Coordinate')
+        # plt.ylabel('Y - Longitudinal Coordinate')
+        # plt.ylim(-25, 25)  # Set y-limit for better visibility
+        # plt.title(f'Combined Contour Plot for All Maneuvers at count {count}')
+        # plt.colorbar(combined_contour)
+        # plt.tight_layout()
+        # plt.savefig(f'contour_maps/combined_maneuvers_{time}_seconds.png')
+        # plt.close()
+        
 
 def main():
     args = {}  # Network Arguments
