@@ -43,9 +43,10 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
-    cost = 0
-    sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
+    epsilon = 1e-9 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
+    factor = 0.8 # Factor the epsilon value accordingly 
+    cost = 0 # Initial line integral cost
+    sig = np.sqrt((sigX**2 + sigY**2)/2) + factor*epsilon # sigma value
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
@@ -257,9 +258,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
-    # outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # Groundtruth trajectory after the overpass  
-    # possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x) & (input_data['xloc'] <= overpass_end_loc_x+overpass_length)] # All possible trajectories that we need to consider
-    
+   
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # All possible trajectories that we need to consider
     
@@ -329,11 +328,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                  
                 gradient = (np.max(x_list) - np.min(x_list))
                 
-                if gradient <= alpha:
+                if gradient < alpha:
                     gradient += alpha
  
-                # print(f'gradient: {gradient}')  
-                # gradient = 16
+                # print(f'gradient: {gradient}')   
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
