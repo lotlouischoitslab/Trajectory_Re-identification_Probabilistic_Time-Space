@@ -43,10 +43,9 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-9 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
-    factor = 0.8 # Factor the epsilon value accordingly 
+    epsilon = 1e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal 
     cost = 0 # Initial line integral cost
-    sig = np.sqrt((sigX**2 + sigY**2)/2) + factor*epsilon # sigma value
+    sig = np.sqrt((sigX**2 + sigY**2)/8) + epsilon # sigma value
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
@@ -328,7 +327,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                  
                 gradient = (np.max(x_list) - np.min(x_list))
                 
-                if gradient < alpha:
+                if gradient <= alpha:
                     gradient += alpha
  
                 # print(f'gradient: {gradient}')   
