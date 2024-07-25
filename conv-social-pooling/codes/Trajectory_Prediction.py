@@ -307,7 +307,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
     
-        # plt.figure()
+        plt.figure()
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
@@ -344,20 +344,18 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 x_axis = len(muX_time) 
                 y_axis = len(x_list) 
 
-                # if x_axis >= y_axis:
-                #     plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
-                # else:
-                #     plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
-
-                # print(muX)
+                if x_axis >= y_axis:
+                    plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
+                else:
+                    plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
+ 
                 traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
-                # plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
-                # plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
-                # plt.xlabel('Time')
-                # plt.ylabel('X Location')
-                # plt.legend()
-                # plt.title('Possible xloc and Predicted muX')
-                # plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
+                plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
+                plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
+                plt.xlabel('Time')
+                plt.ylabel('X Location') 
+                plt.title('Possible xloc and Predicted muX')
+                plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
  
                 N = len(x_list)-2
 
@@ -518,13 +516,13 @@ def main(): # Main function
     ################################## SUCCESS CASES ##################################################################################################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
     # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
-    overpass_start_loc_x,overpass_end_loc_x = 1070, 1085 # both in meters Overpass width 15 meters (50 feets)   % |  % Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1075, 1090 # both in meters Overpass width 15 meters (50 feets)   % |  % Accuracy 
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58% | 25.00% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets)   35.07% | 24.62% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
+    overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
