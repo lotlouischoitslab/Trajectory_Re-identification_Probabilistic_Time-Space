@@ -43,9 +43,13 @@ yloc: Lateral E/S Movement
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 1e-3 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal 
+    epsilon = 1e-2 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal 
     cost = 0 # Initial line integral cost
-    sig = np.sqrt((sigX**2 + sigY**2)/6) + epsilon # sigma value # 2 4 6 8 10
+    sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
+
+
+    epsilon = 1e-2
+    sig = np.sqrt((sigX**2 + sigY**2)/9) + epsilon # sigma value
 
     # Adjusted calculations to use muX, muY, sigX, and sigY directly.
     a = (math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2)) * (1 / (2 * sig)) + epsilon
@@ -252,7 +256,7 @@ def scale_data(muX, muY, method='minmax'):
 
   
 
-def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha,gamma):
+def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
@@ -325,12 +329,12 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]  
                  
-                gradient = gamma*((np.max(x_list) - np.min(x_list))/overpass_length)
+                gradient = (np.max(x_list) - np.min(x_list)) 
                 
                 if gradient <= alpha:
-                    gradient += gamma*(alpha/overpass_length)
+                    gradient += alpha 
  
-                print(f'gradient: {gradient}')   
+                # print(f'gradient: {gradient}')   
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
@@ -513,33 +517,28 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) #################################################################################################################################################################
     ################################## SUCCESS CASES ##################################################################################################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feets) 80.83% Accuracy    
-    
-    # overpass_start_loc_x,overpass_end_loc_x = 1931, 1948 # both in meters Overpass width 17 meters (56 feets) 75.37% Accuracy  
-    # overpass_start_loc_x,overpass_end_loc_x = 2093, 2110 # both in meters Overpass width 17 meters (56 feets) 73.56% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1110, 1127 # both in meters Overpass width 17 meters (56 feets) 71.05% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  71.28% | 38.03% Accuracy  
+    overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  73.46% | 33.80% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1110, 1125 # both in meters Overpass width 15 meters (50 feets)  80.30% | 5.71% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.21% | 25.00% Accuracy 
     #################################################################################################################################################################################
  
-    ################################### FALIED CASES ############################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1587 # both in meters Overpass width 17 meters (56 feets)  
-    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1337 # both in meters Overpass width 17 meters (56 feets) 
+    ################################### FAILED CASES ############################################################################################################
+    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets)   32.53% | 24.62% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  39.69% | 15.87% Accuracy 
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  91.11%  20.59%
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 78.78%  23.53%
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58%
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1817 # meters   
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1835 # 35 meters
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1840 # 40 meters
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  94.24% | 20.59% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 85.25% | 23.53% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.21% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 51.98% | 30.88% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.25% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 16.40% | 22.06% Accuracy
 
 
-    delta = 5 # Time interval that we will be predicting for 
-    alpha = 12 # First value to adjust for the statistical parameters
-    gamma = 9 # Second value to adjust for the statistical parameters
+    delta = 5 # time interval that we will be predicting for 
+    alpha = 12 # value to adjust for the statistical parameters
  
     ################################# NEURAL NETWORK INITIALIZATION ######################################################## 
     net = highwayNet_six_maneuver(args) # we are going to initialize the network 
@@ -598,7 +597,7 @@ def main(): # Main function
                 fut_pred_np.append(fut_pred_np_point)
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
-            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha,gamma) # where the function is called and I feed in maneurver pred and future prediction points         
+            predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha) # where the function is called and I feed in maneurver pred and future prediction points         
             generate_normal_distribution(fut_pred_np, lane,batch_size-1)
 
             analyzed_traj = evaluate_trajectory_prediction()
