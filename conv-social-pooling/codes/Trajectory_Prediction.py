@@ -325,12 +325,12 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]  
                  
-                gradient = (np.max(x_list) - np.min(x_list))
+                gradient = 10*((np.max(x_list) - np.min(x_list))/overpass_length)
                 
                 if gradient <= alpha:
-                    gradient += alpha
+                    gradient += 10*(alpha/overpass_length)
  
-                # print(f'gradient: {gradient}')   
+                print(f'gradient: {gradient}')   
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
