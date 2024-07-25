@@ -58,8 +58,9 @@ yloc: Lateral E/S Movement
 #             math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
     
 #     return cost
+
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
-    epsilon = 5e-5 # Small value to prevent division by zero 1e-5 1e-6 1e-7 optimal
+    epsilon = 8e-5 # Small value to prevent division by zero 1e-5 5e-5 1e-6 1e-7 optimal
     cost = 0
     sig = np.sqrt((sigX**2 + sigY**2)/2) + epsilon
 
@@ -341,7 +342,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 sigX = fut_pred[m][:,batch_num,2]
                 sigY = fut_pred[m][:,batch_num,3]  
                  
-                gradient = (np.max(x_list) - np.min(x_list)) 
+                gradient = np.max(x_list) - np.min(x_list) 
                 
                 if gradient <= alpha:
                     gradient += alpha 
