@@ -253,7 +253,35 @@ def scale_data(muX, muY, method='minmax'):
 
     return muX_scaled.tolist(), muY_scaled.tolist()
 
-  
+
+
+
+def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold, maneuver_colors):
+    x_axis = len(muX_time)
+    y_axis = len(x_list)
+    
+    if x_list[0] <= threshold:
+        plt.figure(figsize=(10, 6))
+
+        if x_axis >= y_axis:
+            plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='black')
+        else:
+            plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='black')
+
+        traj_time_original = np.linspace(overpass_start_time, overpass_end_time, len(x_list))
+
+        # Plot predicted muX for each maneuver
+        for m, (muX_m, color) in enumerate(zip(muX, maneuver_colors)):
+            plt.scatter(muX_time, muX_m[:len(muX_time)], label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
+
+        plt.xlabel('Time', fontsize=12)
+        plt.ylabel('X Location', fontsize=12)  
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(f'plots/{ident}_{possible_traj_temp_ID}_muX_vs_xloc.png')
+        plt.close()
+
  
 
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
@@ -284,6 +312,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta, 0.2) # This is the 0.2 seconds increment part 
     stat_time_frame = np.round(stat_time_frame, 1)
+
+    maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
+
  
 
     for key, ident in enumerate(IDs_to_traverse): 
@@ -307,7 +338,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
     
-        plt.figure()
+        # plt.figure()
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
@@ -321,6 +352,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             x_list = temp_proj_to_traverse['xloc'].values 
             y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
+            # plt.figure()
+
+            muX_maneuvers = []
 
             for m in range(num_maneuvers):
                 muX_before = fut_pred[m][:,batch_num,0] 
@@ -338,26 +372,28 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
-                 
-    
+
+                # plot_trajectories_with_threshold(muX_time, x_list, muX, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x+20)
+                  
                 # Plot muX and xloc
                 x_axis = len(muX_time) 
                 y_axis = len(x_list) 
-
-                if x_axis >= y_axis:
-                    plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}')
-                else:
-                    plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}')
- 
-                traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
-                plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
-                plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}')
-                plt.xlabel('Time')
-                plt.ylabel('X Location') 
-                plt.title('Possible xloc and Predicted muX')
-                plt.savefig('plots/'+str(ident)+'_muX_vs_xloc.png')
+                if x_list[0] <= overpass_end_loc_x+15:
+                    if x_axis >= y_axis:
+                        plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
+                    else:
+                        plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
+    
+                    traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
+                    #plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
+                    plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}', marker='o', color='r')
+                    plt.xlabel('Time')
+                    plt.ylabel('X Location')  
+                    plt.title('Possible xloc and Predicted muX')
+                    plt.savefig('plots/'+str(ident)+'_'+str(possible_traj_temp_ID)+'_muX_vs_xloc.png')
  
                 N = len(x_list)-2
+                muX_maneuvers.append(muX)
 
                 for i in range(0, N, 2): 
                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
@@ -373,7 +409,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
 
-                
+            
+            plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20, maneuver_colors=maneuver_colors)
 
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
@@ -517,12 +554,12 @@ def main(): # Main function
     # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
     # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
     # overpass_start_loc_x,overpass_end_loc_x = 1075, 1090 # both in meters Overpass width 15 meters (50 feets)   % |  % Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58% | 25.00% Accuracy
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58% | 25.00% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets)   35.07% | 24.62% Accuracy 
-    overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
@@ -595,7 +632,7 @@ def main(): # Main function
 
             fut_pred_np = np.array(fut_pred_np) # convert the fut pred points into numpy
             predict_trajectories(original_data, overpass_start_loc_x,overpass_end_loc_x,lane,fut_pred_np,batch_size-1,delta,alpha) # where the function is called and I feed in maneurver pred and future prediction points         
-            generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+             
 
             analyzed_traj = evaluate_trajectory_prediction()
             print(f'analyzed trajectory: {analyzed_traj}')
@@ -605,8 +642,7 @@ def main(): # Main function
 
             #plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
 
-            if i == 0: # Generate and save the distribution plots just for one trajectory
-                generate_normal_distribution(fut_pred_np, lane,batch_size-1)
+            if i == 0: # Generate and save the distribution plots just for one trajectory 
                 break 
      
  

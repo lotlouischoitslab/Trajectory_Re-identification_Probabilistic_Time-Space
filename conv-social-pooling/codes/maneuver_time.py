@@ -41,7 +41,7 @@ yloc: Lateral E/S Movement
  
 def generate_normal_distribution(fut_pred, lane, batch_num):
     num_maneuvers = len(fut_pred)
-    x = np.linspace(20, 120, 100)
+    x = np.linspace(-10, 100, 100)
     y = np.linspace(-10, 10, 100)  # Reduced y-range for better visibility
     X, Y = np.meshgrid(x, y)
     time = 0
