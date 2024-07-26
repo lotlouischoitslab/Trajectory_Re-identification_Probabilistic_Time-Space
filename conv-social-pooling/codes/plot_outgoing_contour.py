@@ -14,6 +14,13 @@ def plot_trajectory_contour(input_data, overpass_start_loc_x, overpass_end_loc_x
             print(f"No data for vehicle ID {ident} in lane {lane}")
             continue
 
+        # Filter data within the overpass x-coordinate range
+        vehicle_data = vehicle_data[(vehicle_data['xloc'] >= overpass_end_loc_x) & (vehicle_data['xloc'] <= overpass_end_loc_x+10)]
+
+        if len(vehicle_data) == 0:
+            print(f"No data within the overpass range for vehicle ID {ident}")
+            continue
+
         x = np.linspace(overpass_start_loc_x, overpass_end_loc_x, 100)
         y = np.linspace(vehicle_data['yloc'].min(), vehicle_data['yloc'].max(), 100)
         X, Y = np.meshgrid(x, y)
@@ -42,6 +49,7 @@ def plot_trajectory_contour(input_data, overpass_start_loc_x, overpass_end_loc_x
         plt.tight_layout()
         plt.savefig(f'contour_maps/vehicle_{ident}_contour.png')
         plt.close()
+        break
 
 def main():
     # Load your data here
