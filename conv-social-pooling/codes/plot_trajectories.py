@@ -8,7 +8,7 @@ def plot_original_trajectories():
     file_to_read = 'I294_Cleaned.csv'  # TGSIM csv dataset 
     df = pd.read_csv(file_to_read) # read in the data 
     input_data = df.copy() # copy the dataframe  
-    overpass_start_loc_x, overpass_end_loc_x = 1800, 1817 # both in meters Overpass width 17 meters (56 feet) 
+    overpass_start_loc_x, overpass_end_loc_x = 1800, 1815 # both in meters Overpass width 17 meters (56 feet) 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  

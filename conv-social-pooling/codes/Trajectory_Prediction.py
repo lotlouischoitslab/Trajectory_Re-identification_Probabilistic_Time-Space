@@ -376,21 +376,21 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 # plot_trajectories_with_threshold(muX_time, x_list, muX, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x+20)
                   
                 # Plot muX and xloc
-                x_axis = len(muX_time) 
-                y_axis = len(x_list) 
-                if x_list[0] <= overpass_end_loc_x+15:
-                    if x_axis >= y_axis:
-                        plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
-                    else:
-                        plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
+                # x_axis = len(muX_time) 
+                # y_axis = len(x_list) 
+                # if x_list[0] <= overpass_end_loc_x+15:
+                #     if x_axis >= y_axis:
+                #         plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
+                #     else:
+                #         plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
     
-                    traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
-                    #plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
-                    plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}', marker='o', color='r')
-                    plt.xlabel('Time')
-                    plt.ylabel('X Location')  
-                    plt.title('Possible xloc and Predicted muX')
-                    plt.savefig('plots/'+str(ident)+'_'+str(possible_traj_temp_ID)+'_muX_vs_xloc.png')
+                #     traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
+                #     #plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
+                #     plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}', marker='o', color='r')
+                #     plt.xlabel('Time')
+                #     plt.ylabel('X Location')  
+                #     plt.title('Possible xloc and Predicted muX')
+                #     plt.savefig('plots/'+str(ident)+'_'+str(possible_traj_temp_ID)+'_muX_vs_xloc.png')
  
                 N = len(x_list)-2
                 muX_maneuvers.append(muX)
