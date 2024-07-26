@@ -42,10 +42,8 @@ def plot_trajectory_contour(predicted_trajectories_dir, overpass_start_loc_x, ov
         predicted_trajectory_input_path = os.path.join(predicted_trajectories_dir, predicted_trajectory_input_file)
         predicted_trajectory_input = pd.read_csv(predicted_trajectory_input_path)
         ID_to_check = predicted_trajectory_input['Vehicle_ID'].values[0]
-        
-        
-    
-        if len(predicted_trajectory_input['xloc']) != 0 and len(time) != 0:
+
+        if len(predicted_trajectory_input['xloc']) != 0:
             s_clean_x = predicted_trajectory_input['xloc'].values[0].strip("[]")
             list_str_x = s_clean_x.split()
             x = [round(float(x), 2) for x in list_str_x]
@@ -53,11 +51,12 @@ def plot_trajectory_contour(predicted_trajectories_dir, overpass_start_loc_x, ov
             s_clean_y = predicted_trajectory_input['yloc'].values[0].strip("[]")
             list_str_y = s_clean_y.split()
             y = [round(float(y), 2) for y in list_str_y]
- 
-
+            time = np.linspace(0, delta, len(x))
+  
             maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
+            fig, ax = plt.subplots(figsize=(10, 6))
 
-            for m in range(6):
+            for m in range(6): 
                 muX_before = fut_pred[m][:, batch_num-1, 0].detach().numpy()
                 muY_before = fut_pred[m][:, batch_num-1, 1].detach().numpy()
 
@@ -69,34 +68,30 @@ def plot_trajectory_contour(predicted_trajectories_dir, overpass_start_loc_x, ov
                 muX_scaled, muY_scaled = scale_data(muX_before, muY_before, method='minmax')
                 muX = [(gradient * mx) + overpass_start_loc_x for mx in muX_scaled] 
                 muY = [my + overpass_start_loc_x for my in muY_scaled]
- 
+
                 # Create a 2D histogram for the contour
-                heatmap, xedges, yedges = np.histogram2d(muX, muY, bins=30, range=[[overpass_end_loc_x, overpass_end_loc_x + delta + 0.5], [min(y), max(y) + 0.05]])
+                heatmap, xedges, yedges = np.histogram2d(muX, muY, bins=30, range=[[overpass_end_loc_x, overpass_end_loc_x + delta + 0.5], [min(muY), max(muY) + 0.05]])
 
                 # Generate the mesh grid for the contour plot
                 X, Y = np.meshgrid(xedges[:-1], yedges[:-1])
-                contour = plt.contourf(X, Y, heatmap.T, levels=60, cmap='viridis', alpha=0.5)
-                plt.colorbar(contour)
+                contour = ax.contourf(X, Y, heatmap.T, levels=60, cmap='viridis', alpha=0.5)
+                fig.colorbar(contour)
 
                 # Plot the predicted trajectory
-                plt.plot(time, muX, marker='o', linestyle='-', color=maneuver_colors[m], label=f'Trajectory for Maneuver {m+1}')
+                ax.plot(time[:len(muX)], muX[:len(time)], marker='o', linestyle='-', color=maneuver_colors[m], label=f'Trajectory for Maneuver {m+1}')
 
-            plt.xlabel('Time (seconds)')
-            plt.ylabel('X - Longitudinal Coordinate (meters)')
-            plt.plot(time, x, marker='o', color='white', label=f'Trajectory for ID {ID_to_check}')  # Plot the actual trajectory
-            plt.legend()
-            plt.grid(True)
-            plt.tight_layout()
+            ax.set_xlabel('Time (seconds)', fontsize=14)
+            ax.set_ylabel('X - Longitudinal Coordinate (meters)', fontsize=14)
+            ax.plot(time, x[:len(time)], marker='o', color='white', label=f'Trajectory for ID {ID_to_check}')  # Plot the actual trajectory
+            ax.legend()
+            ax.grid(True)
+            fig.tight_layout()
             plt.savefig(f'contour_maps/vehicle_{ID_to_check}_contour.png')
             plt.close()
 
-def main():
-    predicted_trajectories_dir = "best_trajectories"
-    overpass_start_loc_x = 1800
-    overpass_end_loc_x = 1815
-    lane = -2
-    delta = 10
 
+def main():
+    predicted_trajectories_dir = "best_trajectories"  
     args = {}
     print('cuda available', torch.cuda.is_available())
     print('torch version', torch.__version__)
