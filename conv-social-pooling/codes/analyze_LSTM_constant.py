@@ -27,15 +27,14 @@ def analyze():
             ground_truth_xlist = np.round(ground_truth_trajectory['xloc'].values[:len(predicted_xlist)], 2)
             ground_truth_ylist = np.round(ground_truth_trajectory['yloc'].values[:len(predicted_ylist)], 2)
 
-            # Time axis for plotting 
-            time_steps = ground_truth_trajectory['time'].values[:len(predicted_xlist)]
-            print(time_steps)
+            # Time axis for plotting  
+            time_steps = np.linspace(0,5,len(predicted_xlist))
 
             fig, ax = plt.subplots(figsize=(10, 5))
             ax.plot(time_steps, predicted_xlist, label='Predicted X Coordinate', marker='o', color='red')
             ax.plot(time_steps, ground_truth_xlist, label='Ground Truth X Coordinate', marker='x', color='blue')
-            ax.set_xlabel('Time (Seconds)')
-            ax.set_ylabel('X coordinates')
+            ax.set_xlabel('Time (Seconds)', fontsize=20)
+            ax.set_ylabel('X coordinates', fontsize=20)
             ax.legend()
             ax.grid(True) 
             plt.savefig(f'prediction_plots/predicted_{ID_to_check}.png')

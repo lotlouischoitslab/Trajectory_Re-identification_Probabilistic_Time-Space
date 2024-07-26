@@ -252,21 +252,19 @@ def scale_data(muX, muY, method='minmax'):
         muY_scaled = muY.flatten()
 
     return muX_scaled.tolist(), muY_scaled.tolist()
+  
 
 
-
-
-def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold, maneuver_colors):
+def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold):
     x_axis = len(muX_time)
     y_axis = len(x_list)
+    maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
     
-    if x_list[0] <= threshold:
-        plt.figure(figsize=(10, 6))
-
+    if x_list[0] <= threshold: 
         if x_axis >= y_axis:
-            plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='black')
+            plt.plot(muX_time[:y_axis], x_list, label=f'Possible Trajectory {possible_traj_temp_ID}', linestyle='-', color='black')
         else:
-            plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='black')
+            plt.plot(muX_time, x_list[:x_axis], label=f'Possible Trajectory {possible_traj_temp_ID}', linestyle='-', color='black')
 
         traj_time_original = np.linspace(overpass_start_time, overpass_end_time, len(x_list))
 
@@ -274,12 +272,12 @@ def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj
         for m, (muX_m, color) in enumerate(zip(muX, maneuver_colors)):
             plt.scatter(muX_time, muX_m[:len(muX_time)], label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
 
-        plt.xlabel('Time', fontsize=12)
-        plt.ylabel('X Location', fontsize=12)  
+        plt.xlabel('Time', fontsize=20)
+        plt.ylabel('X Location', fontsize=20)  
         plt.legend()
         plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(f'plots/{ident}_{possible_traj_temp_ID}_muX_vs_xloc.png')
+        plt.tight_layout() 
+        plt.savefig(f'possible_plots/{ident}_muX_vs_xloc.png')
         plt.close()
 
  
@@ -338,7 +336,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
     
-        # plt.figure()
+        plt.figure(figsize=(10, 6))
         # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
         # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
         
@@ -352,10 +350,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             x_list = temp_proj_to_traverse['xloc'].values 
             y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
-            # plt.figure()
-
             muX_maneuvers = []
 
+             
             for m in range(num_maneuvers):
                 muX_before = fut_pred[m][:,batch_num,0] 
                 muY_before = fut_pred[m][:,batch_num,1] 
@@ -372,26 +369,8 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                 muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
-
-                # plot_trajectories_with_threshold(muX_time, x_list, muX, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x+20)
-                  
-                # Plot muX and xloc
-                # x_axis = len(muX_time) 
-                # y_axis = len(x_list) 
-                # if x_list[0] <= overpass_end_loc_x+15:
-                #     if x_axis >= y_axis:
-                #         plt.plot(muX_time[:y_axis], x_list, label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
-                #     else:
-                #         plt.plot(muX_time, x_list[:x_axis], label=f'Possible xloc for ID {ident}', linestyle='-', color='b')
-    
-                #     traj_time_original = np.linspace(overpass_start_time,overpass_end_time,len(x_list))
-                #     #plt.plot(traj_time_original, x_list, label=f'Possible xloc for ID {ident}')
-                #     plt.scatter(muX_time, muX[:len(muX_time)], label=f'muX Maneuver {m+1} for ID {ident}', marker='o', color='r')
-                #     plt.xlabel('Time')
-                #     plt.ylabel('X Location')  
-                #     plt.title('Possible xloc and Predicted muX')
-                #     plt.savefig('plots/'+str(ident)+'_'+str(possible_traj_temp_ID)+'_muX_vs_xloc.png')
  
+
                 N = len(x_list)-2
                 muX_maneuvers.append(muX)
 
@@ -410,7 +389,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
 
             
-            plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20, maneuver_colors=maneuver_colors)
+            plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20)
 
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
