@@ -533,7 +533,7 @@ def main(): # Main function
     # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
     # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
     # overpass_start_loc_x,overpass_end_loc_x = 1075, 1090 # both in meters Overpass width 15 meters (50 feets)   % |  % Accuracy 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58% | 25.00% Accuracy
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
