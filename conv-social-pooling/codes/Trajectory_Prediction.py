@@ -37,12 +37,12 @@ os.environ["CUDA_LAUNCH_BLOCKING"]="1"
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='.*openblas.*')
 warnings.simplefilter('ignore', np.RankWarning)
-##############################################################################
+################################################################################################################################################
 
 '''
 xloc: Longitudinal N/S movement 
 yloc: Lateral E/S Movement
-'''
+''' 
 
 ############################################# LINE INTEGRAL CALCULATIONS #######################################################################
 def line_integral(x1, y1, x2, y2, muX, muY, sigX, sigY): # Line Integral Function 
