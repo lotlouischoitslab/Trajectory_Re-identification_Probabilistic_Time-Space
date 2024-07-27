@@ -30,16 +30,14 @@ def analyze():
             # Time axis for plotting  
             time_steps = np.linspace(0,5,len(predicted_xlist))
 
-            fig, ax = plt.subplots(figsize=(10, 5))
+            fig, ax = plt.subplots(figsize=(16, 10))
             ax.plot(time_steps, predicted_xlist, label='Predicted X Coordinate', marker='o', color='red')
             ax.plot(time_steps, ground_truth_xlist, label='Ground Truth X Coordinate', marker='x', color='blue')
-            ax.set_xlabel('Time (Seconds)', fontsize=20)
-            ax.set_ylabel('X coordinates', fontsize=20)
-            ax.legend()
+            ax.set_xlabel('Time (s)', fontsize=30)
+            ax.set_ylabel('X coordinates (m)', fontsize=30) 
             ax.grid(True) 
             plt.savefig(f'prediction_plots/predicted_{ID_to_check}.png')
-            # plt.show()
-            #break 
+             
 
 def main():
     analyze()

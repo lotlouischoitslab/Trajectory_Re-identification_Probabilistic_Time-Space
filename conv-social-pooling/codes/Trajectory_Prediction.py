@@ -148,8 +148,8 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
             ax.set_xlim(0, 320)
             ax.set_ylim(1000, 2200)  # Set y-axis range from 0 to 2200
 
-        ax.set_xlabel('Time (s)', fontsize = 20)
-        ax.set_ylabel('Location (m)', fontsize = 20)
+        ax.set_xlabel('Time (s)', fontsize = 30)
+        ax.set_ylabel('Location (m)', fontsize = 30)
         ax.xaxis.set_major_locator(plt.MaxNLocator(100)) # Increase the number of grid lines on the x-axis 
         ax.yaxis.set_major_locator(plt.MaxNLocator(60)) # Increase the number of grid lines on the y-axis
         ax.grid()
@@ -158,61 +158,7 @@ def plot_original_trajectories(incoming_trajectories,outgoing_trajectories):
         fig.savefig(f'trajectory_plots/trajectory-'+ axis_temp+'.png')
 
 
-def plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df):
-    IDs = possible_traj_df['ID'].unique() 
-    all_ts = []
-    all_ys = [] 
-
-    fig, ax = plt.subplots() # get xs and ts of each vehicle
-
-    first_time_pred = []
-    first_point_pred = []
-    last_time_pred = []
-    last_point_pred = []
-
-    for i in IDs:
-        # print(f'ID: {i}')
-        temp_data = incoming_trajectories[incoming_trajectories['ID']==i]
-        ys = temp_data['xloc'].to_numpy() 
-        ts = temp_data.time.to_numpy()
-        # print(ts)
-        ax.scatter(ts, ys,s=1) 
-        if len(ts) != 0:
-            first_time_pred.append(ts[-1])
-            first_point_pred.append(ys[-1])
-    
-
-    for j in IDs:
-        # print(f'ID: {j}')
-        temp_data = outgoing_trajectories[outgoing_trajectories['ID']==j]
-        ys = temp_data['xloc'].to_numpy() 
-        ts = temp_data.time.to_numpy()
-        ax.scatter(ts, ys,s=1)
-        if len(ts) != 0:
-            last_time_pred.append(ts[0])
-            last_point_pred.append(ys[0])
-
-    for t1,t2,f1,f2 in zip(first_time_pred,last_time_pred,first_point_pred,last_point_pred):
-        plt.plot([t1,t2],[f1,f2],color='r',label='connect')
-     
-    
-    # print('first_time_pred',first_time_pred)
-    # print('last_time_pred',last_time_pred)
-
-    # print('first_point_pred',first_point_pred)
-    # print('last_point_pred',last_point_pred)
-
-    ax.set_xlim(40, 250)
-    ax.set_ylim(1000, 2200)  # Set y-axis range from 0 to 2200 
-    ax.set_xlabel('Time (s)', fontsize = 20)
-    ax.set_ylabel('Location (m)', fontsize = 20)
-    ax.xaxis.set_major_locator(plt.MaxNLocator(100)) # Increase the number of grid lines on the x-axis 
-    ax.yaxis.set_major_locator(plt.MaxNLocator(60)) # Increase the number of grid lines on the y-axis
-    ax.grid()
-
-    fig.set_size_inches(120,30)
-    fig.savefig(f'trajectory_plots/selected_trajectory.png')
-
+ 
 
 
 def determine_overpass_y(incoming_trajectories): 
@@ -255,10 +201,11 @@ def scale_data(muX, muY, method='minmax'):
   
 
 
-def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold):
+def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold,axes):
     x_axis = len(muX_time)
     y_axis = len(x_list)
     maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
+    
     
     if x_list[0] <= threshold: 
         if x_axis >= y_axis:
@@ -272,12 +219,11 @@ def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj
         for m, (muX_m, color) in enumerate(zip(muX, maneuver_colors)):
             plt.scatter(muX_time, muX_m[:len(muX_time)], label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
 
-        plt.xlabel('Time', fontsize=20)
-        plt.ylabel('X Location', fontsize=20)  
-        plt.legend()
+        plt.xlabel('Time (s)', fontsize=15)
+        plt.ylabel(axes[1]+' Location (m)', fontsize=15)   
         plt.grid(True)
         plt.tight_layout() 
-        plt.savefig(f'possible_plots/{ident}_muX_vs_xloc.png')
+        plt.savefig(f'possible_plots/{ident}_'+axes[0]+'_vs_'+axes[1]+'.png')
         plt.close()
 
  
@@ -319,7 +265,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
-         
+ 
         
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
@@ -336,9 +282,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
     
-        plt.figure(figsize=(10, 6))
-        # plt.plot(ingoing_temp_data['time'].values,ingoing_temp_data['xloc'].values)
-        # plt.plot(current_outgoing['time'].values,current_outgoing['xloc'].values)
+        plt.figure(figsize=(10, 6)) 
         
 
         for possible_traj_temp_ID in possible_IDS:   
@@ -351,6 +295,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
             muX_maneuvers = []
+            muY_maneuvers = [] 
 
              
             for m in range(num_maneuvers):
@@ -366,13 +311,14 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     gradient += alpha 
  
                 # print(f'gradient: {gradient}')   
-                muX_scaled,muY_scaled = scale_data(muX_before,muY_before, method='minmax')
+                muX_scaled, muY_scaled = scale_data(muX_before,muY_before, method='minmax')  
                 muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
                 muY = [my+overpass_start_loc_y for my in muY_scaled] 
- 
+
 
                 N = len(x_list)-2
                 muX_maneuvers.append(muX)
+                muY_maneuvers.append(muY)
 
                 for i in range(0, N, 2): 
                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
@@ -389,8 +335,9 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
 
             
-            plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20)
-
+            plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20,axes=['muX','X'])
+            
+            
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
                 best_traj_info = {
@@ -418,18 +365,6 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
  
 
-def plot_predicted_trajectories(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist, traj_id,timeframe):
-    plt.figure(figsize=(10, 5))
-    plt.scatter(timeframe, predicted_xlist, color='r', label='Predicted Trajectory')
-    plt.plot(timeframe, ground_truth_xlist, 'b-', label='Ground Truth Trajectory')
-    plt.xlabel('Time (seconds)')
-    plt.ylabel('X Location')
-    plt.title(f'Trajectory Comparison for Vehicle ID {traj_id}')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(f'trajectory_plots/trajectory_comparison_{traj_id}.png')
- 
- 
  
 def evaluate_trajectory_prediction(): 
     best_trajectories_dir = "best_trajectories"
@@ -467,14 +402,7 @@ def evaluate_trajectory_prediction():
 
             timeframe = np.linspace(0, 5, len(predicted_xlist))  # space out from 0 to 5 seconds with length of the predicted trajectory  
 
-            # print(f'predicted_xlist: {predicted_xlist}') 
-            # print(f'predicted_ylist: {predicted_ylist}') 
-
-            # print(f'ground_truth_xlist: {ground_truth_xlist}') 
-            # print(f'ground_truth_ylist: {ground_truth_ylist}')  
-
-            # plot_predicted_trajectories(predicted_xlist_plot, predicted_ylist_plot, ground_truth_xlist_plot, ground_truth_ylist_plot, ID_to_check, timeframe)
- 
+             
             # Check if the trajectories match 
             for px, py, gx, gy in zip(predicted_xlist, predicted_ylist, ground_truth_xlist, ground_truth_ylist):
                 if px != gx or py != gy:
@@ -532,7 +460,6 @@ def main(): # Main function
     ################################## SUCCESS CASES ##################################################################################################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
     # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1075, 1090 # both in meters Overpass width 15 meters (50 feets)   % |  % Accuracy 
     overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
     #################################################################################################################################################################################
  
@@ -544,7 +471,7 @@ def main(): # Main function
     ################################### TRIAL RUNS #################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  96.12% | 20.59% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 89.73% | 23.53% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 78.58% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 50.33% | 30.88% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.00% | 25.00% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 18.12% | 22.06% Accuracy
@@ -618,8 +545,7 @@ def main(): # Main function
 
             accuracy_score = calculate_accuracy(analyzed_traj)    
             print(f'Accuracy Score: {accuracy_score}%') 
-
-            #plot_total_trajectories(incoming_trajectories,predicted_traj,outgoing_trajectories,possible_traj_df)
+ 
 
             if i == 0: # Generate and save the distribution plots just for one trajectory 
                 break 

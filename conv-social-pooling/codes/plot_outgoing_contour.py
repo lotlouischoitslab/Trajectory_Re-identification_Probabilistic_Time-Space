@@ -83,7 +83,7 @@ def plot_trajectory_contour(predicted_trajectories_dir, overpass_start_loc_x, ov
             ax.set_xlabel('Time (seconds)', fontsize=14)
             ax.set_ylabel('X - Longitudinal Coordinate (meters)', fontsize=14)
             ax.plot(time, x[:len(time)], marker='o', color='white', label=f'Trajectory for ID {ID_to_check}')  # Plot the actual trajectory
-            ax.legend()
+            
             ax.grid(True)
             fig.tight_layout()
             plt.savefig(f'contour_maps/vehicle_{ID_to_check}_contour.png')
