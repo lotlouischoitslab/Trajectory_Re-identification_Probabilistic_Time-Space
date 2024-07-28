@@ -15,7 +15,7 @@
 
          
 We are using CEE497 conda environment and go here for more **[reference](https://wiki.ncsa.illinois.edu/display/ISL20/HAL+cluster)**
-Make sure to upload the files to the cluster if you have made any changes
+Make sure to upload the files to the cluster if you have made any changes.
 
 We need to: 
 
