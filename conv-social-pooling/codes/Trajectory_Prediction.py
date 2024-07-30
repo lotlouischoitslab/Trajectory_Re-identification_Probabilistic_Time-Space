@@ -458,22 +458,22 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) #################################################################################################################################################################
     ################################## SUCCESS CASES ##################################################################################################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
-    # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets) 74.37% | 11.76% Accuracy  
+    # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets) 78.51% | 13.51% Accuracy 
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # both in meters Overpass width 15 meters (50 feets) 80.66% | 29.39% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets)   35.07% | 24.62% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets) 35.07% | 24.62% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets) 40.80% | 15.87% Accuracy 
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  96.12% | 20.59% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 89.73% | 23.53% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 50.33% | 30.88% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.00% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  96.12% | 35.22% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 89.73% | 27.65% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 29.39% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 50.75% | 21.04% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.00% | 17.05% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 18.12% | 22.06% Accuracy
 
 

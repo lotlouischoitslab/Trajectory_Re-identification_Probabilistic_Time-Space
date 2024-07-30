@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-def straight_line_method(overpass_start_loc_x, average_speed, delta, overpass_start_time):
+def constant_speed_method(overpass_start_loc_x, average_speed, delta, overpass_start_time):
     time_frame = np.arange(overpass_start_time, overpass_start_time + delta, 0.1)
     adjusted_time_frame = np.arange(0, delta, 0.1)
     x = [overpass_start_loc_x + average_speed * t for t in adjusted_time_frame]
@@ -20,13 +20,13 @@ def straight_line_method(overpass_start_loc_x, average_speed, delta, overpass_st
     
     return pd.DataFrame(df)
 
+
 def analyze_trajectories():  
     incoming_trajectories = pd.read_csv('before/incoming.csv')
     unique_ids = incoming_trajectories['ID'].unique() 
     outgoing_trajectories = pd.read_csv('before/outgoing.csv')
     outgoing_ids = outgoing_trajectories['ID'].unique() 
-    overpass_start_loc_x = 1800
-    overpass_end_loc_x = 1817 
+    overpass_start_loc_x,overpass_end_loc_x = 1895, 1910
     delta = 5  # Set the delta as needed for the time duration after the overpass
 
     correct_predictions = [] 
@@ -41,7 +41,7 @@ def analyze_trajectories():
         overpass_start_time = temp_incoming['time'].values[-1]
         
         # Generate points using the straight line method
-        linear_df = straight_line_method(overpass_start_loc_x, average_speed, delta, overpass_start_time)
+        linear_df = constant_speed_method(overpass_start_loc_x, average_speed, delta, overpass_start_time)
         linear_df.to_csv('linear_plots/ID'+str(temp_id)+'_slope_possible.csv', index=False)
         
         error = float('inf')
@@ -70,15 +70,17 @@ def analyze_trajectories():
          
         if best_possible_x is not None:
             min_len = min(len(best_possible_x), len(ground_truth_x))
-            if np.allclose(best_possible_x[:min_len], ground_truth_x[:min_len], atol=1e-4):
-                correct_predictions.append(1)
-            else:
-                correct_predictions.append(0)
+            for bx,gx in zip(best_possible_x[:min_len], ground_truth_x[:min_len]):
+                if bx == gx:
+                    correct_predictions.append(1)
+                else:
+                    correct_predictions.append(0)
 
     correct_predictions_results = sum(correct_predictions)
     accuracy = (correct_predictions_results / len(correct_predictions)) * 100
     accuracy = np.round(accuracy,2)
     print(f'Accuracy: {accuracy}%')
+
 
 def main(): 
     analyze_trajectories()
