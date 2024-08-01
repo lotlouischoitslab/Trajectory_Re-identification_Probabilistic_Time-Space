@@ -26,7 +26,7 @@ def analyze_trajectories():
     unique_ids = incoming_trajectories['ID'].unique() 
     outgoing_trajectories = pd.read_csv('before/outgoing.csv')
     outgoing_ids = outgoing_trajectories['ID'].unique() 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815
+    overpass_start_loc_x,overpass_end_loc_x =1165, 1180
     delta = 5  # Set the delta as needed for the time duration after the overpass
 
     correct_predictions = [] 

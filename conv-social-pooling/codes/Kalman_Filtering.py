@@ -4,161 +4,183 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pykalman import KalmanFilter
 
-def kalman_predict(trajectories, n_steps_ahead=50):
-    num_objects = len(trajectories)
-    results = [[] for _ in range(num_objects)]
+def kalman_predict(trajectory, n_steps_ahead, dt=0.1):
+    x_data = trajectory['xloc'].values
+    y_data = trajectory['yloc'].values
     
-    for obj_idx, trajectory in enumerate(trajectories):
-        # Ensure there are enough points for Kalman filtering
-        if len(trajectory) < 2:
-            print(f"Not enough data points for object {obj_idx}")
-            continue
-        
-        # Extract the x and y coordinates
-        x_data = trajectory[:, 0]
-        y_data = trajectory[:, 1]
-
-        # Calculate velocity and acceleration for each point
-        velocities = np.diff(trajectory, axis=0)
-        if len(velocities) < 1:
-            print(f"Not enough velocity data for object {obj_idx}")
-            continue
-        accelerations = np.diff(velocities, axis=0)
-        if len(accelerations) < 1:
-            print(f"Not enough acceleration data for object {obj_idx}")
-            continue
-        
-        # Truncate the x and y data to match the length of the accelerations
-        x_data = x_data[:len(accelerations) + 1]
-        y_data = y_data[:len(accelerations) + 1]
-
-        # Truncate the velocities to match the length of the accelerations
-        velocities = velocities[:len(accelerations)]
-
-        # Initial state [x, y, vx, vy, ax, ay]
-        initial_state_mean = [
-            x_data[0], y_data[0],
-            velocities[0, 0], velocities[0, 1],
-            accelerations[0, 0], accelerations[0, 1]
-        ]
-
-        # State transition matrix for 2D with acceleration
-        dt = 0.1  # Time step, assuming 1 for simplicity
-        transition_matrix = [
-            [1, 0, dt, 0, 0.5 * dt**2, 0],  # x' = x + vx*dt + 0.5*ax*dt^2
-            [0, 1, 0, dt, 0, 0.5 * dt**2],  # y' = y + vy*dt + 0.5*ay*dt^2
-            [0, 0, 1, 0, dt, 0],            # vx' = vx + ax*dt
-            [0, 0, 0, 1, 0, dt],            # vy' = vy + ay*dt
-            [0, 0, 0, 0, 1, 0],             # ax' = ax
-            [0, 0, 0, 0, 0, 1]              # ay' = ay
-        ]
-
-        # Observation matrix for 2D
-        observation_matrix = [
-            [1, 0, 0, 0, 0, 0],  # observe x
-            [0, 1, 0, 0, 0, 0]   # observe y
-        ]
-
-        # Covariance matrices
-        transition_covariance = np.eye(6) * 0.1
-        observation_covariance = np.eye(2) * 0.1
-        initial_state_covariance = np.eye(6) * 1.0
-
-        # Create the Kalman Filter
-        kf = KalmanFilter(
-            initial_state_mean=initial_state_mean,
-            initial_state_covariance=initial_state_covariance,
-            transition_matrices=transition_matrix,
-            observation_matrices=observation_matrix,
-            transition_covariance=transition_covariance,
-            observation_covariance=observation_covariance
-        )
-
-        # Use the Kalman Filter to estimate the states
-        observations = np.column_stack((x_data, y_data))
-        state_means, _ = kf.filter(observations)
-
-        # Extract the estimated positions
-        estimated_positions_x = state_means[:, 0]
-        estimated_positions_y = state_means[:, 1]
-
-        # Predict the next n_steps_ahead points
-        future_state_means = state_means[-1]
-
-        future_positions = []
-
-        for _ in range(n_steps_ahead):
-            future_state_means = np.dot(transition_matrix, future_state_means)
-            future_positions.append([future_state_means[0], future_state_means[1]])
-
-        results[obj_idx] = future_positions
+    if len(x_data) < 2:
+        print("Not enough data points for Kalman filtering.")
+        return np.array([])
     
-    return np.array(results)
+    velocities = np.diff(np.column_stack((x_data, y_data)), axis=0)
+    velocities = np.vstack((velocities, velocities[-1]))
 
-def plot_trajectories(predicted, actual, vehicle_id):
+    initial_state_mean = [x_data[0], y_data[0], velocities[0, 0], velocities[0, 1]]
+
+    transition_matrix = [
+        [1, 0, dt, 0],
+        [0, 1, 0, dt],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ]
+
+    observation_matrix = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0]
+    ]
+
+    transition_covariance = np.eye(4) * 0.5  # Adjusted value for better accuracy
+    observation_covariance = np.eye(2) * 0.25  # Adjusted value for better accuracy
+    initial_state_covariance = np.eye(4) * 0.25
+
+    kf = KalmanFilter(
+        initial_state_mean=initial_state_mean,
+        initial_state_covariance=initial_state_covariance,
+        transition_matrices=transition_matrix,
+        observation_matrices=observation_matrix,
+        transition_covariance=transition_covariance,
+        observation_covariance=observation_covariance
+    )
+
+    observations = np.column_stack((x_data, y_data))
+    state_means, _ = kf.filter(observations)
+
+    future_state_means = state_means[-1]
+    future_positions = []
+
+    for _ in range(n_steps_ahead):
+        future_state_means = np.dot(transition_matrix, future_state_means)
+        future_positions.append([future_state_means[0], future_state_means[1]])
+
+    return np.array(future_positions)
+
+def kalman_predict(trajectory, n_steps_ahead, dt=0.1):
+    x_data = trajectory['xloc'].values
+    y_data = trajectory['yloc'].values
+    
+    if len(x_data) < 2:
+        print("Not enough data points for Kalman filtering.")
+        return np.array([])
+    
+    velocities = np.diff(np.column_stack((x_data, y_data)), axis=0)
+    velocities = np.vstack((velocities, velocities[-1]))
+    
+    # Assuming cubic behavior, let's include acceleration and jerk (third derivative of position)
+    accelerations = np.diff(velocities, axis=0)
+    accelerations = np.vstack((accelerations, accelerations[-1]))
+    
+    initial_state_mean = [x_data[0], y_data[0], velocities[0, 0], velocities[0, 1], accelerations[0, 0], accelerations[0, 1]]
+
+    transition_matrix = [
+        [1, 0, dt, 0, 0.5 * dt**2, 0],  # x' = x + vx*dt + 0.5*ax*dt^2
+        [0, 1, 0, dt, 0, 0.5 * dt**2],  # y' = y + vy*dt + 0.5*ay*dt^2
+        [0, 0, 1, 0, dt, 0],            # vx' = vx + ax*dt
+        [0, 0, 0, 1, 0, dt],            # vy' = vy + ay*dt
+        [0, 0, 0, 0, 1, 0],             # ax' = ax
+        [0, 0, 0, 0, 0, 1]              # ay' = ay
+    ]
+
+    observation_matrix = [
+        [1, 0, 0, 0, 0, 0],  # observe x
+        [0, 1, 0, 0, 0, 0]   # observe y
+    ]
+
+    transition_covariance = np.eye(6) * 0.5  # Adjusted value for better accuracy
+    observation_covariance = np.eye(2) * 0.5  # Adjusted value for better accuracy
+    initial_state_covariance = np.eye(6) * 0.25
+
+    kf = KalmanFilter(
+        initial_state_mean=initial_state_mean,
+        initial_state_covariance=initial_state_covariance,
+        transition_matrices=transition_matrix,
+        observation_matrices=observation_matrix,
+        transition_covariance=transition_covariance,
+        observation_covariance=observation_covariance
+    )
+
+    observations = np.column_stack((x_data, y_data))
+    state_means, _ = kf.filter(observations)
+
+    future_state_means = state_means[-1]
+    future_positions = []
+
+    for _ in range(n_steps_ahead):
+        future_state_means = np.dot(transition_matrix, future_state_means)
+        future_positions.append([future_state_means[0], future_state_means[1]])
+
+    return np.array(future_positions)
+
+def plot_trajectories(predicted, actual, vehicle_id, overpass_start_time, delta, overpass_end_loc_x):
     predicted_x = predicted[:, 0]
-    actual_x = actual['xloc'].values[:len(predicted_x)]
-    time_step = np.arange(len(predicted_x))
+    actual_x = actual['xloc'].values
+    
+    if len(actual_x) == 0:
+        print(f"No actual data available for vehicle ID {vehicle_id}")
+        return
+    
+    time_step_predicted = np.linspace(overpass_start_time, overpass_start_time + delta, len(predicted_x))
+    time_step_actual = np.linspace(overpass_start_time, overpass_start_time + delta, len(actual_x))
+
+    time_step_actual = actual['time'].values 
     
     plt.figure(figsize=(16, 10))
-    plt.plot(time_step, predicted_x, marker='o', color='red', label='Kalman Predicted')
-    plt.plot(time_step, actual_x, marker='x', color='blue', label='Actual')
+    plt.plot(time_step_actual, actual_x, marker='x', color='blue', label='Actual')
+    plt.plot(time_step_predicted, predicted_x, marker='o', color='red', label='Kalman Predicted')
+    
     plt.xlabel('Time (s)', fontsize=30)
     plt.ylabel('X Coordinates (m)', fontsize=30) 
     plt.legend(fontsize=20)
     plt.grid(True)
-    plt.savefig(f'kalman/kalman_vehicle_{vehicle_id}.png')
+    plt.savefig(f'kalman/{overpass_end_loc_x}_kalman_vehicle_{vehicle_id}.png')
 
-def analyze_trajectories(overpass_start_loc_x, overpass_end_loc_x):  
-    delta = 5  # Set the delta as needed for the time duration after the overpass
-    steps = overpass_end_loc_x - overpass_start_loc_x 
+
+def analyze_trajectories(overpass_start_loc_x, overpass_end_loc_x):
     input_data = pd.read_csv('I294_Cleaned.csv')
     lane = -2
+    delta = 5
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
-    incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
-    unique_ids = incoming_trajectories['ID'].unique()  
+    incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x]  # Incoming trajectory before overpass  
+    unique_ids = incoming_trajectories['ID'].unique()
    
-    outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # Groundtruth trajectory after the overpass  
-    outgoing_ids = outgoing_trajectories['ID'].unique() 
+    outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)]  # Groundtruth trajectory after the overpass  
+    outgoing_ids = outgoing_trajectories['ID'].unique()
 
-    correct_predictions = [] 
+    correct_predictions = []
+    traversed_data = []
 
     for temp_id in unique_ids:
         ground_truth_trajectory = outgoing_trajectories[outgoing_trajectories['ID'] == temp_id]
         ground_truth_x = ground_truth_trajectory['xloc'].values
-        temp_incoming = incoming_trajectories[incoming_trajectories['ID'] == temp_id] 
+        temp_incoming = incoming_trajectories[incoming_trajectories['ID'] == temp_id]
         overpass_start_time = temp_incoming['time'].values[-1]
         
-        # Predict points using the Kalman filter
-        kalman_df = temp_incoming[temp_incoming['xloc'] <= overpass_end_loc_x]
+        kalman_df = temp_incoming[temp_incoming['xloc'] <= overpass_start_loc_x]
         if len(kalman_df) < 2:
             print(f"Not enough points for vehicle ID {temp_id} after filtering.")
             continue
 
-        trajectory = kalman_df[['xloc', 'yloc']].values.reshape(1, -1, 2)
-        kalman_predicted_positions = kalman_predict(trajectory, steps)
+        # Set the number of steps to predict into the future
+        steps = 50  # Adjust the number of steps to predict as needed
+        kalman_predicted_positions = kalman_predict(kalman_df, steps) 
 
-        if len(kalman_predicted_positions) == 0:
-            print(f"Kalman prediction failed for vehicle ID {temp_id}.")
-            continue
-
-        kalman_predicted_x = kalman_predicted_positions[0, :, 0]
+        kalman_predicted_x = kalman_predicted_positions[:, 0]
+        kalman_predicted_x = kalman_predicted_x[kalman_predicted_x >= overpass_end_loc_x]
         
         error = float('inf')
         best_possible_x = None
 
-        print(kalman_predicted_x)
+        for second_id in outgoing_ids:
+            possible_trajectory = outgoing_trajectories[
+                (outgoing_trajectories['ID'] == second_id) & 
+                (outgoing_trajectories['time'] >= overpass_start_time) 
+            ]
+            poss_x = possible_trajectory['xloc'].values[:10]
 
-
-        for second_id in unique_ids:
-            possible_trajectory = outgoing_trajectories[(outgoing_trajectories['ID'] == second_id)]
-            poss_x = possible_trajectory['xloc'].values 
-            
-            if len(poss_x) == 0:
-                continue  # Skip if there are no points to compare
-            
-            min_len = min(len(kalman_predicted_x), len(poss_x))
-            temp_error = sum((kalman_predicted_x[:min_len] - poss_x[:min_len]) ** 2)
+            if len(poss_x) == 0: 
+                temp_error = float('inf')
+            else:
+                min_len = min(len(kalman_predicted_x), len(poss_x))
+                temp_error = sum((kalman_predicted_x[:min_len] - poss_x[:min_len]) ** 2)
             
             if temp_error < error:
                 error = temp_error
@@ -172,25 +194,41 @@ def analyze_trajectories(overpass_start_loc_x, overpass_end_loc_x):
                 else:
                     correct_predictions.append(0)
             
-            # Plot the predicted vs. actual trajectories 
-            # plot_trajectories(kalman_predicted_positions[0], ground_truth_trajectory, temp_id)
+            plot_trajectories(kalman_predicted_positions, ground_truth_trajectory, temp_id, overpass_start_time, delta, overpass_end_loc_x)
+
+        # Save traversed data
+        if best_possible_x is not None:
+            for bx in best_possible_x:
+                traversed_data.append([temp_id, bx])
+
+    # Save traversed data to a CSV file
+    traversed_df = pd.DataFrame(traversed_data, columns=['Vehicle_ID', 'xloc'])
+    traversed_df.to_csv('traversed_data.csv', index=False)
 
     correct_predictions_results = sum(correct_predictions)
-    accuracy = (correct_predictions_results / len(correct_predictions)) * 100
+    if len(correct_predictions) > 0:
+        accuracy = (correct_predictions_results / len(correct_predictions)) * 100
+    else:
+        accuracy = 0
     accuracy = np.round(accuracy, 2)
     print(f'Accuracy: {accuracy}%')
-
+    return accuracy
 
 def main(): 
-    overpass_start_loc_x, overpass_end_loc_x = 1800, 1805
-    analyze_trajectories(overpass_start_loc_x, overpass_end_loc_x)
+    overpass_start = [1800,1800,1800,1800,1800,1800,1895,1930,1705,1755,2065,2111,1050,1120,1165]
+    overpass_end  =  [1805,1810,1815,1820,1825,1830,1910,1945,1720,1770,2080,2126,1065,1135,1180]
 
-    # 1800 to 1805: 51.79% Accuracy
-    # 1800 to 1810: % Accuracy
-    # 1800 to 1815: % Accuracy
-    # 1800 to 1820: % Accuracy
-    # 1800 to 1825: % Accuracy
-    # 1800 to 1830: % Accuracy
+   
+    accuracies = []
+
+    for start, end in zip(overpass_start, overpass_end):
+        acc = analyze_trajectories(start, end)
+        accuracies.append(acc) 
+        #break 
+
+    print(accuracies)
 
 if __name__ == '__main__': 
     main()
+ 
+

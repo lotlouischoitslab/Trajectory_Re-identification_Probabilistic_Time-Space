@@ -199,227 +199,52 @@ def scale_data(muX, muY, method='minmax'):
 
     return muX_scaled.tolist(), muY_scaled.tolist()
   
- 
 
 
-def plot_trajectories_with_threshold(traj_time_original, x_list, muX_maneuvers, vehicle_id, traj_id, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold, axes):
-    plt.figure(figsize=(10, 6))
- 
+def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold,axes):
+    x_axis = len(muX_time)
+    y_axis = len(x_list)
     maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
     
-    # Plot the predicted maneuvers
-    for m, (muX_m, color) in enumerate(zip(muX_maneuvers, maneuver_colors)):
-        stat_time = np.linspace(overpass_start_time,overpass_start_time+10,len(muX_m))
-        plt.scatter(stat_time, muX_m, label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
     
-    # Plot the actual trajectory 
-    plt.plot(traj_time_original, x_list, label=f'Actual Trajectory {vehicle_id}', color='black')
-    plt.xlabel('Time (s)') 
-    plt.ylabel('X Location (m)')
-    plt.grid(True)
-    plt.savefig('possible_plots/'+str(vehicle_id)+'_'+str(traj_id)+'muX_vs_X.png')
-    
+    if x_list[0] <= threshold: 
+        if x_axis >= y_axis:
+            plt.plot(muX_time[:y_axis], x_list, label=f'Possible Trajectory {possible_traj_temp_ID}', linestyle='-', color='black')
+        else:
+            plt.plot(muX_time, x_list[:x_axis], label=f'Possible Trajectory {possible_traj_temp_ID}', linestyle='-', color='black')
 
- 
-def plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, vehicle_id, traj_id, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold, axes, incoming_trajectory, ground_truth_trajectory):
-    plt.figure(figsize=(10, 6))
-    maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
-    
-    # Plot the predicted maneuvers
-    for m, (muX_m, color) in enumerate(zip(muX_maneuvers, maneuver_colors)):
-        stat_time = np.linspace(overpass_start_time,overpass_start_time+10,len(muX_m))
-        plt.scatter(stat_time, muX_m, label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
-    
-    # Plot the actual trajectory
-    min_len = min(len(muX_time), len(x_list))
-    plt.plot(muX_time[:min_len], x_list[:min_len], label=f'Actual Trajectory {vehicle_id}', color='black')
-    
-    # Plot the incoming trajectory
-    plt.plot(incoming_trajectory['time'][-10:], incoming_trajectory['xloc'][-10:], label='Incoming Trajectory', color='blue')
-    
-    # Plot the ground truth trajectory
-    plt.plot(ground_truth_trajectory['time'][:10], ground_truth_trajectory['xloc'][:10], label='Ground Truth Trajectory', color='green')
-     
+        traj_time_original = np.linspace(overpass_start_time, overpass_end_time, len(x_list))
 
-    plt.title('Trajectories with Threshold')
-    plt.xlabel('Time (s)') 
-    plt.ylabel('X Location (m)')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig('possible_plots/'+str(vehicle_id)+'_'+str(traj_id)+'muX_vs_X.png')
+        # Plot predicted muX for each maneuver
+        for m, (muX_m, color) in enumerate(zip(muX, maneuver_colors)):
+            plt.scatter(muX_time, muX_m[:len(muX_time)], label=f'Predicted muX Maneuver {m+1}', marker='o', color=color)
 
-# def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
-#     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
-#     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
-#     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
-#     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
-   
-#     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # Groundtruth trajectory after the overpass  
-#     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # All possible trajectories that we need to consider
-    
-#     IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed 
-#     overpass_start_loc_y = determine_overpass_y(incoming_trajectories) 
-
-#     incoming_trajectories_copy = incoming_trajectories.copy()
-#     outgoing_trajectories_copy = outgoing_trajectories.copy() 
-#     possible_trajectories_copy = possible_trajectories.copy()  
-
-    
-#     ingoing_pd = pd.DataFrame(incoming_trajectories)
-#     ingoing_pd.to_csv('before/incoming.csv')
-#     outgoing_pd = pd.DataFrame(outgoing_trajectories)
-#     outgoing_pd.to_csv('before/outgoing.csv')
-#     possible_before_pd = pd.DataFrame(possible_trajectories)
-#     possible_before_pd.to_csv('before/possible_before.csv')
-
-
-#     possible_traj_list = []  # Store all the possible trajectories
-#     stat_time_frame = np.arange(0, delta, 0.2) # This is the 0.2 seconds increment part 
-#     stat_time_frame = np.round(stat_time_frame, 1)
-
-#     maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
+        plt.xlabel('Time (s)', fontsize=15)
+        plt.ylabel(axes[1]+' Location (m)', fontsize=15)   
+        plt.grid(True)
+        plt.tight_layout() 
+        plt.savefig(f'possible_plots/{ident}_'+axes[0]+'_vs_'+axes[1]+'.png')
+        plt.close()
 
  
 
-#     for key, ident in enumerate(IDs_to_traverse): 
-#         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
-#         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
-#         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
- 
-        
-#         if len(ingoing_temp_data['time']) == 0:
-#             print(f"Skipping ID {ident} due to no incoming data")
-#             continue  # Skip this ID if there's no incoming data
- 
-#         overpass_start_time = ingoing_temp_data['time'].values[-1]
-#         overpass_end_time = overpass_start_time + delta 
-#         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1) 
-#         possible_trajectories_for_each_vehicle_ID = possible_trajectories[ (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_end_time)] 
-#         possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
-#         outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
-        
-#         best_trajectory = None
-#         trajectory_updates = []
-#         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
-    
-#         plt.figure(figsize=(10, 6)) 
-        
-
-#         for possible_traj_temp_ID in possible_IDS:   
-#             highest_integral_value = float('-inf')  # Reset for each ID
-#             temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[(possible_trajectories_for_each_vehicle_ID['ID']==possible_traj_temp_ID) & (possible_trajectories_for_each_vehicle_ID['time'] >= overpass_start_time) ]
-#             traj_time_adjusted = temp_proj_to_traverse['adjusted_time'].values
-#             traj_time_original = temp_proj_to_traverse['time'].values
-            
-            
-#             x_list = temp_proj_to_traverse['xloc'].values 
-#             y_list = temp_proj_to_traverse['yloc'].values 
-#             segment_integral = 0.0  # Reset for each maneuver 
-#             muX_maneuvers = [] 
-#             muY_maneuvers = [] 
-
-#             muX_time = np.arange(0,50,0.2)
-
-             
-#             for m in range(num_maneuvers):
-#                 muX_before = fut_pred[m][:,batch_num,0]
-#                 muY_before = fut_pred[m][:,batch_num,1]  
-#                 sigX_temp = fut_pred[m][:,batch_num,2] 
-#                 sigY_temp = fut_pred[m][:,batch_num,3] 
-
-#                 muX_time = np.arange(0,len(muX_before),0.2) 
-
-#                 try:
-#                     start_idx = list(muX_time).index(traj_time_adjusted[0])
-#                 except ValueError:
-#                     try:
-#                         start_idx = list(muX_time).index(traj_time_adjusted[1])
-#                     except ValueError:
-#                         start_idx = 0
-            
-                
-#                 # print(f'gradient: {gradient}')   
-#                 muX_scaled, muY_scaled = scale_data(muX_before,muY_before, method='minmax')  
-#                 # muX = [(gradient*mx)+overpass_start_loc_x for mx in muX_scaled] 
-#                 # muY = [my+overpass_start_loc_y for my in muY_scaled] 
-#                 muX_temp = [mx+overpass_start_loc_x for mx in muX_before]  
-#                 muY_temp = muY_scaled
-
-#                 muX = muX_temp[start_idx:]
-#                 muY = muY_temp[start_idx:]
-#                 sigX = sigX_temp[start_idx:]
-#                 sigY = sigY_temp[start_idx:]
-#                 traj_time_original_start = traj_time_original[start_idx:]
-                 
-#                 gradient = np.max(x_list) - np.min(x_list) 
-                
-#                 if gradient <= alpha:
-#                     gradient += alpha 
-  
-
-#                 N = len(x_list)-2
-#                 muX_maneuvers.append(muX_temp)
-#                 muY_maneuvers.append(muY)
-
-#                 for i in range(start_idx, N,2): 
-#                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
-#                     y1, y2, y3 = y_list[i], y_list[i + 1], y_list[i + 2] 
-                    
-#                     temp_muX, temp_muY = muX[i], muY[i]
-#                     temp_sigX, temp_sigY = sigX[i], sigY[i]
-                
-#                     temp_muX2, temp_muY2 = muX[i+1], muY[i+1]
-#                     temp_sigX2, temp_sigY2 = sigX[i+1], sigY[i+1]
-
-#                     # Now perform your line integral or any other calculations
-#                     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
-#                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
-
-            
-#                 #plot_trajectories_with_threshold(traj_time_original_start, x_list[start_idx:], muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20,axes=['muX','X'])
-            
-            
-#             if segment_integral > highest_integral_value:
-#                 highest_integral_value = segment_integral
-#                 best_traj_info = {
-#                     'Vehicle_ID':ident,
-#                     'ID': possible_traj_temp_ID,
-#                     'time': traj_time_adjusted,
-#                     'xloc': x_list,
-#                     'yloc': y_list, 
-#                     'line_integral_values': segment_integral,
-#                     'maneuver': m + 1 
-#                 }
-
-#                 trajectory_updates.append(best_traj_info.copy())  # Track updates
-
-#             if best_traj_info and (best_trajectory is None or best_traj_info['line_integral_values'] > best_trajectory['line_integral_values']):
-#                 best_trajectory = best_traj_info
-            
-#         # Convert the list of trajectories into a DataFrame 
-#         trajectory_updates_df = pd.DataFrame(trajectory_updates)
-#         trajectory_updates_df.to_csv(f'temp_best/simulation_{ident}_trajectory_updates.csv', index=False) 
-
-
-#         if best_trajectory:
-#             best_trajectory_df = pd.DataFrame([best_trajectory])
-#             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
-
-def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta, alpha):
+def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
     overpass_length = overpass_end_loc_x - overpass_start_loc_x # length of the overpass 
     input_data = input_data[input_data['lane'] == lane].reset_index(drop=True)  # Filter data for the given lane
     incoming_trajectories = input_data[input_data['xloc'] <= overpass_start_loc_x] # Incoming trajectory before overpass  
+   
     outgoing_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # Groundtruth trajectory after the overpass  
     possible_trajectories = input_data[(input_data['xloc'] >= overpass_end_loc_x)] # All possible trajectories that we need to consider
     
-    IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that need to be traversed 
+    IDs_to_traverse = possible_trajectories['ID'].unique() # Vehicle IDs that needs to be traversed 
     overpass_start_loc_y = determine_overpass_y(incoming_trajectories) 
 
     incoming_trajectories_copy = incoming_trajectories.copy()
     outgoing_trajectories_copy = outgoing_trajectories.copy() 
     possible_trajectories_copy = possible_trajectories.copy()  
 
+    
     ingoing_pd = pd.DataFrame(incoming_trajectories)
     ingoing_pd.to_csv('before/incoming.csv')
     outgoing_pd = pd.DataFrame(outgoing_trajectories)
@@ -427,27 +252,31 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     possible_before_pd = pd.DataFrame(possible_trajectories)
     possible_before_pd.to_csv('before/possible_before.csv')
 
+
     possible_traj_list = []  # Store all the possible trajectories
     stat_time_frame = np.arange(0, delta, 0.2) # This is the 0.2 seconds increment part 
     stat_time_frame = np.round(stat_time_frame, 1)
 
     maneuver_colors = ['#d62728', '#2ca02c', '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b']  # Colors for different maneuvers
 
+ 
+
     for key, ident in enumerate(IDs_to_traverse): 
         ingoing_temp_data = incoming_trajectories[incoming_trajectories['ID'] == ident]
         current_data = possible_trajectories[possible_trajectories['ID'] == ident] 
         current_outgoing = outgoing_trajectories[outgoing_trajectories['ID'] == ident] 
-
+ 
+        
         if len(ingoing_temp_data['time']) == 0:
             print(f"Skipping ID {ident} due to no incoming data")
             continue  # Skip this ID if there's no incoming data
-
+ 
         overpass_start_time = ingoing_temp_data['time'].values[-1]
         overpass_end_time = overpass_start_time + delta 
         possible_trajectories.loc[:, 'adjusted_time'] = (possible_trajectories_copy['time'] - overpass_start_time).round(1) 
-        possible_trajectories_for_each_vehicle_ID = possible_trajectories[(possible_trajectories['time'] >= overpass_start_time) & (possible_trajectories['time'] <= overpass_end_time)] 
-        possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID' + str(ident) + 'possible.csv')
-        outgoing_trajectories.to_csv('outgoing_data/outgoing' + str(ident) + 'traj.csv')
+        possible_trajectories_for_each_vehicle_ID = possible_trajectories[ (possible_trajectories['time'] >= overpass_start_time)  &(possible_trajectories['time'] <= overpass_end_time)] 
+        possible_trajectories_for_each_vehicle_ID.to_csv('possible_trajectories/ID'+str(ident)+'possible.csv')
+        outgoing_trajectories.to_csv('outgoing_data/outgoing'+str(ident)+'traj.csv')
         
         best_trajectory = None
         trajectory_updates = []
@@ -455,86 +284,64 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
     
         plt.figure(figsize=(10, 6)) 
         
+
         for possible_traj_temp_ID in possible_IDS:   
             highest_integral_value = float('-inf')  # Reset for each ID
-            temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[(possible_trajectories_for_each_vehicle_ID['ID'] == possible_traj_temp_ID) & (possible_trajectories_for_each_vehicle_ID['time'] >= overpass_start_time)]
-            traj_time_adjusted = temp_proj_to_traverse['adjusted_time'].values
+            temp_proj_to_traverse = possible_trajectories_for_each_vehicle_ID[possible_trajectories_for_each_vehicle_ID['ID']==possible_traj_temp_ID]
+            traj_time = temp_proj_to_traverse['adjusted_time'].values
             traj_time_original = temp_proj_to_traverse['time'].values
-            
+            muX_time = np.arange(overpass_start_time,overpass_end_time,0.2) 
             x_list = temp_proj_to_traverse['xloc'].values 
             y_list = temp_proj_to_traverse['yloc'].values 
             segment_integral = 0.0  # Reset for each maneuver 
-            muX_maneuvers = [] 
+            muX_maneuvers = []
             muY_maneuvers = [] 
 
-            muX_time = np.arange(0, 50, 0.2)
-
+             
             for m in range(num_maneuvers):
-                muX_before = fut_pred[m][:, batch_num, 0]
-                muY_before = fut_pred[m][:, batch_num, 1]  
-                sigX_temp = fut_pred[m][:, batch_num, 2] 
-                sigY_temp = fut_pred[m][:, batch_num, 3] 
+                muX_before = fut_pred[m][:,batch_num,0] 
+                muY_before = fut_pred[m][:,batch_num,1] 
 
-                muX_time = np.arange(0, len(muX_before), 0.2) 
-
-                try:
-                    start_idx = list(muX_time).index(traj_time_adjusted[0])
-                except ValueError:
-                    try:
-                        start_idx = list(muX_time).index(traj_time_adjusted[1])
-                    except ValueError:
-                        start_idx = 0
-            
-                muX_scaled, muY_scaled = scale_data(muX_before, muY_before, method='minmax')  
-                muX_temp = [mx + overpass_start_loc_x for mx in muX_before]  
-                muY_temp = muY_scaled
-
-                muX = muX_temp[start_idx:]
-                muY = muY_temp[start_idx:]
-                sigX = sigX_temp[start_idx:]
-                sigY = sigY_temp[start_idx:]
-                traj_time_original_start = traj_time_original[start_idx:]
+                sigX = fut_pred[m][:,batch_num,2]
+                sigY = fut_pred[m][:,batch_num,3]  
                  
                 gradient = np.max(x_list) - np.min(x_list) 
                 
                 if gradient <= alpha:
                     gradient += alpha 
-
-                N = len(x_list) - 2
-                muX_maneuvers.append(muX_temp)
+  
+                muX_scaled, muY_scaled = scale_data(muX_before,muY_before, method='minmax')  
+                muX = [(gradient*mx)+overpass_start_loc_x+overpass_length for mx in muX_scaled] 
+                muY = [my+overpass_start_loc_y for my in muY_scaled] 
+ 
+                N = len(x_list)-2
+                muX_maneuvers.append(muX)
                 muY_maneuvers.append(muY)
 
-                for i in range(start_idx, N, 2): 
+                for i in range(0, N, 2): 
                     x1, x2, x3 = x_list[i], x_list[i + 1], x_list[i + 2]
                     y1, y2, y3 = y_list[i], y_list[i + 1], y_list[i + 2] 
                     
                     temp_muX, temp_muY = muX[i], muY[i]
                     temp_sigX, temp_sigY = sigX[i], sigY[i]
                 
-                    temp_muX2, temp_muY2 = muX[i + 1], muY[i + 1]
-                    temp_sigX2, temp_sigY2 = sigX[i + 1], sigY[i + 1]
+                    temp_muX2, temp_muY2 = muX[i+1], muY[i+1]
+                    temp_sigX2, temp_sigY2 = sigX[i+1], sigY[i+1]
 
                     # Now perform your line integral or any other calculations
                     segment_integral += line_integral(x1, y1, x2, y2, temp_muX, temp_muY, temp_sigX, temp_sigY)
                     segment_integral += line_integral(x2, y2, x3, y3, temp_muX2, temp_muY2, temp_sigX2, temp_sigY2) 
 
-            # Add incoming and ground truth trajectories
-            incoming_trajectory = ingoing_temp_data[ingoing_temp_data['ID'] == ident]
-            ground_truth_trajectory = current_outgoing[current_outgoing['ID'] == ident]
-
-            plot_trajectories_with_threshold(
-                traj_time_original_start, x_list[start_idx:], muX_maneuvers, ident, 
-                possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, 
-                threshold=overpass_end_loc_x + 20, axes=['muX', 'X'], 
-                incoming_trajectory=incoming_trajectory, ground_truth_trajectory=ground_truth_trajectory
-            )
+            
+            # plot_trajectories_with_threshold(muX_time, x_list, muX_maneuvers, ident, possible_traj_temp_ID, overpass_start_time, overpass_end_time, overpass_end_loc_x, threshold=overpass_end_loc_x + 20,axes=['muX','X'])
+            
             
             if segment_integral > highest_integral_value:
                 highest_integral_value = segment_integral
                 best_traj_info = {
-                    'Vehicle_ID': ident,
+                    'Vehicle_ID':ident,
                     'ID': possible_traj_temp_ID,
-                    'time': traj_time_adjusted,
+                    'time': traj_time,
                     'xloc': x_list,
                     'yloc': y_list, 
                     'line_integral_values': segment_integral,
@@ -550,10 +357,10 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates_df = pd.DataFrame(trajectory_updates)
         trajectory_updates_df.to_csv(f'temp_best/simulation_{ident}_trajectory_updates.csv', index=False) 
 
+
         if best_trajectory:
             best_trajectory_df = pd.DataFrame([best_trajectory])
             best_trajectory_df.to_csv(f'best_trajectories/simulation_{ident}_best_trajectory.csv', index=False)
-
  
 
  
@@ -649,22 +456,31 @@ def main(): # Main function
 
     ################################## OVERPASS LOCATION (ASSUMPTION) #################################################################################################################################################################
     ################################## SUCCESS CASES ##################################################################################################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets) 74.37% | 11.76% Accuracy  
-    # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets) 78.51% | 13.51% Accuracy 
-    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # both in meters Overpass width 15 meters (50 feets) 80.66% | 29.39% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
+    # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
+
+    # overpass_start_loc_x,overpass_end_loc_x = 1705, 1720 # 15 meters 70.96% | 37.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1755, 1770 # 15 meters 70.00% | 23.75% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 2065, 2080 # 15 meters 70.02% | 27.75% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 2111, 2126 # 15 meters 71.65% | 38.06% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1050, 1065 # 15 meters 71.67% | 20.24% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1120, 1135 # 15 meters 77.03% | 14.65% Accuracy
+
+    overpass_start_loc_x,overpass_end_loc_x = 1165, 1180 # 15 meters 77.67% | 26.77% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets) 35.07% | 24.62% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets) 40.80% | 15.87% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1570, 1585 # both in meters Overpass width 15 meters (50 feets)   35.07% | 24.62% Accuracy 
+    # overpass_start_loc_x,overpass_end_loc_x = 1320, 1335 # both in meters Overpass width 15 meters (50 feets)  40.80% | 15.87% Accuracy 
     #################################################################################################################################################################################
     
     ################################### TRIAL RUNS #################################################################################################
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  96.12% | 35.22% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 89.73% | 27.65% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 29.39% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 50.75% | 21.04% Accuracy
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.00% | 17.05% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1805 # 5 meters  96.12% | 20.59% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1810 # 10 meters 89.73% | 23.53% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1820 # 20 meters 50.33% | 30.88% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1825 # 25 meters 33.00% | 25.00% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1800, 1830 # 30 meters 18.12% | 22.06% Accuracy
 
 
