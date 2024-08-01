@@ -85,9 +85,9 @@ def kalman_predict(trajectory, n_steps_ahead, dt=0.1):
         [0, 1, 0, 0, 0, 0]   # observe y
     ]
 
-    transition_covariance = np.eye(6) * 0.5  # Adjusted value for better accuracy
-    observation_covariance = np.eye(2) * 0.5  # Adjusted value for better accuracy
-    initial_state_covariance = np.eye(6) * 0.25
+    transition_covariance = np.eye(6) * 0.8 # Adjusted value for better accuracy
+    observation_covariance = np.eye(2) * 0.3  # Adjusted value for better accuracy
+    initial_state_covariance = np.eye(6) * 0.6
 
     kf = KalmanFilter(
         initial_state_mean=initial_state_mean,

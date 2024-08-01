@@ -226,7 +226,7 @@ def plot_trajectories_with_threshold(muX_time, x_list, muX, ident, possible_traj
         plt.savefig(f'possible_plots/{ident}_'+axes[0]+'_vs_'+axes[1]+'.png')
         plt.close()
 
- 
+
 
 def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, lane, fut_pred, batch_num, delta,alpha):
     num_maneuvers = len(fut_pred)  # Number of different maneuvers 
@@ -282,7 +282,7 @@ def predict_trajectories(input_data, overpass_start_loc_x, overpass_end_loc_x, l
         trajectory_updates = []
         possible_IDS = possible_trajectories_for_each_vehicle_ID['ID'].unique()
     
-        plt.figure(figsize=(10, 6)) 
+        # plt.figure(figsize=(10, 6)) 
         
 
         for possible_traj_temp_ID in possible_IDS:   
@@ -458,7 +458,7 @@ def main(): # Main function
     ################################## SUCCESS CASES ##################################################################################################################################################################################
     # overpass_start_loc_x,overpass_end_loc_x = 1930, 1945 # both in meters Overpass width 15 meters (50 feets)  74.37% | 38.03% Accuracy  
     # overpass_start_loc_x,overpass_end_loc_x = 1895, 1910 # both in meters Overpass width 15 meters (50 feets)  78.51% | 33.80% Accuracy 
-    # overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
+    overpass_start_loc_x,overpass_end_loc_x = 1800, 1815 # 15 meters 80.66% | 25.00% Accuracy
 
     # overpass_start_loc_x,overpass_end_loc_x = 1705, 1720 # 15 meters 70.96% | 37.00% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1755, 1770 # 15 meters 70.00% | 23.75% Accuracy
@@ -467,7 +467,7 @@ def main(): # Main function
     # overpass_start_loc_x,overpass_end_loc_x = 1050, 1065 # 15 meters 71.67% | 20.24% Accuracy
     # overpass_start_loc_x,overpass_end_loc_x = 1120, 1135 # 15 meters 77.03% | 14.65% Accuracy
 
-    overpass_start_loc_x,overpass_end_loc_x = 1165, 1180 # 15 meters 77.67% | 26.77% Accuracy
+    # overpass_start_loc_x,overpass_end_loc_x = 1165, 1180 # 15 meters 77.67% | 26.77% Accuracy
     #################################################################################################################################################################################
  
     ################################### FAILED CASES ############################################################################################################
