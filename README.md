@@ -1,4 +1,4 @@
-# Autonomous Vehicles Trajectory Prediction Analysis
+# Trajectory Re-identification Prediction using Probabilistic Time-space Diagram
 
 ## Contributors:
 - **Louis Sungwoo Cho, Civil & Environmental Engineering (Transportation) Major, Computer Science Minor, </br> University of Illinois at Urbana-Champaign (UIUC)**
