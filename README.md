@@ -6,15 +6,15 @@
 
 ## Convolutional Social Pooling Model Architecture
 
-Initialization (__init__ method)
+1. Initialization (__init__ method)
 
-Arguments Unpacking: The method starts by unpacking various arguments from args dictionary, which are configurations for the model.
-Network Layers Definition:
-Input Embedding Layer: A linear layer to embed the input coordinates.
-Encoder LSTM: An LSTM to encode the input trajectory.
-Vehicle Dynamics Embedding: A linear layer to embed the output of the encoder LSTM.
-Convolutional Social Pooling Layers: Convolutional layers to process the social context (neighboring vehicles).
-Decoder LSTM: An LSTM to decode the concatenated embeddings (social + dynamics + maneuver).
+- Arguments Unpacking: The method starts by unpacking various arguments from args dictionary, which are configurations for the model.
+- Network Layers Definition:
+    - Input Embedding Layer: A linear layer to embed the input coordinates.
+    - Encoder LSTM: An LSTM to encode the input trajectory.
+    - Vehicle Dynamics Embedding: A linear layer to embed the output of the encoder LSTM.
+    - Convolutional Social Pooling Layers: Convolutional layers to process the social context (neighboring vehicles).
+    - Decoder LSTM: An LSTM to decode the concatenated embeddings (social + dynamics + maneuver).
 Output Layers: Linear layers for predicting future trajectories and maneuver classes.
 Activations: Various activation functions like LeakyReLU, ReLU, and Softmax.
 Forward Pass (forward method)
