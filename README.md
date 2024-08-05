@@ -5,7 +5,7 @@
 - **Alireza Talebpour, Assistant Professor Civil & Environmental Engineering (Transportation), </br> University of Illinois at Urbana-Champaign (UIUC)**
 
  
-## HighwayNet Six Maneuver Description
+## HighwayNet Six Maneuver Architecture
 
 ## Overview
 This model, `highwayNet_six_maneuver`, is designed for trajectory prediction in autonomous driving scenarios. It incorporates both the dynamics of individual vehicles and the social interactions between multiple vehicles using a convolutional social pooling mechanism.
@@ -46,7 +46,7 @@ This model, `highwayNet_six_maneuver`, is designed for trajectory prediction in 
 - Decodes the repeated embedding using the decoder LSTM.
 - Applies the output activation function to get the final predicted trajectory.
 
-## Explanation for the Professor
+## Model Description
 
 **Model Architecture:**
 - The input trajectories are first embedded into a higher-dimensional space using a linear layer. These embeddings are then processed by an LSTM to capture temporal dependencies.
