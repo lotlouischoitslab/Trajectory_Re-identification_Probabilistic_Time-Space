@@ -6,81 +6,63 @@
 
 ## Convolutional Social Pooling Model Architecture
 
-1. Initialization (__init__ method)
+# HighwayNet Six Maneuver
 
-- Arguments Unpacking: The method starts by unpacking various arguments from args dictionary, which are configurations for the model.
-- Network Layers Definition:
-    - Input Embedding Layer: A linear layer to embed the input coordinates.
-    - Encoder LSTM: An LSTM to encode the input trajectory.
-    - Vehicle Dynamics Embedding: A linear layer to embed the output of the encoder LSTM.
-    - Convolutional Social Pooling Layers: Convolutional layers to process the social context (neighboring vehicles).
-    - Decoder LSTM: An LSTM to decode the concatenated embeddings (social + dynamics + maneuver).
-Output Layers: Linear layers for predicting future trajectories and maneuver classes.
-Activations: Various activation functions like LeakyReLU, ReLU, and Softmax.
-Forward Pass (forward method)
+## Overview
+This model, `highwayNet_six_maneuver`, is designed for trajectory prediction in autonomous driving scenarios. It incorporates both the dynamics of individual vehicles and the social interactions between multiple vehicles using a convolutional social pooling mechanism.
 
-History Encoding:
-Embeds and encodes the input trajectory using the encoder LSTM.
-Neighbor Encoding:
-Embeds and encodes the neighboring vehicles' trajectories.
-Masked Scatter:
-Constructs a social encoding tensor by placing the neighbor encodings into a predefined grid using masks.
-Convolutional Social Pooling:
-Applies convolutional layers followed by max pooling to the social encoding tensor.
-Concatenation:
-Concatenates the social encoding and the history encoding.
-Maneuver Recognition (Optional):
-Predicts maneuver classes if use_maneuvers is True.
-During training, it concatenates the true maneuver encoding with the concatenated embedding and decodes the future trajectory.
-During testing, it predicts trajectories for each possible maneuver class.
-Decoding:
-Decodes the concatenated embedding into future trajectory predictions.
-Decoding (decode method)
+## Core Components
 
-Repeats the concatenated embedding for the output length.
-Decodes the repeated embedding using the decoder LSTM.
-Applies the output activation function to get the final predicted trajectory.
-Explanation for the Professor
-Model Architecture:
+### Initialization (`__init__` method)
+- **Arguments Unpacking:** The method starts by unpacking various arguments from the `args` dictionary, which are configurations for the model.
+- **Network Layers Definition:**
+  - **Input Embedding Layer:** A linear layer to embed the input coordinates.
+  - **Encoder LSTM:** An LSTM to encode the input trajectory.
+  - **Vehicle Dynamics Embedding:** A linear layer to embed the output of the encoder LSTM.
+  - **Convolutional Social Pooling Layers:** Convolutional layers to process the social context (neighboring vehicles).
+  - **Decoder LSTM:** An LSTM to decode the concatenated embeddings (social + dynamics + maneuver).
+  - **Output Layers:** Linear layers for predicting future trajectories and maneuver classes.
+  - **Activations:** Various activation functions like LeakyReLU, ReLU, and Softmax.
 
-Input Embedding: The model starts by embedding the input trajectory coordinates into a higher-dimensional space.
-Encoder LSTM: It uses an LSTM to encode the temporal dependencies in the input trajectory.
-Social Pooling: The encoded history of the target vehicle and its neighbors are pooled using convolutional layers to capture the social context.
-Concatenation: The social encoding and the history encoding are concatenated to form a comprehensive representation of the target vehicle's context.
-Maneuver Recognition: If enabled, the model predicts maneuver classes and conditions the future trajectory prediction on these maneuvers.
-Decoder LSTM: The concatenated embedding is decoded using another LSTM to predict future trajectories.
-Training vs Testing:
+### Forward Pass (`forward` method)
+- **History Encoding:**
+  - Embeds and encodes the input trajectory using the encoder LSTM.
+- **Neighbor Encoding:**
+  - Embeds and encodes the neighboring vehicles' trajectories.
+- **Masked Scatter:**
+  - Constructs a social encoding tensor by placing the neighbor encodings into a predefined grid using masks.
+- **Convolutional Social Pooling:**
+  - Applies convolutional layers followed by max pooling to the social encoding tensor.
+- **Concatenation:**
+  - Concatenates the social encoding and the history encoding.
+- **Maneuver Recognition (Optional):**
+  - Predicts maneuver classes if `use_maneuvers` is True.
+  - During training, it concatenates the true maneuver encoding with the concatenated embedding and decodes the future trajectory.
+  - During testing, it predicts trajectories for each possible maneuver class.
+- **Decoding:**
+  - Decodes the concatenated embedding into future trajectory predictions.
 
-During training, the model uses the true maneuver classes to condition the future trajectory prediction.
-During testing, the model predicts trajectories for each possible maneuver class and selects the most likely one.
-Convolutional Social Pooling:
+### Decoding (`decode` method)
+- Repeats the concatenated embedding for the output length.
+- Decodes the repeated embedding using the decoder LSTM.
+- Applies the output activation function to get the final predicted trajectory.
 
-This component allows the model to consider the interactions between multiple vehicles by applying convolutional operations to the encoded trajectories of neighboring vehicles.
-Handling Different Maneuvers:
+## Explanation for the Professor
 
-The model can handle multiple maneuver classes (e.g., lane changes, straight driving) and predict future trajectories conditioned on these maneuvers.
-Flexibility and Modularity:
+**Model Architecture:**
+- The input trajectories are first embedded into a higher-dimensional space using a linear layer. These embeddings are then processed by an LSTM to capture temporal dependencies.
+- The social interactions are captured using a series of convolutional layers applied to the embeddings of neighboring vehicles. This is followed by max pooling to reduce the dimensionality.
+- The encoded representations of the target vehicle and its neighbors are concatenated to form a comprehensive context vector.
 
-The model is designed to be flexible, with configurable parameters for different components (e.g., LSTM sizes, convolutional depths).
-It is modular, allowing for easy modification and extension of different parts of the architecture.
-Suggested Explanation to Professor
-Introduction:
+**Maneuver Recognition:**
+- The model can predict different maneuver classes (such as lane changes) and use these predictions to condition the future trajectory predictions. During training, it uses the true maneuver classes, while during testing, it considers all possible maneuvers.
 
-"This model, highwayNet_six_maneuver, is designed for trajectory prediction in autonomous driving scenarios. It incorporates both the dynamics of individual vehicles and the social interactions between multiple vehicles using a convolutional social pooling mechanism."
-Core Components:
+**Decoding:**
+- The concatenated context vector is decoded using another LSTM to generate future trajectory predictions. This process is repeated for each time step in the prediction horizon.
 
-"The input trajectories are first embedded into a higher-dimensional space using a linear layer. These embeddings are then processed by an LSTM to capture temporal dependencies."
-"The social interactions are captured using a series of convolutional layers applied to the embeddings of neighboring vehicles. This is followed by max pooling to reduce the dimensionality."
-"The encoded representations of the target vehicle and its neighbors are concatenated to form a comprehensive context vector."
-Maneuver Recognition:
+**Flexibility and Performance:**
+- The model's architecture is flexible, with configurable parameters for different components, making it adaptable to various scenarios. The convolutional social pooling mechanism enables the model to effectively capture the interactions between multiple vehicles, improving the accuracy of trajectory predictions.
 
-"The model can predict different maneuver classes (such as lane changes) and use these predictions to condition the future trajectory predictions. During training, it uses the true maneuver classes, while during testing, it considers all possible maneuvers."
-Decoding:
-
-"The concatenated context vector is decoded using another LSTM to generate future trajectory predictions. This process is repeated for each time step in the prediction horizon."
-Flexibility and Performance:
-
-"The model's architecture is flexible, with configurable parameters for different components, making it adaptable to various scenarios. The convolutional social pooling mechanism enables the model to effectively capture the interactions between multiple vehicles, improving the accuracy of trajectory predictions."
 
 <!--- 
 ## HAL Cluster Notes:
