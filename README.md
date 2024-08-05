@@ -4,6 +4,8 @@
 - **Louis Sungwoo Cho, Civil & Environmental Engineering (Transportation) Major, Computer Science Minor, </br> University of Illinois at Urbana-Champaign (UIUC)**
 - **Alireza Talebpour, Assistant Professor Civil & Environmental Engineering (Transportation), </br> University of Illinois at Urbana-Champaign (UIUC)**
 
+## Algorithm:
+First, the trajectory points for x and y coordinates are parsed in. The points are then filtered so we do not have any empty arrays in the nested data file. For each of the predDataloader, se have the mean x coordinates, mean y coordinates, and the standard deviation of x and y coordinates. We feed those in with the x and y coordinates of each trajectory into a helper function which will calculate the line integral and return the best trajectory. The best trajectory is determined by returning the maximum line integral value. 
  
 ## HighwayNet Six Maneuver Architecture
 
@@ -61,6 +63,36 @@ This model, `highwayNet_six_maneuver`, is designed for trajectory prediction in 
 
 **Flexibility and Performance:**
 - The model's architecture is flexible, with configurable parameters for different components, making it adaptable to various scenarios. The convolutional social pooling mechanism enables the model to effectively capture the interactions between multiple vehicles, improving the accuracy of trajectory predictions.
+
+# Training the Convolutional Social Pooling Model
+
+This script trains the Convolutional Social Pooling (CSP) model with six maneuvers on the TGSIM dataset.
+
+## Overview
+The training process involves pre-training the model using Mean Squared Error (MSE) loss and then training it using Negative Log-Likelihood (NLL) loss. The model uses both individual vehicle dynamics and social interactions to predict future trajectories.
+
+## Core Components
+
+### Setup and Initialization
+- **Environment Configuration:** Sets the GPU to be used for training.
+- **Network Arguments:** Specifies various hyperparameters and configurations for the network.
+- **Network Initialization:** Initializes the CSP model with six maneuvers.
+- **Optimizer:** Uses the Adam optimizer for training.
+- **Data Loaders:** Loads the training and validation datasets using the TGSIM dataset class.
+
+### Training Process
+The training is divided into two phases:
+1. **Pre-training with MSE Loss:** Helps the model converge faster by minimizing the mean squared error of the predicted trajectories.
+2. **Training with NLL Loss:** Optimizes the model using negative log-likelihood loss for multi-modal trajectory prediction.
+
+### Key Functions and Steps
+- **Forward Pass:** Computes the predicted future trajectories and maneuver probabilities.
+- **Loss Calculation:** Calculates the loss based on the current phase (MSE or NLL) and updates the model weights.
+- **Validation:** Evaluates the model performance on the validation set after each epoch.
+
+
+
+
 
 
 <!--- 
@@ -138,5 +170,4 @@ To save: If you're using vim, you can press ESC, then type :wq and press Enter.
 -->
          exit 
 
-## Algorithm:
-First, the trajectory points for x and y coordinates are parsed in. The points are then filtered so we do not have any empty arrays in the nested data file. For each of the predDataloader, se have the mean x coordinates, mean y coordinates, and the standard deviation of x and y coordinates. We feed those in with the x and y coordinates of each trajectory into a helper function which will calculate the line integral and return the best trajectory. The best trajectory is determined by returning the maximum line integral value. 
+
