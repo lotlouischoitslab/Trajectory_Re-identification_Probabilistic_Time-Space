@@ -43,7 +43,6 @@ def main():
     pretrainEpochs = 7
     trainEpochs = 3
 
-  
 
     optimizer = torch.optim.Adam(net.parameters())
     batch_size = 128
@@ -54,7 +53,7 @@ def main():
     # trSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
     # valSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
 
-    
+
     
     print('Loading Data')
     train_trajectories_directory = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/train' # HAL GPU Cluster
@@ -66,7 +65,6 @@ def main():
 
 
     print('TGSIM Data Loaded!')
-
     trDataloader = DataLoader(trSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=trSet.collate_fn)
     valDataloader = DataLoader(valSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=valSet.collate_fn)
 

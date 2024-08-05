@@ -135,8 +135,3 @@ class highwayNet_six_maneuver(nn.Module):
         fut_pred = fut_pred.permute(1, 0, 2)
         fut_pred = outputActivation(fut_pred)
         return fut_pred
-
-
-
-
-
