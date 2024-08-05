@@ -1,18 +1,17 @@
 from __future__ import print_function
-import torch
-# from model import highwayNet_six_maneuver
+import torch 
 from model_six_maneuvers import highwayNet_six_maneuver
 from TGSIM_utils import tgsimDataset,maskedNLL,maskedMSE,maskedNLLTest
 from torch.utils.data import DataLoader
 import time
 import math
+import numpy as np 
 import pandas as pd
 
-###FOR MULTI-GPU system using a single gpu:
+### FOR MULTI-GPU system using a single GPU:
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-#The GPU id to use, usually either "0" or "1"
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # this should be 0
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # The GPU id to use, usually either "0" or "1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # This should be 0
 
 
 def main():
@@ -52,7 +51,6 @@ def main():
     ## Initialize data loaders
     # trSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/train', t_h=30, t_f=100, d_s=2)
     # valSet = ngsimDataset('/reza/projects/trajectory-prediction/data/NGSIM/101-80-speed-maneuver-for-GT/10-seconds/valid', t_h=30, t_f=100, d_s=2)
-
 
     
     print('Loading Data')
