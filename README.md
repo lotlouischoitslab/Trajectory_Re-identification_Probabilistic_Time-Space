@@ -5,7 +5,7 @@
 - **Alireza Talebpour, Assistant Professor Civil & Environmental Engineering (Transportation), </br> University of Illinois at Urbana-Champaign (UIUC)**
 
  
-# HighwayNet Six Maneuver Description
+## HighwayNet Six Maneuver Description
 
 ## Overview
 This model, `highwayNet_six_maneuver`, is designed for trajectory prediction in autonomous driving scenarios. It incorporates both the dynamics of individual vehicles and the social interactions between multiple vehicles using a convolutional social pooling mechanism.
