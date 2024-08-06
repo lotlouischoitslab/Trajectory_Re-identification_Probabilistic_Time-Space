@@ -38,6 +38,7 @@ def main():
     net = highwayNet_six_maneuver(args)
     if args['use_cuda']:
         net = net.to(device)
+
     ## Initialize optimizer
     pretrainEpochs = 7
     trainEpochs = 3
@@ -66,7 +67,7 @@ def main():
     trDataloader = DataLoader(trSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=trSet.collate_fn)
     valDataloader = DataLoader(valSet,batch_size=batch_size,shuffle=True,num_workers=1,collate_fn=valSet.collate_fn)
 
-    ################################# TRAINING PART ##################################################################################
+    ################################# TRAINING PART #####################################################################################################################################
     print('Start Training Now')
     ## Variables holding train and validation loss values:
     train_loss = []
@@ -157,10 +158,10 @@ def main():
                 avg_lat_acc = 0
                 avg_lon_acc = 0
                 avg_tr_time = 0
-        #######################################################################################################################################################################################################
+        ################################################################################################################################################################################################################################################################################################################################################################
 
 
-        ########################################### VALIDATE ######################################################################################################################################################################################################
+        ########################################### VALIDATE ###########################################################################################################################################################################################################################################################################################################
         net.train_flag = False
 
         print("Epoch",epoch_num+1,'complete. Calculating validation loss...')
@@ -222,7 +223,6 @@ def main():
         print('Validation loss :',format(avg_val_loss/val_batch_count,'0.4f'),"| Val Maneuver Acc:",format(avg_maneuver_acc/val_batch_count*100,'0.4f'),"| Val Acc:",format(avg_val_lat_acc/val_batch_count*100,'0.4f'),format(avg_val_lon_acc/val_batch_count*100,'0.4f'))
         val_loss.append(avg_val_loss/val_batch_count)
         prev_val_loss = avg_val_loss/val_batch_count
-
 
     torch.save(net.state_dict(), 'trained_model_TGSIM/cslstm_m.tar')
 
