@@ -69,88 +69,6 @@ class Ngsim:
 		print("All the points are processed and thre trajectories are constructed!")
 
 
-
-	# def find_location_grid(self, time_resolution, num_lanes):
-	# 	print("finding the location grid for each point ...")
-	# 	errors = 0
-	# 	times = [p.time for p in self.data_points]
-	# 	locations = [p.y_loc for p in self.data_points]
-	# 	min_time = min(times)
-	# 	max_time = max(times)
-	# 	min_location = min(locations)
-	# 	max_location = max(locations)
-	# 	grid_size = self.data_points[0].grid_size
-	# 	grid_shape = (num_lanes, int((max_location-min_location)/grid_size)+1)
-	# 	print("min_location: ", min_location)
-	# 	print("max_location: ", max_location) 
-	# 	t_steps = int((max_time - min_time) / time_resolution) + 1
-	# 	global_grid = [np.zeros(grid_shape, dtype=int) for s in range(t_steps)]
-
-	# 	print(f'Total time steps: {t_steps}')
-	# 	print(f'Global grid size: {len(global_grid)}')
- 
- 
-	# 	for p in self.data_points: 
-	# 		t_ind = int(round(p.time/time_resolution, 0))  
-	# 		lane_ind = self.lane_dict[p.lane]
-	# 		location_ind = int(p.y_loc/grid_size)  
-			 
-	# 		# print(f't_ind: {t_ind}| global_grid: {len(global_grid)}')
-	# 		# print(f'location_ind: {location_ind}| global_grid[{t_ind}]: {len(global_grid[t_ind])}')
-			 
-
-	# 		if t_ind >= len(global_grid):
-	# 			errors += 1
-	# 		elif location_ind >= len(global_grid[t_ind][lane_ind]):
-	# 			errors+=1
-	# 		elif global_grid[t_ind][lane_ind][location_ind] == 0:
-	# 			global_grid[t_ind][lane_ind][location_ind] = p.id
-	# 		else: 
-	# 			errors += 1
-
-	# 	print("WARNING - total errors:", errors)
-	# 	print("Global Grid is constructed")
-
-		
-	# 	for p in self.data_points:
-	# 		t_ind = int(round(p.time/time_resolution, 0))
-	# 		lane_ind = self.lane_dict[p.lane]
-	# 		# print(self.lane_dict)
-	# 		location_ind = int(p.y_loc/grid_size)
-
-	# 		for i in range(1,p.grids_on_each_side+1):
-	# 			# the location of the vehicle on its grid is at p.grids_on_each_side,
-	# 			# example: p.grids_on_each_side=6, [0,1,2,3,4,5,vehicle,7,8,9,10,11,12]
-
-	# 			# infront of the vehicle:
-	# 			if location_ind+i in range(grid_shape[1]):
-	# 				#for the same lane:
-	# 				# print(f'index: {p.grids_on_each_side+i} | lane id {lane_ind} | global grid:  {len(global_grid[t_ind])} | {len(global_grid[t_ind][lane_ind])}')
-	# 				p.neighbors_same_lane[p.grids_on_each_side+i] = global_grid[t_ind][lane_ind][location_ind+i]
-	# 				#for the lane on the left:
-	# 				if lane_ind-1 in range(grid_shape[0]):
-	# 					p.neighbors_left_lane[p.grids_on_each_side+i] = \
-	# 						global_grid[t_ind][lane_ind-1][location_ind+i]
-	# 				#for the lane on the right:
-	# 				if lane_ind+1 in range(grid_shape[0]):
-	# 					p.neighbors_right_lane[p.grids_on_each_side + i] = \
-	# 						global_grid[t_ind][lane_ind+1][location_ind+i]
-
-	# 			# behind the vehicle:
-	# 			if location_ind-i in range(grid_shape[1]):
-	# 				#for the same lane:
-	# 				p.neighbors_same_lane[p.grids_on_each_side-i] = global_grid[t_ind][lane_ind][location_ind-i]
-	# 				#for the lane on the left:
-	# 				if lane_ind-1 in range(grid_shape[0]):
-	# 					p.neighbors_left_lane[p.grids_on_each_side-i] = \
-	# 						global_grid[t_ind][lane_ind-1][location_ind-i]
-	# 				#for the lane on the right:
-	# 				if lane_ind+1 in range(grid_shape[0]):
-	# 					p.neighbors_right_lane[p.grids_on_each_side-i] = \
-	# 						global_grid[t_ind][lane_ind+1][location_ind-i]
-
-	# 	print("location grids: complete!")
-
 	def find_location_grid(self, time_resolution, num_lanes):
 		print("Finding the location grid for each point ...")
 		errors = 0
@@ -282,6 +200,7 @@ class Ngsim:
 						p.longitudinal_maneuver = 1
 
 		print("Finding the maneuvers is complete!")
+		
 
 def process_data_flow_density(file, dataset_id, reference_time = 0, input_history = 3, output_history = 5, speed_ratio_braking = 0.8, lateral_m_t = 4, time_resolution = 0.1, num_lanes = 8):
 	print("output_history: ", output_history)
