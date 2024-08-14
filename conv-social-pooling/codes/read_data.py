@@ -4,20 +4,21 @@ import pickle
 import csv
 
 # Define directories and filenames
-# trajectories_directory = 'cee497projects/data/101-80-speed-maneuver-for-GT/10_seconds/train/' 
+trajectories_directory = 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/' 
+# 'cee497projects/trajectory-prediction/data/101-80-speed-maneuver-for-GT/10_seconds/test'
 
  
 
-# filename = trajectories_directory + 'train.data'
+filename = trajectories_directory + 'test.data'
 
-# with open(filename, 'rb') as file:
-#     data = pickle.load(file)
+with open(filename, 'rb') as file:
+    data = pickle.load(file)
 
-# with open('temp_write/data.csv', 'w', newline='') as file:
-#     writer = csv.writer(file)
+with open('temp_write/data.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
 
-#     # Write the data to the csv file
-#     writer.writerows(data)
+    # Write the data to the csv file
+    writer.writerows(data)
 
  
 
