@@ -4,6 +4,8 @@
 - **Louis Sungwoo Cho, Civil & Environmental Engineering (Transportation) Major, Computer Science Minor, </br> University of Illinois at Urbana-Champaign (UIUC)**
 - **Alireza Talebpour, Assistant Professor Civil & Environmental Engineering (Transportation), </br> University of Illinois at Urbana-Champaign (UIUC)**
 
+## [UIUC CEE 497 Louis Sungwoo Cho Senior Thesis](https://lotlouischoitslab.github.io/static/media/Louis_CEE497_Thesis.93a25b1773e42226928a.pdf)
+
 ## Algorithm:
 First, the trajectory points for x and y coordinates are parsed in. The points are then filtered so we do not have any empty arrays in the nested data file. For each of the predDataloader, se have the mean x coordinates, mean y coordinates, and the standard deviation of x and y coordinates. We feed those in with the x and y coordinates of each trajectory into a helper function which will calculate the line integral and return the best trajectory. The best trajectory is determined by returning the maximum line integral value. 
  
@@ -167,5 +169,6 @@ To save: If you're using vim, you can press ESC, then type :wq and press Enter.
 ## Exit the terminal:
 -->
          exit 
+
 
 
